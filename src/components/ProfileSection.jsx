@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { updateUser } from '../utils/db'; // Ensure this is imported effectively or passed down
 import { updateEmail, updateProfile as updateAuthProfile, updatePassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import DailyBonus from './DailyBonus';
 
 const getRankTitle = (level) => {
     if (level < 5) return 'Iniciante';
@@ -41,11 +42,8 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile }) => { // onUpda
     const [avatarTab, setAvatarTab] = useState('male'); // 'male' | 'female'
 
     // Mock Data for History
-    const history = [
-        { date: 'Hoje', type: 'HIIT Blast', duration: '20 min', cal: 180, score: 'A' },
-        { date: 'Ontem', type: 'Yoga Flow', duration: '45 min', cal: 120, score: 'S' },
-        { date: '22 Jan', type: 'Força', duration: '30 min', cal: 210, score: 'A+' },
-    ];
+    // Mock Data removed
+
 
     const openEditModal = () => {
         setEditName(profile.name || profile.userName || '');
@@ -372,35 +370,9 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile }) => { // onUpda
                 </div>
             </div>
 
-            {Object.keys(profile.workoutHistory || {}).length > 0 && (
-                <>
-                    <h2 className="section-title">Atividade <span className="title-gradient">Recente</span></h2>
-                    <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: '3rem' }}>
-                        {history.map((item, i) => (
-                            <div key={i} style={{
-                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                padding: '1.5rem',
-                                borderBottom: i < history.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none'
-                            }}>
-                                <div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{item.type}</div>
-                                    <div style={{ fontSize: '0.9rem', opacity: 0.6 }}>{item.date} • {item.duration}</div>
-                                </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontWeight: 'bold', color: 'var(--color-primary)' }}>{item.cal} kcal</div>
-                                    <div style={{
-                                        fontSize: '0.8rem',
-                                        background: 'rgba(255,255,255,0.1)',
-                                        padding: '2px 8px', borderRadius: '4px',
-                                        display: 'inline-block', marginTop: '4px'
-                                    }}>
-                                        Rank {item.score}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </>
+            {/* Daily Bonus Section */}
+            {profile.isLoggedIn && (
+                <DailyBonus profile={profile} onUpdateProfile={onUpdateProfile} />
             )}
         </section>
     );
