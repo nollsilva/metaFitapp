@@ -208,6 +208,15 @@ function App() {
     setTimeout(() => setNotification(null), 5000);
   };
 
+  const handleToggleCheck = (index) => {
+    setSessionChecks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) newSet.delete(index);
+      else newSet.add(index);
+      return newSet;
+    });
+  };
+
   return (
     <div className="app-container">
       <div className="bg-glow-container">
@@ -258,6 +267,8 @@ function App() {
               setActiveTab('timer');
             }}
             onCompleteDaily={handleDailyWorkoutComplete}
+            checkedExercises={sessionChecks}
+            onToggleCheck={handleToggleCheck}
           />
         )}
 
@@ -272,7 +283,14 @@ function App() {
               // If it's a "Daily/For You" exercise, we don't award XP here.
               // We only award XP when the whole set is done in WorkoutsSection.
               if (activeExercise.isDaily) {
-                // No XP, No History Update yet.
+                // Auto-mark check
+                if (activeExercise.index !== undefined) {
+                  setSessionChecks(prev => new Set(prev).add(activeExercise.index));
+                }
+                setNotification(`Exercício finalizado! ✓`);
+                setTimeout(() => setNotification(null), 3000);
+                setActiveTab('workout');
+                setActiveExercise(null);
                 return;
               }
 
