@@ -20,6 +20,7 @@ function App() {
   const [activeExercise, setActiveExercise] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [sessionChecks, setSessionChecks] = useState(new Set()); // Track completed daily exercises indices
 
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('metafit_tutorial_seen');

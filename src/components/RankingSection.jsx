@@ -111,95 +111,94 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                     )}
                 </div>
             </div>
-        </div>
 
-            {/* Profile Detail Modal */ }
-    {
-        selectedUser && (
-            <div className="modal-overlay animate-fade-in" onClick={() => setSelectedUser(null)}>
-                <div className="card" onClick={(e) => e.stopPropagation()} style={{
-                    width: '90%', maxWidth: '350px',
-                    background: 'linear-gradient(145deg, #121215 0%, #000 100%)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    padding: '2rem',
-                    textAlign: 'center',
-                    position: 'relative',
-                    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
-                }}>
-                    <button onClick={() => setSelectedUser(null)} style={{
-                        position: 'absolute', top: '10px', right: '15px',
-                        background: 'none', border: 'none', color: '#666', fontSize: '1.5rem', cursor: 'pointer'
-                    }}>×</button>
+            {/* Profile Detail Modal */}
+            {
+                selectedUser && (
+                    <div className="modal-overlay animate-fade-in" onClick={() => setSelectedUser(null)}>
+                        <div className="card" onClick={(e) => e.stopPropagation()} style={{
+                            width: '90%', maxWidth: '350px',
+                            background: 'linear-gradient(145deg, #121215 0%, #000 100%)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            padding: '2rem',
+                            textAlign: 'center',
+                            position: 'relative',
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+                        }}>
+                            <button onClick={() => setSelectedUser(null)} style={{
+                                position: 'absolute', top: '10px', right: '15px',
+                                background: 'none', border: 'none', color: '#666', fontSize: '1.5rem', cursor: 'pointer'
+                            }}>×</button>
 
-                    {/* Elo Icon */}
-                    <div style={{ width: '100px', height: '100px', margin: '0 auto 1rem' }}>
-                        <BadgeIcon
-                            type={getBadgeConfig(selectedUser.xp).icon}
-                            color={getBadgeConfig(selectedUser.xp).color}
-                        />
-                    </div>
-
-                    {/* Avatar */}
-                    <div style={{
-                        width: '80px', height: '80px', borderRadius: '50%',
-                        background: '#222', margin: '-40px auto 1rem', position: 'relative',
-                        border: '4px solid #121215', overflow: 'hidden'
-                    }}>
-                        {selectedUser.avatar ? (
-                            <img src={`/avatars/${selectedUser.avatar}.png`} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>
-                                {selectedUser.name ? selectedUser.name.substring(0, 2).toUpperCase() : 'JD'}
+                            {/* Elo Icon */}
+                            <div style={{ width: '100px', height: '100px', margin: '0 auto 1rem' }}>
+                                <BadgeIcon
+                                    type={getBadgeConfig(selectedUser.xp).icon}
+                                    color={getBadgeConfig(selectedUser.xp).color}
+                                />
                             </div>
-                        )}
-                    </div>
 
-                    <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0.2rem' }}>{selectedUser.name}</h2>
-                    <div style={{ color: 'var(--color-primary)', fontSize: '0.9rem', marginBottom: '1.5rem', fontWeight: '600' }}>
-                        {getRankTitle(selectedUser.xp)}
-                    </div>
+                            {/* Avatar */}
+                            <div style={{
+                                width: '80px', height: '80px', borderRadius: '50%',
+                                background: '#222', margin: '-40px auto 1rem', position: 'relative',
+                                border: '4px solid #121215', overflow: 'hidden'
+                            }}>
+                                {selectedUser.avatar ? (
+                                    <img src={`/avatars/${selectedUser.avatar}.png`} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                                        {selectedUser.name ? selectedUser.name.substring(0, 2).toUpperCase() : 'JD'}
+                                    </div>
+                                )}
+                            </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-around', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}>
-                        <div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: '800' }}>{selectedUser.level}</div>
-                            <div style={{ fontSize: '0.7rem', color: '#888', textTransform: 'uppercase' }}>Nível</div>
-                        </div>
-                        <div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: '800' }}>{selectedUser.xp}</div>
-                            <div style={{ fontSize: '0.7rem', color: '#888', textTransform: 'uppercase' }}>XP Total</div>
+                            <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0.2rem' }}>{selectedUser.name}</h2>
+                            <div style={{ color: 'var(--color-primary)', fontSize: '0.9rem', marginBottom: '1.5rem', fontWeight: '600' }}>
+                                {getRankTitle(selectedUser.xp)}
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-around', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}>
+                                <div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: '800' }}>{selectedUser.level}</div>
+                                    <div style={{ fontSize: '0.7rem', color: '#888', textTransform: 'uppercase' }}>Nível</div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: '800' }}>{selectedUser.xp}</div>
+                                    <div style={{ fontSize: '0.7rem', color: '#888', textTransform: 'uppercase' }}>XP Total</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )
+            }
+
+            {/* Add Friend Section */}
+            <div className="card" style={{ marginBottom: '2rem' }}>
+                <h3 style={{ marginBottom: '1rem', color: '#fff' }}>Adicionar Amigo</h3>
+                <form onSubmit={handleAddFriend} style={{ display: 'flex', gap: '10px' }}>
+                    <input
+                        type="text"
+                        placeholder="ID do Amigo (6 números)"
+                        value={friendIdInput}
+                        onChange={(e) => setFriendIdInput(e.target.value)}
+                        maxLength={6}
+                        style={{
+                            flex: 1,
+                            padding: '12px',
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '8px',
+                            color: '#fff',
+                            outline: 'none'
+                        }}
+                    />
+                    <button className="btn-primary" type="submit" style={{ padding: '0 20px' }}>+</button>
+                </form>
+                {msg && <p style={{ marginTop: '10px', color: msg.includes('erro') ? '#ff0055' : '#00ff66', fontSize: '0.9rem' }}>{msg}</p>}
             </div>
-        )
-    }
 
-    {/* Add Friend Section */ }
-    <div className="card" style={{ marginBottom: '2rem' }}>
-        <h3 style={{ marginBottom: '1rem', color: '#fff' }}>Adicionar Amigo</h3>
-        <form onSubmit={handleAddFriend} style={{ display: 'flex', gap: '10px' }}>
-            <input
-                type="text"
-                placeholder="ID do Amigo (6 números)"
-                value={friendIdInput}
-                onChange={(e) => setFriendIdInput(e.target.value)}
-                maxLength={6}
-                style={{
-                    flex: 1,
-                    padding: '12px',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '8px',
-                    color: '#fff',
-                    outline: 'none'
-                }}
-            />
-            <button className="btn-primary" type="submit" style={{ padding: '0 20px' }}>+</button>
-        </form>
-        {msg && <p style={{ marginTop: '10px', color: msg.includes('erro') ? '#ff0055' : '#00ff66', fontSize: '0.9rem' }}>{msg}</p>}
-    </div>
-
-    {/* Medal Gallery */ }
+            {/* Medal Gallery */}
             <h2 className="section-title">Galeria de <span className="title-gradient">Medalhas</span></h2>
             <div className="card" style={{
                 marginBottom: '2rem',
@@ -240,45 +239,45 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                 ))}
             </div>
 
-    {/* Leaderboard Tabs */ }
-    <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem' }}>
-        <button
-            onClick={() => setRankingTab('global')}
-            style={{
-                flex: 1,
-                padding: '12px',
-                background: rankingTab === 'global' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
-                color: rankingTab === 'global' ? '#111' : '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: '0.3s'
-            }}
-        >
-            GLOBAL
-        </button>
-        <button
-            onClick={() => setRankingTab('friends')}
-            disabled={profile.friends?.length === 0}
-            style={{
-                flex: 1,
-                padding: '12px',
-                background: rankingTab === 'friends' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
-                color: rankingTab === 'friends' ? '#111' : '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: '0.3s',
-                opacity: (profile.friends && profile.friends.length > 0) ? 1 : 0.5
-            }}
-        >
-            AMIGOS
-        </button>
-    </div>
+            {/* Leaderboard Tabs */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem' }}>
+                <button
+                    onClick={() => setRankingTab('global')}
+                    style={{
+                        flex: 1,
+                        padding: '12px',
+                        background: rankingTab === 'global' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
+                        color: rankingTab === 'global' ? '#111' : '#fff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        transition: '0.3s'
+                    }}
+                >
+                    GLOBAL
+                </button>
+                <button
+                    onClick={() => setRankingTab('friends')}
+                    disabled={profile.friends?.length === 0}
+                    style={{
+                        flex: 1,
+                        padding: '12px',
+                        background: rankingTab === 'friends' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
+                        color: rankingTab === 'friends' ? '#111' : '#fff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        transition: '0.3s',
+                        opacity: (profile.friends && profile.friends.length > 0) ? 1 : 0.5
+                    }}
+                >
+                    AMIGOS
+                </button>
+            </div>
 
-    {/* Leaderboard List */ }
+            {/* Leaderboard List */}
             <h2 className="section-title">Ranking <span className="title-gradient">{rankingTab === 'global' ? 'Global' : 'Amigos'}</span></h2>
             <div className="leaderboard" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {(() => {
@@ -314,18 +313,18 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                         const config = getBadgeConfig(user.xp);
 
                         return (
-                            <div key={user.id} className="card" 
+                            <div key={user.id} className="card"
                                 onClick={() => setSelectedUser(user)}
                                 style={{
-                                padding: '1.2rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '1rem',
-                                cursor: 'pointer',
-                                transition: '0.2s',
-                                border: isMe ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.05)',
-                                background: isMe ? 'rgba(0,240,255,0.05)' : 'var(--color-bg-card)'
-                            }}>
+                                    padding: '1.2rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '1rem',
+                                    cursor: 'pointer',
+                                    transition: '0.2s',
+                                    border: isMe ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.05)',
+                                    background: isMe ? 'rgba(0,240,255,0.05)' : 'var(--color-bg-card)'
+                                }}>
                                 {/* Rank & Badge Row */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginRight: '10px' }}>
                                     <div style={{
