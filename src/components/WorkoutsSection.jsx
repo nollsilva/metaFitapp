@@ -8,6 +8,9 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
         legs: [], chest_biceps: [], back_triceps: [], abs: []
     });
 
+    // Checkbox state for equipment
+    const [hasBar, setHasBar] = useState(false);
+
     // Track checked exercises by index
     const [checkedExercises, setCheckedExercises] = useState(new Set());
 
@@ -32,16 +35,16 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
             chest_biceps: [
                 { name: 'Flexão Tradicional', reps: '3 x 15', image: '/pushup.png', desc: 'Peitoral médio.', howTo: '1. Mãos largas.\n2. Corpo prancha.\n3. Peito ao chão.\n4. Empurre.', proTip: 'Core travado.' },
                 { name: 'Flexão Arqueiro', reps: '3 x 8/lado', image: '/archer.png', desc: 'Força unilateral.', howTo: '1. Mãos bem largas.\n2. Desça em um braço.\n3. Outro braço reto.\n4. Suba e troque.', proTip: 'Avançado.' },
-                { name: 'Chin-up (Supinada)', reps: '3 x 8', image: '/chinup.png', desc: 'Bíceps e dorsais.', howTo: '1. Palmas para você.\n2. Puxe até o queixo.\n3. Desça total.\n4. Controle.', proTip: 'Sem balanço.' },
+                { name: 'Chin-up (Supinada)', reps: '3 x 8', image: '/chinup.png', desc: 'Bíceps e dorsais.', howTo: '1. Palmas para você.\n2. Puxe até o queixo.\n3. Desça total.\n4. Controle.', proTip: 'Sem balanço.', requiresBar: true },
                 { name: 'Hammer Curl', reps: '3 x 12', image: '/hammer_curl.png', desc: 'Bíceps e Antebraço.', howTo: '1. Halteres neutros.\n2. Cotovelos fixos.\n3. Suba até o ombro.\n4. Desça controlado.', proTip: 'Não balance o tronco.' },
                 { name: 'Desenvolvimento Ombros', reps: '3 x 12', image: '/shoulder_press.png', desc: 'Ombros completo.', howTo: '1. Halteres na altura orelha.\n2. Empurre para cima.\n3. Braços esticados.\n4. Retorne a 90 graus.', proTip: 'Core firme.' },
                 { name: 'Flexão Declinada', reps: '3 x 12', image: '/decline_pushup.png', desc: 'Peitoral Superior.', howTo: '1. Pés no banco.\n2. Mãos no chão.\n3. Desça até encostar.\n4. Empurre forte.', proTip: 'Não arqueie as costas.' },
                 { name: 'Flexão Pike', reps: '3 x 10', image: '/pike_pushup.png', desc: 'Ombros Calistenia.', howTo: '1. Corpo em V invertido.\n2. Olhe para os pés.\n3. Dobre cotovelos.\n4. Empurre o chão.', proTip: 'Mantenha pernas esticadas.' }
             ],
             back_triceps: [
-                { name: 'Barra Fixa (Pronada)', reps: '3 x 8', image: '/pullup_wide.png', desc: 'Largura costas.', howTo: '1. Palmas para frente.\n2. Puxe até o peito.\n3. Desça lento.\n4. Braços esticados.', proTip: 'Puxe cotovelos.' },
+                { name: 'Barra Fixa (Pronada)', reps: '3 x 8', image: '/pullup_wide.png', desc: 'Largura costas.', howTo: '1. Palmas para frente.\n2. Puxe até o peito.\n3. Desça lento.\n4. Braços esticados.', proTip: 'Puxe cotovelos.', requiresBar: true },
                 { name: 'Flexão Diamante', reps: '3 x 10', image: '/diamond.png', desc: 'Tríceps massa.', howTo: '1. Mãos juntas.\n2. Forme diamante.\n3. Desça e empurre.\n4. Cotovelos fechados.', proTip: 'Isolamento puro.' },
-                { name: 'Remada Australiana', reps: '3 x 12', image: '/australian.png', desc: 'Espessura costas.', howTo: '1. Sob barra baixa.\n2. Corpo reto.\n3. Puxe o peito.\n4. Desça lento.', proTip: 'Esmague escápulas.' },
+                { name: 'Remada Australiana', reps: '3 x 12', image: '/australian.png', desc: 'Espessura costas.', howTo: '1. Sob barra baixa.\n2. Corpo reto.\n3. Puxe o peito.\n4. Desça lento.', proTip: 'Esmague escápulas.', requiresBar: true },
                 { name: 'Tríceps Testa', reps: '3 x 12', image: '/skullcrusher.png', desc: 'Tríceps isolado.', howTo: '1. Deitado no banco.\n2. Barra acima do peito.\n3. Flexione cotovelos até testa.\n4. Estenda retornando.', proTip: 'Cotovelos fechados.' },
                 { name: 'Superman', reps: '3 x 15', image: '/superman.png', desc: 'Lombar e Postura.', howTo: '1. Deitado de bruços.\n2. Eleve braços e pernas.\n3. Segure 1s.\n4. Relaxe.', proTip: 'Olhe para o chão.' },
                 { name: 'Mergulho no Banco', reps: '3 x 15', image: '/bench_dips.png', desc: 'Tríceps em casa.', howTo: '1. Mãos no banco.\n2. Pernas esticadas.\n3. Desça o quadril.\n4. Suba estendendo.', proTip: 'Costas rente ao banco.' }
@@ -58,8 +61,16 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
             ]
         };
 
-        setCategorizedRoutine(lib);
-    }, []);
+        // Filter library based on hasBar
+        const filteredLib = {
+            legs: lib.legs.filter(ex => hasBar || !ex.requiresBar),
+            chest_biceps: lib.chest_biceps.filter(ex => hasBar || !ex.requiresBar),
+            back_triceps: lib.back_triceps.filter(ex => hasBar || !ex.requiresBar),
+            abs: lib.abs.filter(ex => hasBar || !ex.requiresBar)
+        };
+
+        setCategorizedRoutine(filteredLib);
+    }, [hasBar]);
 
     // --- Dynamic Scheduling Logic ---
     const getDailyWorkout = () => {
@@ -217,6 +228,19 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
                             <div>
                                 <h2 style={{ fontSize: '1.8rem', marginBottom: '0.2rem' }}>GUIA <span className="title-gradient">PARA VOCÊ</span></h2>
                                 <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Foco: {urgentPart.toUpperCase()} | {trainingDuration}min por dia</p>
+                                {/* Checkbox for Equipment */}
+                                <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={hasBar}
+                                        onChange={(e) => setHasBar(e.target.checked)}
+                                        style={{ accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                                        id="bar-check"
+                                    />
+                                    <label htmlFor="bar-check" style={{ fontSize: '0.85rem', color: '#fff', cursor: 'pointer' }}>
+                                        Tenho barra fixa em casa
+                                    </label>
+                                </div>
                             </div>
                             {todayDone ? (
                                 <div className="done-status-badge">CONCLUÍDO ✓</div>

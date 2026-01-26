@@ -9,8 +9,8 @@ const Navbar = ({ activeTab, setActiveTab, onOpenAuth, isLoggedIn, onLogout, onS
     return (
         <nav className="navbar">
             <div className="container nav-content">
-                <div className="logo" onClick={() => setActiveTab('home')} style={{ cursor: 'pointer' }}>
-                    META<span className="title-gradient">FIT</span>
+                <div className="logo" onClick={() => setActiveTab('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                    <img src="/logo.png" alt="MetaFit Logo" style={{ height: '50px', objectFit: 'contain' }} />
                 </div>
                 <ul className="nav-links">
                     {['Início', 'Treino', 'Dieta', 'Perfil'].map((item) => (
