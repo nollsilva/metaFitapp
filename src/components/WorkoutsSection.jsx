@@ -8,6 +8,9 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
         legs: [], chest_biceps: [], back_triceps: [], abs: []
     });
 
+    // Checkbox state for equipment (Restored)
+    const [hasBar, setHasBar] = useState(false);
+
     // --- Date & Time Helpers ---
     // ... omit ...
     useEffect(() => {
@@ -50,8 +53,16 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
             ]
         };
 
-        setCategorizedRoutine(lib);
-    }, []);
+        // Filter library based on hasBar (Restored logic)
+        const filteredLib = {
+            legs: lib.legs.filter(ex => hasBar || !ex.requiresBar),
+            chest_biceps: lib.chest_biceps.filter(ex => hasBar || !ex.requiresBar),
+            back_triceps: lib.back_triceps.filter(ex => hasBar || !ex.requiresBar),
+            abs: lib.abs.filter(ex => hasBar || !ex.requiresBar)
+        };
+
+        setCategorizedRoutine(filteredLib);
+    }, [hasBar]);
 
     // ... (Dynamic Scheduling Logic stays) ...
 
@@ -68,6 +79,19 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
     <div>
         <h2 style={{ fontSize: '1.8rem', marginBottom: '0.2rem' }}>GUIA <span className="title-gradient">PARA VOCÊ</span></h2>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Foco: {urgentPart.toUpperCase()} | {trainingDuration}min por dia</p>
+        {/* Checkbox for Equipment (Restored) */}
+        <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input
+                type="checkbox"
+                checked={hasBar}
+                onChange={(e) => setHasBar(e.target.checked)}
+                style={{ accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                id="bar-check"
+            />
+            <label htmlFor="bar-check" style={{ fontSize: '0.85rem', color: '#fff', cursor: 'pointer' }}>
+                Tenho barra fixa em casa
+            </label>
+        </div>
     </div>
     {
         todayDone ? (
@@ -120,23 +144,24 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
                 {todayWorkout.exercises.map((ex, i) => (
                     <div key={i} className="mini-ex-card" style={{
                         border: checkedExercises.has(i) ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.1)',
-                        opacity: checkedExercises.has(i) ? 0.6 : 1
+                        opacity: checkedExercises.has(i) ? 0.6 : 1,
+                        position: 'relative' // Added for absolute positioning of checkmark
                     }} onClick={() => {
-                        // Only show modal if needed, but here maybe priority is checking?
-                        // Let's separate check circle and card click.
+                        // Card click selects exercise
+                        setSelectedExercise(ex);
                     }}>
-                        <div
-                            onClick={(e) => { e.stopPropagation(); toggleCheck(i); }}
-                            style={{
-                                width: '24px', height: '24px', borderRadius: '50%', border: '2px solid var(--color-primary)',
-                                marginRight: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                                background: checkedExercises.has(i) ? 'var(--color-primary)' : 'transparent', color: '#000', fontWeight: 'bold'
+                        {/* Visual Indicator of Completion (non-clickable) */}
+                        {checkedExercises.has(i) && (
+                            <div style={{
+                                position: 'absolute', top: '5px', right: '5px',
+                                color: 'var(--color-primary)', fontSize: '1.2rem', fontWeight: 'bold'
                             }}>
-                            {checkedExercises.has(i) && '✓'}
-                        </div>
+                                ✓
+                            </div>
+                        )}
 
-                        <img src={ex.image} alt={ex.name} onClick={() => setSelectedExercise(ex)} style={{ cursor: 'pointer' }} />
-                        <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => setSelectedExercise(ex)}>
+                        <img src={ex.image} alt={ex.name} style={{ cursor: 'pointer' }} />
+                        <div style={{ flex: 1, cursor: 'pointer' }}>
                             <div style={{ fontWeight: '600' }}>{ex.name}</div>
                             <div style={{ fontSize: '0.8rem', color: 'var(--color-primary)' }}>{ex.reps}</div>
                         </div>
