@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import ShareStoryCard from './ShareStoryCard';
+import { shareHiddenElement } from '../utils/share';
 
 const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteDaily, checkedExercises, onToggleCheck }) => {
     const { goal, mealPlan, urgentPart, trainingDays, trainingDuration, workoutHistory = {} } = profile;
@@ -155,8 +157,27 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
 
     const allChecked = todayWorkout.exercises.length > 0 && checkedExercises.size === todayWorkout.exercises.length;
 
+    const handleShareWorkout = () => {
+        // Trigger share
+        shareHiddenElement('share-workout-card', `treino-${todayKey}.png`);
+    };
+
     return (
         <section className="container" style={{ paddingTop: '2rem', paddingBottom: '4rem' }}>
+
+            {/* Hidden Card for Sharing */}
+            <ShareStoryCard
+                id="share-workout-card"
+                type="workout"
+                data={{
+                    name: profile.name || profile.userName,
+                    avatar: profile.avatar,
+                    duration: trainingDuration,
+                    xpTotal: profile.xp, // for medal
+                    xp: trainingDuration >= 30 ? 400 : 200, // Estimate based on logic
+                    focus: todayWorkout.title
+                }}
+            />
 
             {/* Modal Detail Overlay */}
             {selectedExercise && (
@@ -251,8 +272,23 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
                             {todayWorkout.category === 'rest' ? (
                                 <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.7 }}>😴 Dia de descanso planejado. Foque na nutrição!</div>
                             ) : todayDone ? (
-                                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-primary)', fontSize: '1.2rem', fontWeight: 'bold' }}>
-                                    Treino de hoje finalizado! Bom descanso. 🔥
+                                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                                    <div style={{ color: 'var(--color-primary)', fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem' }}>
+                                        Treino de hoje finalizado! Bom descanso. 🔥
+                                    </div>
+                                    <button
+                                        className="btn-primary"
+                                        onClick={() => handleShareWorkout()}
+                                        style={{
+                                            background: 'linear-gradient(90deg, #E1306C, #FD1D1D)',
+                                            border: 'none',
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '8px'
+                                        }}
+                                    >
+                                        <span style={{ fontSize: '1.2rem' }}>📸</span> Compartilhar Conquista
+                                    </button>
                                 </div>
                             ) : (
                                 <>

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { addFriend, getFriendsLeaderboard, getGlobalLeaderboard, checkSeasonReset } from '../utils/db';
 import { BadgeIcon, getBadgeConfig } from './BadgeIcons';
 import { getRankTitle } from '../utils/rankingSystem';
+import ShareStoryCard from './ShareStoryCard';
+import { shareHiddenElement } from '../utils/share';
 
 const RankingSection = ({ profile, onUpdateProfile }) => {
     const [friendIdInput, setFriendIdInput] = useState('');
@@ -23,6 +25,8 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
         }
     }, [profile?.uid]);
 
+    const [myRank, setMyRank] = useState(null);
+
     useEffect(() => {
         refreshLeaderboard();
     }, [profile, rankingTab]);
@@ -37,6 +41,11 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
             }
         }
         setLeaderboard(data);
+
+        // Update myRank state
+        const meIndex = data.findIndex(u => u.id === profile.id);
+        if (meIndex !== -1) setMyRank(meIndex + 1);
+        else setMyRank('-');
     };
 
     const handleAddFriend = async (e) => {
@@ -110,6 +119,42 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                         </div>
                     )}
                 </div>
+
+                {/* Share Button absolute positioned */}
+                <button
+                    onClick={() => shareHiddenElement('share-ranking-card', 'meu-ranking.png')}
+                    style={{
+                        position: 'absolute',
+                        top: '1rem',
+                        right: '1rem',
+                        background: 'rgba(255,255,255,0.15)',
+                        border: 'none',
+                        color: '#fff',
+                        width: '50px', // Increased size
+                        height: '50px', // Increased size
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        zIndex: 10,
+                        fontSize: '1.5rem', // Larger icon
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                    }}
+                    title="Compartilhar Ranking"
+                >
+                    📸
+                </button>
+
+                {/* Hidden Card for Sharing */}
+                <ShareStoryCard
+                    id="share-ranking-card"
+                    type="ranking"
+                    data={{
+                        xp: profile.xp,
+                        rank: myRank || '?',
+                    }}
+                />
             </div>
 
             {/* Profile Detail Modal */}
@@ -279,13 +324,18 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
 
             {/* Leaderboard List */}
             <h2 className="section-title">Ranking <span className="title-gradient">{rankingTab === 'global' ? 'Global' : 'Amigos'}</span></h2>
-            <div className="leaderboard" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="leaderboard" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                 {(() => {
                     let displayList = leaderboard;
                     let showSeparator = false;
                     let myUserInList = null;
+                    let remainingCount = 0;
 
                     if (rankingTab === 'global' && leaderboard.length > 0) {
+                        if (leaderboard.length > 10) {
+                            remainingCount = leaderboard.length - 10;
+                        }
+
                         displayList = leaderboard.slice(0, 10);
                         const myIndex = leaderboard.findIndex(u => u.id === profile.id);
                         if (myIndex >= 10 && profile.isLoggedIn) {
@@ -316,21 +366,21 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                             <div key={user.id} className="card"
                                 onClick={() => setSelectedUser(user)}
                                 style={{
-                                    padding: '1.2rem',
+                                    padding: '0.8rem 1rem', // Compact padding
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '1rem',
+                                    gap: '0.8rem',
                                     cursor: 'pointer',
                                     transition: '0.2s',
                                     border: isMe ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.05)',
                                     background: isMe ? 'rgba(0,240,255,0.05)' : 'var(--color-bg-card)'
                                 }}>
                                 {/* Rank & Badge Row */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginRight: '10px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginRight: '5px' }}>
                                     <div style={{
-                                        fontSize: '1.2rem',
+                                        fontSize: '1rem',
                                         fontWeight: '800',
-                                        width: '40px',
+                                        width: '30px',
                                         textAlign: 'center',
                                         color: rank === 1 ? '#ffd700' : rank === 2 ? '#c0c0c0' : rank === 3 ? '#cd7f32' : '#666'
                                     }}>
@@ -339,7 +389,7 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
 
                                     <div style={{
                                         position: 'relative',
-                                        width: '70px', height: '70px',
+                                        width: '50px', height: '50px', // Smaller badge
                                         flexShrink: 0
                                     }}>
                                         <BadgeIcon type={config.icon} color={config.color} />
@@ -347,12 +397,13 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                                 </div>
 
                                 <div style={{
-                                    width: '50px', height: '50px',
+                                    width: '40px', height: '40px', // Smaller avatar
                                     borderRadius: '50%',
                                     background: '#333',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     fontWeight: 'bold',
                                     color: '#fff',
+                                    fontSize: '0.8rem',
                                     border: `2px solid ${rank <= 3 ? 'var(--color-primary)' : '#444'} `,
                                     overflow: 'hidden'
                                 }}>
@@ -363,18 +414,18 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                                     )}
                                 </div>
 
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: isMe ? 'var(--color-primary)' : '#fff' }}>
+                                <div style={{ flex: 1, overflow: 'hidden' }}>
+                                    <div style={{ fontWeight: 'bold', fontSize: '1rem', color: isMe ? 'var(--color-primary)' : '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {user.name} {isMe && '(Você)'}
                                     </div>
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                                         {getRankTitle(user.xp)}
                                     </div>
                                 </div>
 
                                 <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontWeight: '800', fontSize: '1.2rem' }}>{user.xp} XP</div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Nível {user.level}</div>
+                                    <div style={{ fontWeight: '800', fontSize: '1rem' }}>{user.xp} XP</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Lvl {user.level}</div>
                                 </div>
                             </div>
                         );
@@ -383,6 +434,14 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                     return (
                         <>
                             {displayList.map((user, idx) => renderRow(user, idx))}
+
+                            {/* Remaining Players Summary */}
+                            {rankingTab === 'global' && remainingCount > 0 && !showSeparator && (
+                                <div style={{ textAlign: 'center', fontSize: '0.9rem', color: '#666', marginTop: '1rem', paddingBottom: '1rem' }}>
+                                    E outros {remainingCount} jogadores buscando a glória...
+                                </div>
+                            )}
+
                             {showSeparator && (
                                 <div style={{ textAlign: 'center', fontSize: '1.5rem', color: '#666', margin: '0.5rem 0' }}>
                                     ...
