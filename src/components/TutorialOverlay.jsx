@@ -40,6 +40,11 @@ const cardsContent = [
     },
     {
         step: 8,
+        title: "Instalar App",
+        text: "Para melhor experiência: iOS (Share > Tela Início), Android (Menu > Instalar). Assim você acessa offline!"
+    },
+    {
+        step: 9,
         title: "Editar Perfil",
         text: "Para mudar seu Avatar, Nome ou Email, basta clicar na sua foto de perfil na aba 'Perfil'. Personalize sua experiência!"
     }

@@ -400,66 +400,9 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile }) => { // onUpda
                             </div>
                         ))}
                     </div>
-                        ))}
-                </div>
-        </>
-    )
-}
-
-<InstallGuideCard />
-        </section >
-    );
-};
-
-const InstallGuideCard = () => {
-    const [expanded, setExpanded] = useState(false);
-
-    return (
-        <div className="card" style={{
-            marginBottom: '3rem',
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0) 100%)'
-        }}>
-            <div
-                onClick={() => setExpanded(!expanded)}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-            >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ fontSize: '1.5rem' }}>📲</div>
-                    <div>
-                        <h3 style={{ fontSize: '1.1rem', marginBottom: '0.2rem' }}>Instalar App</h3>
-                        <p style={{ fontSize: '0.85rem', color: '#888' }}>Como adicionar à tela inicial</p>
-                    </div>
-                </div>
-                <div style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.3s' }}>▼</div>
-            </div>
-
-            {expanded && (
-                <div className="animate-fade-in" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ marginBottom: '1.5rem' }}>
-                        <h4 style={{ color: 'var(--color-primary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '1.2rem' }}>🍎</span> iPhone (iOS)
-                        </h4>
-                        <ol style={{ paddingLeft: '1.2rem', fontSize: '0.9rem', color: '#ccc', lineHeight: '1.6' }}>
-                            <li>Toque no botão <strong>Compartilhar</strong> <span style={{ fontSize: '1.1rem' }}>⎋</span> no Safári.</li>
-                            <li>Role para baixo e selecione <strong>Adicionar à Tela de Início</strong>.</li>
-                            <li>Toque em <strong>Adicionar</strong> no canto superior direito.</li>
-                        </ol>
-                    </div>
-
-                    <div>
-                        <h4 style={{ color: '#00ff66', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '1.2rem' }}>🤖</span> Android (Chrome)
-                        </h4>
-                        <ol style={{ paddingLeft: '1.2rem', fontSize: '0.9rem', color: '#ccc', lineHeight: '1.6' }}>
-                            <li>Toque no menu de <strong>Três Pontos</strong> <span style={{ fontSize: '1.1rem' }}>⋮</span> no Chrome.</li>
-                            <li>Selecione <strong>Instalar aplicativo</strong> ou <strong>Adicionar à tela inicial</strong>.</li>
-                            <li>Confirme clicando em <strong>Instalar</strong>.</li>
-                        </ol>
-                    </div>
-                </div>
+                </>
             )}
-        </div>
+        </section>
     );
 };
 
