@@ -5,6 +5,7 @@ const DietSection = ({ profile, onUpdateProfile }) => {
     const [weight, setWeight] = useState(profile.weight);
     const [height, setHeight] = useState(profile.height);
     const [age, setAge] = useState(profile.age);
+    const [gender, setGender] = useState(profile.gender || 'male');
     const [activityLevel, setActivityLevel] = useState(profile.activityLevel || '1.55');
     const [goal, setGoal] = useState(profile.goal || 'maintain');
 
@@ -20,6 +21,7 @@ const DietSection = ({ profile, onUpdateProfile }) => {
         setWeight(profile.weight);
         setHeight(profile.height);
         setAge(profile.age);
+        setGender(profile.gender || 'male');
         setActivityLevel(profile.activityLevel);
         setGoal(profile.goal);
         setUrgentPart(profile.urgentPart || 'corpo todo');
@@ -46,7 +48,15 @@ const DietSection = ({ profile, onUpdateProfile }) => {
         else { classification = 'Obesidade'; color = '#ff0055'; }
 
         const idealWeight = 21.7 * (h_m * h_m);
-        const tmb = (10 * w_kg) + (6.25 * height) - (5 * age_val);
+        // TMB (Taxa Metabólica Basal) - Fórmula de Mifflin-St Jeor
+        let tmb = (10 * w_kg) + (6.25 * height) - (5 * age_val);
+
+        if (gender === 'female') {
+            tmb -= 161;
+        } else {
+            tmb += 5;
+        }
+
         const tdee = tmb * parseFloat(activityLevel);
 
         let targetCalories = tdee;
@@ -58,7 +68,7 @@ const DietSection = ({ profile, onUpdateProfile }) => {
         const newMealPlan = generateMealPlan(targetCalories);
 
         onUpdateProfile({
-            weight, height, age, activityLevel, goal,
+            weight, height, age, gender, activityLevel, goal,
             urgentPart, trainingDays, trainingDuration,
             selectedWeekDays,
             targetCalories: Math.round(targetCalories),
@@ -144,6 +154,13 @@ const DietSection = ({ profile, onUpdateProfile }) => {
                         <div className="input-group">
                             <label>Idade</label>
                             <input type="number" placeholder="25" value={age} onChange={(e) => setAge(e.target.value)} />
+                        </div>
+                        <div className="input-group">
+                            <label>Gênero</label>
+                            <select value={gender} onChange={(e) => setGender(e.target.value)}>
+                                <option value="male">Masculino</option>
+                                <option value="female">Feminino</option>
+                            </select>
                         </div>
                     </div>
 

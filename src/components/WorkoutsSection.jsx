@@ -32,33 +32,61 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
                 { name: 'Subida no Banco', reps: '3 x 12/lado', image: '/step_up.png', desc: 'Glúteo e Coxa.', howTo: '1. Pise firme no banco.\n2. Suba o corpo todo.\n3. Desça controlado.\n4. Alterne ou mantenha.', proTip: 'Não impulsione com o pé de baixo.' }
             ],
             chest_biceps: [
-                { name: 'Flexão Tradicional', reps: '3 x 15', image: '/pushup.png', desc: 'Peitoral médio.', howTo: '1. Mãos largas.\n2. Corpo prancha.\n3. Peito ao chão.\n4. Empurre.', proTip: 'Core travado.' },
+                { name: 'Flexão Tradicional', reps: '3 x 12', image: '/pushup.png', desc: 'Peitoral médio.', howTo: '1. Mãos largas.\n2. Corpo prancha.\n3. Peito ao chão.\n4. Empurre.', proTip: 'Core travado.' },
                 { name: 'Flexão Arqueiro', reps: '3 x 8/lado', image: '/archer.png', desc: 'Força unilateral.', howTo: '1. Mãos bem largas.\n2. Desça em um braço.\n3. Outro braço reto.\n4. Suba e troque.', proTip: 'Avançado.' },
-                { name: 'Chin-up (Supinada)', reps: '3 x 8', image: '/chinup.png', desc: 'Bíceps e dorsais.', howTo: '1. Palmas para você.\n2. Puxe até o queixo.\n3. Desça total.\n4. Controle.', proTip: 'Sem balanço.', requiresBar: true },
+                { name: 'Chin-up (Supinada)', reps: '3 x 6', image: '/chinup.png', desc: 'Bíceps e dorsais.', howTo: '1. Palmas para você.\n2. Puxe até o queixo.\n3. Desça total.\n4. Controle.', proTip: 'Sem balanço.', requiresBar: true },
                 { name: 'Hammer Curl', reps: '3 x 12', image: '/hammer_curl.png', desc: 'Bíceps e Antebraço.', howTo: '1. Halteres neutros.\n2. Cotovelos fixos.\n3. Suba até o ombro.\n4. Desça controlado.', proTip: 'Não balance o tronco.' },
                 { name: 'Desenvolvimento Ombros', reps: '3 x 12', image: '/shoulder_press.png', desc: 'Ombros completo.', howTo: '1. Halteres na altura orelha.\n2. Empurre para cima.\n3. Braços esticados.\n4. Retorne a 90 graus.', proTip: 'Core firme.' },
-                { name: 'Flexão Declinada', reps: '3 x 12', image: '/decline_pushup.png', desc: 'Peitoral Superior.', howTo: '1. Pés no banco.\n2. Mãos no chão.\n3. Desça até encostar.\n4. Empurre forte.', proTip: 'Não arqueie as costas.' },
+                { name: 'Flexão Declinada', reps: '3 x 10', image: '/decline_pushup.png', desc: 'Peitoral Superior.', howTo: '1. Pés no banco.\n2. Mãos no chão.\n3. Desça até encostar.\n4. Empurre forte.', proTip: 'Não arqueie as costas.' },
                 { name: 'Flexão Pike', reps: '3 x 10', image: '/pike_pushup.png', desc: 'Ombros Calistenia.', howTo: '1. Corpo em V invertido.\n2. Olhe para os pés.\n3. Dobre cotovelos.\n4. Empurre o chão.', proTip: 'Mantenha pernas esticadas.' }
             ],
             back_triceps: [
-                { name: 'Barra Fixa (Pronada)', reps: '3 x 8', image: '/pullup_wide.png', desc: 'Largura costas.', howTo: '1. Palmas para frente.\n2. Puxe até o peito.\n3. Desça lento.\n4. Braços esticados.', proTip: 'Puxe cotovelos.', requiresBar: true },
-                { name: 'Flexão Diamante', reps: '3 x 10', image: '/diamond.png', desc: 'Tríceps massa.', howTo: '1. Mãos juntas.\n2. Forme diamante.\n3. Desça e empurre.\n4. Cotovelos fechados.', proTip: 'Isolamento puro.' },
+                { name: 'Barra Fixa (Pronada)', reps: '3 x 5', image: '/pullup_wide.png', desc: 'Largura costas.', howTo: '1. Palmas para frente.\n2. Puxe até o peito.\n3. Desça lento.\n4. Braços esticados.', proTip: 'Puxe cotovelos.', requiresBar: true },
+                { name: 'Flexão Diamante', reps: '3 x 8', image: '/diamond.png', desc: 'Tríceps massa.', howTo: '1. Mãos juntas.\n2. Forme diamante.\n3. Desça e empurre.\n4. Cotovelos fechados.', proTip: 'Isolamento puro.' },
                 { name: 'Remada Australiana', reps: '3 x 12', image: '/australian.png', desc: 'Espessura costas.', howTo: '1. Sob barra baixa.\n2. Corpo reto.\n3. Puxe o peito.\n4. Desça lento.', proTip: 'Esmague escápulas.', requiresBar: true },
                 { name: 'Tríceps Testa', reps: '3 x 12', image: '/skullcrusher.png', desc: 'Tríceps isolado.', howTo: '1. Deitado no banco.\n2. Barra acima do peito.\n3. Flexione cotovelos até testa.\n4. Estenda retornando.', proTip: 'Cotovelos fechados.' },
                 { name: 'Superman', reps: '3 x 15', image: '/superman.png', desc: 'Lombar e Postura.', howTo: '1. Deitado de bruços.\n2. Eleve braços e pernas.\n3. Segure 1s.\n4. Relaxe.', proTip: 'Olhe para o chão.' },
                 { name: 'Mergulho no Banco', reps: '3 x 15', image: '/bench_dips.png', desc: 'Tríceps em casa.', howTo: '1. Mãos no banco.\n2. Pernas esticadas.\n3. Desça o quadril.\n4. Suba estendendo.', proTip: 'Costas rente ao banco.' }
             ],
             abs: [
-                { name: 'Prancha Frontal', reps: '3 x 60s', image: '/plank_front.png', desc: 'Estabilidade.', howTo: '1. Antebraços.\n2. Corpo linha reta.\n3. Contraia tudo.\n4. Respire.', proTip: 'Aperte os glúteos.' },
-                { name: 'Mountain Climbers', reps: '3 x 40s', image: '/climber.png', desc: 'Core e cardio.', howTo: '1. Posição flexão.\n2. Traga joelhos rápido.\n3. Troque pernas.\n4. Costas retas.', proTip: 'Acelere o ritmo.' },
+                { name: 'Prancha Frontal', reps: '3 x 45s', image: '/plank_front.png', desc: 'Estabilidade.', howTo: '1. Antebraços.\n2. Corpo linha reta.\n3. Contraia tudo.\n4. Respire.', proTip: 'Aperte os glúteos.' },
+                { name: 'Mountain Climbers', reps: '3 x 30s', image: '/climber.png', desc: 'Core e cardio.', howTo: '1. Posição flexão.\n2. Traga joelhos rápido.\n3. Troque pernas.\n4. Costas retas.', proTip: 'Acelere o ritmo.' },
                 { name: 'Abdominal Infra', reps: '3 x 15', image: '/leg_raise.png', desc: 'Foco inferior.', howTo: '1. Deitado.\n2. Mãos sob quadril.\n3. Eleve pernas.\n4. Desça lento.', proTip: 'Lombar no chão.' },
                 { name: 'Russian Twist', reps: '3 x 20', image: '/russian_twist.png', desc: 'Foco Oblíquos.', howTo: '1. Sentado em V.\n2. Gire o tronco.\n3. Toque o chão.\n4. Mantenha pernas altas.', proTip: 'Olhe para a mão.' },
                 { name: 'Bicycle Crunches', reps: '3 x 20', image: '/bicycle.png', desc: 'Abdômen Completo.', howTo: '1. Deitado costas.\n2. Cotovelo no joelho oposto.\n3. Alterne lados.\n4. Ritmo controlado.', proTip: 'Gire bem o ombro.' },
-                { name: 'Hollow Hold', reps: '3 x 30s', image: '/hollow.png', desc: 'Isometria Avançada.', howTo: '1. Deitado.\n2. Tire ombros e pés.\n3. Corpo em canoa.\n4. Segure firme.', proTip: 'Lombar colada no chão.' },
-                { name: 'Abdominal Canivete', reps: '3 x 12', image: '/v_up.png', desc: 'Abs Total.', howTo: '1. Deitado esticado.\n2. Suba tronco e pernas.\n3. Toque os pés.\n4. Controle a descida.', proTip: 'Explosão na subida.' },
-                { name: 'Prancha Lateral', reps: '3 x 30s/lado', image: '/side_plank.png', desc: 'Oblíquos e Core.', howTo: '1. Antebraço no chão.\n2. Corpo alinhado de lado.\n3. Segure firme.\n4. Troque o lado.', proTip: 'Não deixe o quadril cair.' }
+                { name: 'Hollow Hold', reps: '3 x 20s', image: '/hollow.png', desc: 'Isometria Avançada.', howTo: '1. Deitado.\n2. Tire ombros e pés.\n3. Corpo em canoa.\n4. Segure firme.', proTip: 'Lombar colada no chão.' },
+                { name: 'Abdominal Canivete', reps: '3 x 10', image: '/v_up.png', desc: 'Abs Total.', howTo: '1. Deitado esticado.\n2. Suba tronco e pernas.\n3. Toque os pés.\n4. Controle a descida.', proTip: 'Explosão na subida.' },
+                { name: 'Prancha Lateral', reps: '3 x 20s/lado', image: '/side_plank.png', desc: 'Oblíquos e Core.', howTo: '1. Antebraço no chão.\n2. Corpo alinhado de lado.\n3. Segure firme.\n4. Troque o lado.', proTip: 'Não deixe o quadril cair.' }
             ]
         };
+
+        // GENDER ADAPTATIONS
+        if (profile.gender === 'female') {
+            // Replace Chest/Pushups with lighter variations
+            const kneePushup = { name: 'Flexão com Joelhos', reps: '3 x 12', image: '/knee_pushup.png', desc: 'Peitoral (Adaptado).', howTo: '1. Joelhos no chão.\n2. Mãos largas.\n3. Desça o peito.\n4. Empurre.', proTip: 'Mantenha quadril alinhado.' };
+            const wallPushup = { name: 'Flexão na Parede', reps: '3 x 15', image: '/wall_pushup.png', desc: 'Iniciante.', howTo: '1. Pés afastados da parede.\n2. Mãos altura ombro.\n3. Aproxime rosto.\n4. Empurre.', proTip: 'Corpo reto.' };
+
+            // Swap standard pushup
+            lib.chest_biceps[0] = kneePushup;
+            // Swap Archer/Decline for easier or different focus
+            lib.chest_biceps[1] = wallPushup; // Replacing Archer
+            lib.chest_biceps[5] = { name: 'Flexão Banco (Mãos elevadas)', reps: '3 x 12', image: '/incline_pushup.png', desc: 'Peitoral Superior.', howTo: '1. Mãos no banco.\n2. Corpo reto.\n3. Toque o peito.\n4. Empurre.', proTip: 'Mais fácil que chão.' }; // Replacing Decline
+
+            // Triceps/Back adjustments
+            // Replace Diamond Pushup with Bench Dips (already exists, maybe emphasize it or replace with Kickback)
+            // Or just Ensure Diamond is swapped if too hard. Keep Bench Dips.
+            lib.back_triceps[1] = { name: 'Tríceps Coice', reps: '3 x 15', image: '/tricep_kickback.png', desc: 'Tríceps (Halteres).', howTo: '1. Tronco inclinado.\n2. Cotovelo alto fixo.\n3. Estenda o braço.\n4. Volte 90 graus.', proTip: 'Não balance o ombro.' }; // Replacing Diamond
+
+            // Pullup might be hard, offer Australian or Negative
+            lib.back_triceps[0] = { name: 'Remada Curvada', reps: '3 x 15', image: '/bent_over_row.png', desc: 'Costas Geral.', howTo: '1. Tronco inclinado.\n2. Costas retas.\n3. Puxe peso ao umbigo.\n4. Desça.', proTip: 'Aperte as escápulas.' }; // Replacing Pullup
+
+            // Pike Pushup -> Shoulder Taps or Plank to Down Dog
+            lib.chest_biceps[6] = { name: 'Prancha Toca Ombro', reps: '3 x 20', image: '/shoulder_tap.png', desc: 'Estabilidade Ombro.', howTo: '1. Posição prancha alta.\n2. Tira uma mão.\n3. Toca ombro oposto.\n4. Evite girar quadril.', proTip: 'Contraia abdômen forte.' };
+
+            // Legs - Focus on Glutes (Hip Thrust focus)
+            // Already has Bridge/Hip Thrust, maybe ensure it's prioritized or swapped in?
+            // It's in the list.
+        }
 
         // Filter library based on hasBar
         const filteredLib = {
@@ -113,7 +141,7 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
             title = pick.t; targetCategory = pick.c;
         }
 
-        // 3. Select 4 Unique Exercises
+        // 3. Select 4 Unique Exercises -> NOW DYNAMIC BASED ON TIME
         let baseExercises = [];
         if (targetCategory === 'all') {
             baseExercises = [
@@ -126,15 +154,16 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
             baseExercises = categorizedRoutine[targetCategory] || [];
         }
 
-        // Ensure we have exactly 4 base exercises (if available)
-        baseExercises = baseExercises.slice(0, 4);
+        // 4. Calculate Total Slots based on Time (3 min per exercise)
+        const TIME_PER_EXERCISE = 3;
+        const durationNum = parseInt(trainingDuration, 10) || 15; // Default to 15 if undefined
+        const totalSlots = Math.ceil(durationNum / TIME_PER_EXERCISE);
 
-        // 4. Repeat to Fill Duration
-        const totalSlots = Math.ceil(trainingDuration / 4);
         let finalExercises = [];
 
-        for (let i = 0; i < totalSlots; i++) {
-            if (baseExercises.length > 0) {
+        // Fill slots cycling through base exercises
+        if (baseExercises.length > 0) {
+            for (let i = 0; i < totalSlots; i++) {
                 finalExercises.push(baseExercises[i % baseExercises.length]);
             }
         }

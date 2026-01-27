@@ -106,71 +106,39 @@ const DailyBonus = ({ profile, onUpdateProfile }) => {
     const currentStreak = profile.streak || 0;
 
     return (
-        <div className="card" style={{ marginBottom: '2rem', background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.2) 100%)', border: '1px solid rgba(255,200,0,0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <div>
-                    <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        📅 Bônus Semanal
-                        {profile.hasShield && <span title="Escudo Ativo" style={{ fontSize: '1.2rem' }}>🛡️</span>}
-                    </h3>
-                    <div style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '4px' }}>
-                        {status === 'claimed' ? 'Hoje completado!' : 'Não esqueça de marcar hoje!'}
+        <div style={{ width: '100%' }}>
+            {/* Header com Status */}
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <div style={{
+                    fontSize: '3rem', fontWeight: '800',
+                    background: 'linear-gradient(to right, #FFD700, #ffaa00)',
+                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                    filter: 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.3))'
+                }}>
+                    DIA {todayIndex + 1}
+                </div>
+                <div style={{ fontSize: '1.1rem', color: '#fff', opacity: 0.9 }}>
+                    Semana de Foco
+                </div>
+                {status === 'claimed' && (
+                    <div className="animate-fade-in" style={{
+                        marginTop: '10px', display: 'inline-block',
+                        padding: '6px 16px', borderRadius: '20px',
+                        background: 'rgba(0, 255, 102, 0.15)', color: '#00ff66',
+                        border: '1px solid rgba(0, 255, 102, 0.3)', fontSize: '0.9rem'
+                    }}>
+                        ✓ Bônus Resgatado
                     </div>
-                </div>
-                <div>
-                    {status !== 'claimed' && (
-                        <button
-                            onClick={handleClaim}
-                            className="btn-primary"
-                            style={{
-                                padding: '8px 20px',
-                                background: isProtected ? '#ffaa00' : 'var(--color-primary)',
-                                color: isProtected ? '#000' : '#000',
-                                boxShadow: isProtected ? '0 0 15px rgba(255, 170, 0, 0.4)' : 'none'
-                            }}
-                        >
-                            {isProtected ? '🛡️ USAR ESCUDO' : `RECEBER (+50XP)`}
-                        </button>
-                    )}
-                    {status === 'claimed' && (
-                        <span style={{ color: '#00ff66', fontWeight: 'bold', fontSize: '0.9rem' }}>✓ Recebido</span>
-                    )}
-                </div>
+                )}
             </div>
 
-            {/* Steps Container */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative' }}>
-                {/* Progress Bar Background */}
-                <div style={{
-                    position: 'absolute', top: '50%', left: '0', right: '0', height: '4px',
-                    background: 'rgba(255,255,255,0.1)', transform: 'translateY(-50%)', zIndex: 0
-                }}></div>
-
-                {/* Progress Fill - Calculated based on Today Index if claimed */}
-                <div style={{
-                    position: 'absolute', top: '50%', left: '0',
-                    // Fill up to 'todayIndex' if claimed, or 'todayIndex - 1' if not.
-                    width: `${((status === 'claimed' ? todayIndex : todayIndex - 1) / 6) * 100}%`,
-                    height: '4px',
-                    background: 'var(--color-primary)',
-                    transform: 'translateY(-50%)',
-                    zIndex: 0,
-                    transition: 'width 0.5s ease'
-                }}></div>
-
+            {/* Grid de Dias */}
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)', // 4 colunas para comportar 7 dias e talvez 1 extra ou centralizar
+                gap: '12px', marginBottom: '2rem'
+            }}>
                 {weekDays.map((dayName, index) => {
-                    // Logic for Status of each Day
-                    // Past Days (index < todayIndex):
-                    //   - Need to know if they were claimed.
-                    //   - Simple approximation: If current streak is long enough, assume yes.
-                    //   - E.g. Streak=3, Today=Wed(3). Then Mon(1), Tue(2) were claimed.
-                    //   - But index relative to today logic:
-                    //   - daysAgo = todayIndex - index.
-                    //   - claimed = currentStreak > daysAgo (if claimed today) or >= daysAgo (if not?)
-                    //   Let's refine:
-                    //   If status='claimed' (today included in streak): index is claimed if (todayIndex - index) < currentStreak.
-                    //   If status!='claimed' (today NOT in streak): index is claimed if (todayIndex - index) <= currentStreak.
-
                     let isDone = false;
                     let isLocked = false;
                     let isToday = index === todayIndex;
@@ -183,78 +151,85 @@ const DailyBonus = ({ profile, onUpdateProfile }) => {
                     } else if (index === todayIndex) {
                         isDone = status === 'claimed';
                     } else {
-                        // Past
-                        let effectivelyClaimed = false;
-                        if (status === 'claimed') {
-                            effectivelyClaimed = daysAgo < currentStreak;
-                        } else {
-                            // If I haven't claimed today, and streak is 5.
-                            // Yesterday (1 day ago)? 1 <= 5 -> Yes.
-                            effectivelyClaimed = daysAgo <= currentStreak;
-                            // HOWEVER, if status is missed_reset, streak is technically 0?
-                            // But 'currentStreak' is from profile state which might be old '7' if missed?
-                            // Profile updates ONLY on claim.
-                            // So if I missed yesterday, profile.streak is still high from day before yesterday?
-                            // Wait, logic in 'useEffect' determined status.
-                            // If status == 'missed_reset', then the visual streak is broken. 
-                            // Past days of THIS week might show as Missed.
-                            if (status === 'missed_reset') effectivelyClaimed = false;
-                            if (status === 'missed_protected') effectivelyClaimed = false; // Actually shielded logic preserves streak number but visual?
-                        }
-
-                        if (effectivelyClaimed) {
-                            isDone = true;
-                        } else {
-                            isMissed = true; // Was supposed to be done but wasn't logic? Or just Locked/Missed?
-                            // User said: "os dias que ja passaram ficam bloqueados ate chegar nele de novo"
-                        }
+                        // Past logic simplified for visual
+                        if (status === 'claimed') isDone = daysAgo < currentStreak;
+                        else if (status === 'missed_reset') isDone = false;
+                        else if (status === 'missed_protected') isDone = false;
+                        else isDone = daysAgo <= currentStreak;
                     }
 
+                    // Special styling for the 7th day (Shield)
+                    const isBigReward = index === 6;
+
                     return (
-                        <div key={dayName} style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                            <div style={{
-                                width: '40px', height: '40px', borderRadius: '50%',
-                                background: isDone
-                                    ? 'var(--color-primary)'
-                                    : isMissed
-                                        ? '#331111'
-                                        : isToday
-                                            ? 'var(--color-background)'
-                                            : '#333',
-                                border: isToday ? '2px solid var(--color-primary)' : (isMissed ? '2px solid #550000' : '2px solid transparent'),
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: isDone ? '#000' : isToday ? 'var(--color-primary)' : isMissed ? '#772222' : '#666',
-                                fontWeight: 'bold',
-                                transition: 'all 0.3s ease',
-                                boxShadow: isToday ? '0 0 10px var(--color-primary)' : 'none',
-                                opacity: isLocked ? 0.5 : 1
-                            }}>
-                                {index === 6 ? (
-                                    <span>🛡️</span>
-                                ) : (
-                                    isDone ? '✓' : isMissed ? '✕' : dayName.substring(0, 1) // First letter or DayName? User said "iniciais do nome" -> D, S, T... actually user "Dom, Seg" in request. Let's use 3 chars or 1?
-                                    // User said "iniciais ... Dom, Seg..." -> These are 3 chars. Fits in 40px? Maybe small font.
-                                )}
-                            </div>
-                            <div style={{ fontSize: '0.65rem', opacity: isToday || isDone ? 1 : 0.5 }}>
-                                {dayName}
+                        <div key={dayName} style={{
+                            gridColumn: isBigReward ? 'span 4' : 'auto', // O 7º dia ocupa linha inteira ou destaque
+                            display: 'flex', flexDirection: isBigReward ? 'row' : 'column',
+                            alignItems: 'center', justifyContent: isBigReward ? 'center' : 'center',
+                            gap: isBigReward ? '16px' : '6px',
+                            background: isToday ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                            border: isToday ? '1px solid var(--color-primary)' : '1px solid rgba(255, 255, 255, 0.05)',
+                            borderRadius: '12px',
+                            padding: '12px',
+                            opacity: isLocked ? 0.4 : 1,
+                            position: 'relative'
+                        }}>
+                            {isBigReward && (
+                                <div style={{ fontSize: '2rem' }}>🛡️</div>
+                            )}
+
+                            {!isBigReward && (
+                                <div style={{
+                                    fontSize: '1.2rem',
+                                    color: isDone ? 'var(--color-primary)' : (isMissed ? '#ff4444' : '#fff')
+                                }}>
+                                    {isDone ? '✓' : (isMissed ? '✕' : '●')}
+                                </div>
+                            )}
+
+                            <div style={{ fontSize: '0.8rem', color: '#aaa', textTransform: 'uppercase' }}>
+                                {dayName} {isBigReward && '- Super Bônus de Proteção'}
                             </div>
                         </div>
                     );
                 })}
             </div>
 
-            {status === 'missed_reset' && (
-                <div style={{ marginTop: '1rem', color: '#ff4444', fontSize: '0.8rem', textAlign: 'center' }}>
-                    Você perdeu a sequência! Dias anteriores bloqueados.
-                </div>
-            )}
-            {status === 'missed_protected' && (
-                <div style={{ marginTop: '1rem', color: '#ffaa00', fontSize: '0.8rem', textAlign: 'center' }}>
-                    Escudo ativado!
-                </div>
-            )}
+            {/* Ação */}
+            <div style={{ textAlign: 'center' }}>
+                {status !== 'claimed' ? (
+                    <button
+                        onClick={handleClaim}
+                        className="btn-primary"
+                        style={{
+                            width: '100%',
+                            padding: '16px 0',
+                            fontSize: '1.1rem',
+                            background: isProtected ? '#ffaa00' : 'var(--color-primary)',
+                            color: '#000',
+                            boxShadow: isProtected ? '0 0 20px rgba(255, 170, 0, 0.5)' : '0 0 20px rgba(0, 240, 255, 0.3)',
+                            border: 'none', borderRadius: '12px'
+                        }}
+                    >
+                        {isProtected ? 'USAR ESCUDO E SALVAR' : 'RESGATAR RECOMPENSA'}
+                    </button>
+                ) : (
+                    <div style={{ fontSize: '0.9rem', color: '#888' }}>
+                        Volte amanhã para continuar sua sequência!
+                    </div>
+                )}
+            </div>
 
+            {profile.hasShield && (
+                <div style={{
+                    marginTop: '1.5rem', padding: '10px',
+                    background: 'rgba(255, 170, 0, 0.1)', border: '1px solid rgba(255, 170, 0, 0.3)',
+                    borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    color: '#ffaa00', fontSize: '0.9rem'
+                }}>
+                    <span>🛡️</span> Você tem um Escudo de Proteção ativo!
+                </div>
+            )}
         </div>
     );
 };

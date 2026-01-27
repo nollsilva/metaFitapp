@@ -26,6 +26,7 @@ const avatars = {
 const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile }) => { // onUpdateProfile passed from App
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+    const [isBonusModalOpen, setIsBonusModalOpen] = useState(false);
 
     // Edit Form State
     const [editName, setEditName] = useState('');
@@ -136,6 +137,16 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile }) => { // onUpda
         }
         setIsAvatarModalOpen(false);
     };
+
+    // Calculate Bonus Notification
+    const checkBonusReady = () => {
+        if (!profile || !profile.lastClaimDate) return true; // Never claimed = Ready
+        const last = new Date(profile.lastClaimDate);
+        const today = new Date();
+        // Check if different days
+        return last.toDateString() !== today.toDateString();
+    };
+    const isBonusReady = profile.isLoggedIn && checkBonusReady();
 
     return (
         <section className="container" style={{ paddingTop: '2rem' }}>
@@ -260,6 +271,43 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile }) => { // onUpda
                 </div>
             )}
 
+            {/* Bonus Modal - Only if Logged In */}
+            {isBonusModalOpen && profile.isLoggedIn && (
+                <div className="modal-overlay" onClick={() => setIsBonusModalOpen(false)} style={{ zIndex: 10000 }}>
+                    <div className="wide-modal auth-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', padding: '2rem', background: '#111', border: '1px solid #333' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setIsBonusModalOpen(false)} style={{ background: 'none', border: 'none', color: '#666', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+                        </div>
+                        <DailyBonus profile={profile} onUpdateProfile={onUpdateProfile} />
+                    </div>
+                </div>
+            )}
+
+            {/* Main Action Buttons Area */}
+            {profile.isLoggedIn && (
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+                    <button
+                        className="btn-primary"
+                        onClick={() => setIsBonusModalOpen(true)}
+                        style={{
+                            flex: 1, position: 'relative',
+                            background: 'linear-gradient(135deg, #0077ff, #00c3ff)', border: 'none',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                        }}
+                    >
+                        🎁 Bônus Diário
+                        {isBonusReady && (
+                            <div style={{
+                                position: 'absolute', top: '-5px', right: '-5px',
+                                width: '12px', height: '12px', background: '#ff0055',
+                                borderRadius: '50%', border: '2px solid #000'
+                            }}></div>
+                        )}
+                    </button>
+                    {/* Placeholder for other actions or just full width if alone */}
+                </div>
+            )}
+
             {/* Edit Profile Modal */}
             {isEditModalOpen && (
                 <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)} style={{ zIndex: 10000 }}>
@@ -370,10 +418,12 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile }) => { // onUpda
                 </div>
             </div>
 
-            {/* Daily Bonus Section */}
+            {/* Daily Bonus Section - REMOVED DIRECT RENDER */}
+            {/* 
             {profile.isLoggedIn && (
                 <DailyBonus profile={profile} onUpdateProfile={onUpdateProfile} />
-            )}
+            )} 
+            */}
         </section>
     );
 };

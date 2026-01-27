@@ -44,6 +44,7 @@ function App() {
     weight: '',
     height: '',
     age: '',
+    gender: 'male', // 'male' or 'female'
     activityLevel: '1.55',
     goal: 'maintain', // lose, maintain, gain
     targetCalories: 0,
