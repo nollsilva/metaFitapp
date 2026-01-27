@@ -5,7 +5,8 @@ import {
     signInWithEmailAndPassword,
     signOut,
     updateProfile as updateAuthProfile,
-    deleteUser
+    deleteUser,
+    sendPasswordResetEmail
 } from 'firebase/auth';
 import {
     doc,
@@ -126,6 +127,19 @@ export const logoutUser = async () => {
     } catch (error) {
         console.error("Logout Error:", error);
         // Optionally handle logout errors
+    }
+};
+
+export const resetPassword = async (email) => {
+    try {
+        await sendPasswordResetEmail(auth, email);
+        return { success: true };
+    } catch (error) {
+        console.error("Reset Password Error:", error);
+        let msg = "Erro ao enviar email de redefinição.";
+        if (error.code === 'auth/user-not-found') msg = "Email não encontrado.";
+        if (error.code === 'auth/invalid-email') msg = "Email inválido.";
+        return { error: msg };
     }
 };
 
