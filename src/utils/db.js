@@ -3,7 +3,8 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
-    updateProfile as updateAuthProfile
+    updateProfile as updateAuthProfile,
+    deleteUser
 } from 'firebase/auth';
 import {
     doc,
@@ -14,7 +15,8 @@ import {
     collection,
     getDocs,
     query,
-    where
+    where,
+    deleteDoc
 } from 'firebase/firestore';
 
 // Generate 6-digit ID
@@ -160,6 +162,27 @@ export const updateUser = async (uid, updates) => {
     } catch (e) {
         console.error("Update Error:", e);
         return { error: "Erro ao atualizar perfil." };
+    }
+};
+
+
+export const deleteUserAccount = async (uid) => {
+    try {
+        // 1. Delete Firestore Data
+        const docRef = doc(db, "users", uid);
+        await deleteDoc(docRef);
+
+        // 2. Delete Auth User
+        const user = auth.currentUser;
+        if (user) {
+            await deleteUser(user);
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error("Delete Account Error:", error);
+        // Requires recent login often
+        return { error: error.message };
     }
 };
 

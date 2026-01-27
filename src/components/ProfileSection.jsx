@@ -23,10 +23,13 @@ const avatars = {
     ]
 };
 
-const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile }) => { // onUpdateProfile passed from App
+const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount }) => { // onUpdateProfile passed from App
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isBonusModalOpen, setIsBonusModalOpen] = useState(false);
+
+    // Delete Account State
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // Edit Form State
     const [editName, setEditName] = useState('');
@@ -53,6 +56,8 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile }) => { // onUpda
         setConfirmPassword('');
         setEditError('');
         setSuccessMsg('');
+        setSuccessMsg('');
+        setShowDeleteConfirm(false);
         setIsEditModalOpen(true);
     };
 
@@ -367,6 +372,40 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile }) => { // onUpda
                                 </button>
                             </div>
                         </form>
+
+                        <div style={{ marginTop: '2rem', borderTop: '1px solid #333', paddingTop: '1rem' }}>
+                            {!showDeleteConfirm ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowDeleteConfirm(true)}
+                                    style={{ background: 'transparent', border: '1px solid #ff0055', color: '#ff0055', width: '100%', padding: '10px', borderRadius: '5px', cursor: 'pointer', fontSize: '0.9rem' }}
+                                >
+                                    Excluir Conta
+                                </button>
+                            ) : (
+                                <div className="animate-fade-in" style={{ background: 'rgba(255, 0, 85, 0.1)', padding: '1rem', borderRadius: '8px', border: '1px solid #ff0055', textAlign: 'center' }}>
+                                    <p style={{ color: '#ff0055', fontWeight: 'bold', marginBottom: '10px', fontSize: '0.9rem' }}>
+                                        Tem certeza? Esta ação é irreversível e apagará todos os seus dados.
+                                    </p>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowDeleteConfirm(false)}
+                                            style={{ flex: 1, padding: '8px', background: 'transparent', border: '1px solid #aaa', color: '#aaa', borderRadius: '5px', cursor: 'pointer' }}
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { onDeleteAccount(); setIsEditModalOpen(false); }}
+                                            style={{ flex: 1, padding: '8px', background: '#ff0055', border: 'none', color: 'white', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
+                                        >
+                                            SIM, EXCLUIR
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

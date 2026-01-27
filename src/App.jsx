@@ -10,7 +10,7 @@ import HeroSection from './components/HeroSection';
 import OnboardingGuide from './components/OnboardingGuide';
 import Footer from './components/Footer';
 import TutorialOverlay from './components/TutorialOverlay';
-import { getUserProfile, updateUser, logoutUser } from './utils/db';
+import { getUserProfile, updateUser, logoutUser, deleteUserAccount } from './utils/db';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import './index.css';
@@ -186,6 +186,20 @@ function App() {
     setIsAuthModalOpen(true);
   };
 
+  const handleDeleteAccount = async () => {
+    if (userProfile.uid) {
+      const result = await deleteUserAccount(userProfile.uid);
+      if (result.success) {
+        setNotification("Conta excluída com sucesso. Sentiremos sua falta! 😢");
+        setTimeout(() => setNotification(null), 5000);
+        await handleLogout();
+      } else {
+        setNotification("Erro ao excluir conta: " + result.error);
+        setTimeout(() => setNotification(null), 5000);
+      }
+    }
+  };
+
   const handleAuthSuccess = (user) => {
     // Optimistic update, but onAuthStateChanged will confirm
     setUserProfile({ ...user, isLoggedIn: true });
@@ -316,6 +330,7 @@ function App() {
             profile={userProfile}
             onOpenAuth={() => setIsAuthModalOpen(true)}
             onUpdateProfile={updateProfile}
+            onDeleteAccount={handleDeleteAccount}
           />
         )}
       </main>
