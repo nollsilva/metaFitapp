@@ -11,7 +11,6 @@ import OnboardingGuide from './components/OnboardingGuide';
 import Footer from './components/Footer';
 import TutorialOverlay from './components/TutorialOverlay';
 import { getUserProfile, updateUser, logoutUser, deleteUserAccount } from './utils/db';
-import { sendLevelUpEmail } from './utils/email';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import './index.css';
@@ -179,8 +178,6 @@ function App() {
 
       // Check for Level Up
       if (newLevel > (prev.level || 1)) {
-        // Trigger Level Up Email
-        sendLevelUpEmail({ ...prev, level: newLevel }, newLevel).catch(console.error);
         setNotification(`SUBIU DE NÍVEL! AGORA VOCÊ É NÍVEL ${newLevel} 🚀`);
       }
 
