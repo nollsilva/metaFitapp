@@ -90,8 +90,8 @@ export const registerUser = async (email, password, name) => {
     } catch (error) {
         console.error("Register Error:", error);
         let msg = "Erro ao criar conta.";
-        if (error.code === 'auth/email-already-in-use') msg = "Email já está em uso.";
-        if (error.code === 'auth/weak-password') msg = "Senha muito fraca.";
+        if (error.code === 'auth/email-already-in-use') msg = "Este email já está cadastrado.";
+        if (error.code === 'auth/weak-password') msg = "A senha deve ter pelo menos 6 caracteres.";
         return { error: msg };
     }
 };
