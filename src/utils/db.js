@@ -149,9 +149,17 @@ export const loginUser = async (email, password) => {
     } catch (error) {
         console.error("Login Error:", error);
         let msg = "Erro ao fazer login.";
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-            msg = "Email ou senha inválidos.";
+
+        if (error.code === 'auth/user-not-found') {
+            msg = "Este email não está cadastrado.";
+        } else if (error.code === 'auth/wrong-password') {
+            msg = "Senha incorreta.";
+        } else if (error.code === 'auth/invalid-credential') {
+            msg = "Email ou senha incorretos (ou não cadastrado).";
+        } else if (error.code === 'auth/too-many-requests') {
+            msg = "Muitas tentativas. Tente novamente mais tarde.";
         }
+
         return { error: msg };
     }
 };
