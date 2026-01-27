@@ -65,7 +65,7 @@ const DietSection = ({ profile, onUpdateProfile }) => {
         else if (goal === 'gain') { targetCalories += 500; goalText = "Ganhar Massa"; }
         else { goalText = "Manter Peso"; }
 
-        const newMealPlan = generateMealPlan(targetCalories);
+        const newMealPlan = generateMealPlan(targetCalories, goal);
 
         onUpdateProfile({
             weight, height, age, gender, activityLevel, goal,
@@ -95,34 +95,62 @@ const DietSection = ({ profile, onUpdateProfile }) => {
         onUpdateProfile({ selectedWeekDays: newDays, trainingDays: newDays.length || 1 });
     };
 
-    const generateMealPlan = (calories) => {
-        let plan = {};
-        if (calories < 1800) {
-            plan = {
-                title: "Plano Leve & Definido",
-                breakfast: "Omelete de 2 claras + 1 fruta + Café sem açúcar",
-                lunch: "150g Frango grelhado + Salada verde + 100g Batata doce",
-                snack: "Iogurte natural + 10g Castanhas",
-                dinner: "150g Peixe branco + Legumes no vapor"
-            };
-        } else if (calories < 2500) {
-            plan = {
-                title: "Plano Equilíbrio Energético",
-                breakfast: "Pão integral com ovos mexidos + Vitamina de fruta",
-                lunch: "150g Carne magra + Arroz integral + Feijão + Legumes",
-                snack: "Sanduíche natural de atum ou Whey Protein",
-                dinner: "150g Frango + Salada colorida + Azeite de oliva"
-            };
-        } else {
-            plan = {
-                title: "Plano Ganho de Força",
-                breakfast: "Tapioca com frango/queijo + Suco natural + Ovos",
-                lunch: "200g Carne vermelha + Arroz + Feijão + Salada completa",
-                snack: "Açaí com granola ou Hipercalórico + Fruta",
-                dinner: "200g Frango ou Peixe + Macarrão integral + Vegetais"
-            };
+    const generateMealPlan = (calories, currentGoal) => {
+        // Calorie Splits
+        const s = { b: 0.25, l: 0.35, sn: 0.15, d: 0.25 };
+
+        const k = {
+            b: Math.round(calories * s.b),
+            l: Math.round(calories * s.l),
+            sn: Math.round(calories * s.sn),
+            d: Math.round(calories * s.d)
+        };
+
+        let title = "Plano Equilibrado";
+        if (currentGoal === 'lose') title = "Definição & Queima";
+        else if (currentGoal === 'gain') title = "Ganho de Volume";
+
+        return {
+            title: title,
+            breakfast: getMealSuggestion('breakfast', k.b, currentGoal),
+            lunch: getMealSuggestion('lunch', k.l, currentGoal),
+            snack: getMealSuggestion('snack', k.sn, currentGoal),
+            dinner: getMealSuggestion('dinner', k.d, currentGoal)
+        };
+    };
+
+    const getMealSuggestion = (type, kcal, mode) => {
+        // Base foods
+        const proteins = mode === 'gain' ? ['3 Ovos', '150g Frango', '150g Carne Moida', 'Iogurte Protein'] : ['2 Claras + 1 Ovo', '120g Frango', '120g Peixe', 'Iogurte Natural'];
+        const carbs = mode === 'gain' ? ['3 fatias Pão', '200g Arroz', '200g Macarrão', 'Aveia + Granola'] : ['1 fatia Pão Integral', '100g Arroz/Batata', 'Legumes a vontade', 'Aveia'];
+        const fats = mode === 'gain' ? ['Pasta de Amendoim', 'Azeite', 'Abacate', 'Queijo Amarelo'] : ['Azeite (fio)', 'Castanhas (poucas)', 'Abacate (fatia)', 'Queijo Cotagge'];
+
+        // Logic based on Kcal slots
+        if (type === 'breakfast') {
+            if (kcal < 350) return `Omelete (${proteins[0]}) + Café s/ açúcar + ${carbs[2]}`; // Low
+            if (kcal < 550) return `${proteins[0]} mexidos + ${carbs[0]} + Café com leite + Fruta`; // Mid
+            return `${proteins[0]} + ${carbs[0]} + ${fats[0]} + Vitamina de frutas`; // High
         }
-        return plan;
+
+        if (type === 'lunch') {
+            if (kcal < 450) return `Salada Verde Grande + ${proteins[1]} + ${carbs[1]} + Azeite`;
+            if (kcal < 700) return `${proteins[1]} + ${carbs[1]} + Feijão + Legumes variados`;
+            return `${proteins[2]} ou ${proteins[1]} + ${carbs[1]} (dobro) + Feijão + Legumes + Azeite`;
+        }
+
+        if (type === 'snack') {
+            if (kcal < 200) return `Fruta (Maçã/Pera) + Chá ou Água`;
+            if (kcal < 400) return `${proteins[3]} + ${carbs[3]} ou Fruta`;
+            return `Sanduíche natural (${proteins[1]}) ou Shake Hipercalórico`;
+        }
+
+        if (type === 'dinner') {
+            if (kcal < 350) return `Sopa de Legumes com ${proteins[1]} ou Omelete`;
+            if (kcal < 600) return `${proteins[1]} grelhado + ${carbs[1]} + Salada`;
+            return `${proteins[2]} + ${carbs[1]} + Salada com ${fats[2]}`;
+        }
+
+        return "Opção balanceada conforme macros.";
     };
 
     // Helper for days UI
