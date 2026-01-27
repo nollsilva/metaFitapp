@@ -11,6 +11,8 @@ import OnboardingGuide from './components/OnboardingGuide';
 import Footer from './components/Footer';
 import TutorialOverlay from './components/TutorialOverlay';
 import { getUserProfile, updateUser, logoutUser, deleteUserAccount } from './utils/db';
+import { getUserProfile, updateUser, logoutUser, deleteUserAccount } from './utils/db';
+import { sendLevelUpEmail } from './utils/email';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import './index.css';
@@ -175,6 +177,14 @@ function App() {
     setUserProfile(prev => {
       const newXp = (prev.xp || 0) + amount;
       const newLevel = Math.floor(newXp / 1000) + 1; // 1000 XP por nível
+
+      // Check for Level Up
+      if (newLevel > (prev.level || 1)) {
+        // Trigger Level Up Email
+        sendLevelUpEmail({ ...prev, level: newLevel }, newLevel).catch(console.error);
+        setNotification(`SUBIU DE NÍVEL! AGORA VOCÊ É NÍVEL ${newLevel} 🚀`);
+      }
+
       return { ...prev, xp: newXp, level: newLevel };
     });
   };
