@@ -190,55 +190,156 @@ export const deleteUserAccount = async (uid) => {
     }
 };
 
-export const addFriend = async (myUid, friendCode) => {
-    friendCode = String(friendCode).trim();
+// --- FRIEND REQUEST SYSTEM ---
 
+export const sendFriendRequest = async (myUid, targetUid) => {
     try {
-        // 1. Find friend by code
-        const q = query(collection(db, "users"), where("id", "==", friendCode));
-        const querySnapshot = await getDocs(q);
+        if (myUid === targetUid) return { error: "Você não pode enviar solicitação para si mesmo." };
 
-        if (querySnapshot.empty) {
-            return { error: "Usuário não encontrado com esse ID." };
-        }
-
-        const friendDoc = querySnapshot.docs[0];
-        const friendData = friendDoc.data();
-        const friendUid = friendDoc.id; // This is the friend's Auth UID
-
-        if (friendUid === myUid) {
-            return { error: "Você não pode adicionar a si mesmo." };
-        }
-
-        // 2. Get my data to check if already friends and get my friendCode
+        // 1. Get My Profile to have name/avatar for the request
         const myRef = doc(db, "users", myUid);
-        const myDoc = await getDoc(myRef);
-        if (!myDoc.exists()) {
-            return { error: "Erro: Seu perfil não foi encontrado." };
-        }
-        const myData = myDoc.data();
-        const myFriendCode = myData.id; // My 6-digit friend code
+        const mySnap = await getDoc(myRef);
+        if (!mySnap.exists()) return { error: "Erro de autenticação." };
+        const myData = mySnap.data();
 
-        if (myData.friends && myData.friends.includes(friendCode)) {
-            return { error: "Já está na sua lista de amigos." };
+        const targetRef = doc(db, "users", targetUid);
+
+        // Check if already friends
+        if (myData.friends && myData.friends.includes(targetUid)) { // Storing UIDs now, not codes? 
+            // WAIT. The old system stored "Friend Codes" (6 digits).
+            // The NEW system should probably stick to UIDs for reliability, OR keep Friend Codes if we want backward compat?
+            // The prompt implies "clicar no nome", so we have the User Object (and UID).
+            // Let's migrate to using UIDs for friends list if possible, OR look up Friend Code.
+            // Current db.js uses `friends: [friendCode1, friendCode2]`.
+            // To be consistent, let's keep storing Friend Codes in `friends` array if we want compatibility with existing leaderboards.
+            // OR switch to UIDs. Leaderboards `getFriendsLeaderboard` fetches by `where("id", "in", chunk)`.
+            // field "id" is the Friend Code.
+            // So we MUST store Friend Codes in the `friends` array to keep leaderboard working without refactoring everything.
+
+            // So:
+            // 1. Get Target's Friend Code
+            // 2. Add request using My Friend Code + My Name + My Avatar
         }
 
-        // 3. Add friendCode to my friends list
-        await updateDoc(myRef, {
-            friends: arrayUnion(friendCode)
+        const targetSnap = await getDoc(targetRef);
+        if (!targetSnap.exists()) return { error: "Usuário não encontrado." };
+        const targetData = targetSnap.data();
+
+        // Check compatibility:
+        // if `myData.friends` has `targetData.id`
+        if (myData.friends && myData.friends.includes(targetData.id)) {
+            return { error: "Vocês já são amigos!" };
+        }
+
+        // Check if request already sent
+        // We'll store requests in `requestsReceived` on the target.
+        // Array of objects: { fromUid, fromName, fromAvatar, timestamp }
+        // Firestore arrays of objects are tricky to dedupe. 
+        // Better: `friendRequests: { [requestUid]: { name, avatar... } }` (Map)
+        // OR just simple array and check manually.
+        const currentRequests = targetData.friendRequests || [];
+        if (currentRequests.some(r => r.fromUid === myUid)) {
+            return { error: "Solicitação já enviada." };
+        }
+
+        // Add Request to Target
+        await updateDoc(targetRef, {
+            friendRequests: arrayUnion({
+                fromUid: myUid,
+                fromName: myData.name || "Sem Nome",
+                fromAvatar: myData.avatar || "",
+                timestamp: new Date().toISOString()
+            })
         });
 
-        // 4. Add myFriendCode to friend's friends list (mutual friendship)
-        const friendRef = doc(db, "users", friendUid);
-        await updateDoc(friendRef, {
-            friends: arrayUnion(myFriendCode) // Add my 6-digit ID to their list
-        });
-
-        return { success: true, friendName: friendData.name };
+        return { success: true };
 
     } catch (error) {
-        console.error("Add Friend Error:", error);
-        return { error: "Erro ao adicionar amigo." };
+        console.error("Send Request Error:", error);
+        return { error: "Erro ao enviar solicitação." };
+    }
+};
+
+export const acceptFriendRequest = async (myUid, requesterUid) => {
+    try {
+        const myRef = doc(db, "users", myUid);
+        const reqRef = doc(db, "users", requesterUid);
+
+        const [mySnap, reqSnap] = await Promise.all([getDoc(myRef), getDoc(reqRef)]);
+
+        if (!mySnap.exists() || !reqSnap.exists()) return { error: "Erro ao processar." };
+
+        const myData = mySnap.data();
+        const reqData = reqSnap.data();
+
+        const myFriendCode = myData.id;
+        const reqFriendCode = reqData.id;
+
+        // 1. Add to Friends Lists (Mutual) - Storing Friend Codes
+        await updateDoc(myRef, {
+            friends: arrayUnion(reqFriendCode)
+        });
+        await updateDoc(reqRef, {
+            friends: arrayUnion(myFriendCode)
+        });
+
+        // 2. Remove from my friendRequests
+        // ArrayRemove requires exact object match, which is hard.
+        // Better to read, filter, write.
+        const newRequests = (myData.friendRequests || []).filter(r => r.fromUid !== requesterUid);
+
+        await updateDoc(myRef, {
+            friendRequests: newRequests
+        });
+
+        // 3. Add to Requester's "acceptedNotifications" (Green Dot)
+        await updateDoc(reqRef, {
+            friendRequestsAccepted: arrayUnion({
+                friendUid: myUid,
+                friendName: myData.name || "Alguém",
+                friendAvatar: myData.avatar || "",
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        return { success: true };
+
+    } catch (error) {
+        console.error("Accept Error:", error);
+        return { error: "Erro ao aceitar amizade." };
+    }
+};
+
+export const rejectFriendRequest = async (myUid, requesterUid) => {
+    try {
+        const myRef = doc(db, "users", myUid);
+        const mySnap = await getDoc(myRef);
+
+        if (!mySnap.exists()) return { error: "Erro." };
+        const myData = mySnap.data();
+
+        // Filter out
+        const newRequests = (myData.friendRequests || []).filter(r => r.fromUid !== requesterUid);
+
+        await updateDoc(myRef, {
+            friendRequests: newRequests
+        });
+
+        return { success: true };
+    } catch (e) {
+        return { error: e.message };
+    }
+};
+
+export const clearAcceptedNotifications = async (myUid) => {
+    try {
+        const myRef = doc(db, "users", myUid);
+        await updateDoc(myRef, {
+            friendRequestsAccepted: []
+        });
+        return { success: true };
+    } catch (e) {
+        return { error: e.message };
     }
 };
 

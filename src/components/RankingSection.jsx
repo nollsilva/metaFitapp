@@ -1,25 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { addFriend, getFriendsLeaderboard, getGlobalLeaderboard, checkSeasonReset } from '../utils/db';
+import { getFriendsLeaderboard, getGlobalLeaderboard, checkSeasonReset, sendFriendRequest } from '../utils/db'; // Updated imports
 import { BadgeIcon, getBadgeConfig } from './BadgeIcons';
 import { getRankTitle } from '../utils/rankingSystem';
 import ShareStoryCard from './ShareStoryCard';
 import { shareHiddenElement } from '../utils/share';
 
 const RankingSection = ({ profile, onUpdateProfile }) => {
-    const [friendIdInput, setFriendIdInput] = useState('');
     const [leaderboard, setLeaderboard] = useState([]);
-    const [msg, setMsg] = useState('');
     const [rankingTab, setRankingTab] = useState('global'); // 'global' or 'friends'
     const [selectedUser, setSelectedUser] = useState(null);
+    const [requestStatus, setRequestStatus] = useState(''); // '' | 'sending' | 'sent' | 'error' | 'already_friends'
 
     // Check for season reset on mount for the current user
     useEffect(() => {
         if (profile?.uid) {
             checkSeasonReset(profile.uid).then((res) => {
                 if (res?.resetOccurred) {
-                    // Force profile refresh if implemented, or just alert/log
                     console.log('Season reset occurred:', res);
-                    if (onUpdateProfile) onUpdateProfile(); // Assuming this refetches profile
+                    if (onUpdateProfile) onUpdateProfile();
                 }
             });
         }
@@ -42,26 +40,44 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
         }
         setLeaderboard(data);
 
-        // Update myRank state
         const meIndex = data.findIndex(u => u.id === profile.id);
         if (meIndex !== -1) setMyRank(meIndex + 1);
         else setMyRank('-');
     };
 
-    const handleAddFriend = async (e) => {
-        e.preventDefault();
-        setMsg('');
-        if (!friendIdInput) return;
+    const handleSendRequest = async () => {
+        if (!selectedUser || !profile.uid) return;
+        setRequestStatus('sending');
 
-        const res = await addFriend(profile.uid, friendIdInput);
-        if (res.error) {
-            setMsg(res.error);
+        // selectedUser from leaderboard uses Auth UID as Document ID usually? 
+        // Wait, leaderboard `getDocs`... `d.data()` usually contains what?
+        // In db.js: `registerUser` sets doc id = uid. And saves `uid` field.
+        // So `selectedUser.uid` should be available.
+
+        const targetUid = selectedUser.uid;
+        const result = await sendFriendRequest(profile.uid, targetUid);
+
+        if (result.success) {
+            setRequestStatus('sent');
         } else {
-            setMsg(`Amigo ${res.friendName} adicionado!`);
-            setFriendIdInput('');
-            if (rankingTab === 'friends') refreshLeaderboard();
+            console.error(result.error);
+            setRequestStatus('error');
         }
     };
+
+    const getRelationshipStatus = (targetUser) => {
+        if (targetUser.uid === profile.uid) return 'me';
+        // Check friends list (which contains friend codes)
+        if (profile.friends && profile.friends.includes(targetUser.id)) return 'friend';
+
+        // We can't easily check if *I* sent a request without reading target doc, 
+        // OR storing "sentRequests" in my profile.
+        // For now, simple interaction: User clicks send, if already sent db returns error.
+
+        return 'none';
+    };
+
+    const relationship = selectedUser ? getRelationshipStatus(selectedUser) : 'none';
 
     return (
         <section className="container animate-fade-in" style={{ paddingTop: '2rem', paddingBottom: '5rem' }}>
@@ -120,7 +136,6 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                     )}
                 </div>
 
-                {/* Share Button absolute positioned */}
                 <button
                     onClick={() => shareHiddenElement('share-ranking-card', 'meu-ranking.png')}
                     style={{
@@ -130,15 +145,15 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                         background: 'rgba(255,255,255,0.15)',
                         border: 'none',
                         color: '#fff',
-                        width: '50px', // Increased size
-                        height: '50px', // Increased size
+                        width: '50px',
+                        height: '50px',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'pointer',
                         zIndex: 10,
-                        fontSize: '1.5rem', // Larger icon
+                        fontSize: '1.5rem',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                     }}
                     title="Compartilhar Ranking"
@@ -146,7 +161,6 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                     📸
                 </button>
 
-                {/* Hidden Card for Sharing */}
                 <ShareStoryCard
                     id="share-ranking-card"
                     type="ranking"
@@ -160,7 +174,7 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
             {/* Profile Detail Modal */}
             {
                 selectedUser && (
-                    <div className="modal-overlay animate-fade-in" onClick={() => setSelectedUser(null)}>
+                    <div className="modal-overlay animate-fade-in" onClick={() => { setSelectedUser(null); setRequestStatus(''); }}>
                         <div className="card" onClick={(e) => e.stopPropagation()} style={{
                             width: '90%', maxWidth: '350px',
                             background: 'linear-gradient(145deg, #121215 0%, #000 100%)',
@@ -170,7 +184,7 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                             position: 'relative',
                             boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
                         }}>
-                            <button onClick={() => setSelectedUser(null)} style={{
+                            <button onClick={() => { setSelectedUser(null); setRequestStatus(''); }} style={{
                                 position: 'absolute', top: '10px', right: '15px',
                                 background: 'none', border: 'none', color: '#666', fontSize: '1.5rem', cursor: 'pointer'
                             }}>×</button>
@@ -203,7 +217,7 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                                 {getRankTitle(selectedUser.xp)}
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-around', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-around', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '12px', marginBottom: '2rem' }}>
                                 <div>
                                     <div style={{ fontSize: '1.5rem', fontWeight: '800' }}>{selectedUser.level}</div>
                                     <div style={{ fontSize: '0.7rem', color: '#888', textTransform: 'uppercase' }}>Nível</div>
@@ -213,35 +227,39 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                                     <div style={{ fontSize: '0.7rem', color: '#888', textTransform: 'uppercase' }}>XP Total</div>
                                 </div>
                             </div>
+
+                            {/* Friend Request Action */}
+                            {relationship === 'me' ? (
+                                <div style={{ color: '#666', fontStyle: 'italic' }}>Este é o seu perfil</div>
+                            ) : relationship === 'friend' ? (
+                                <div style={{
+                                    padding: '10px', background: 'rgba(0,255,102,0.1)',
+                                    color: '#00ff66', borderRadius: '8px', border: '1px solid rgba(0,255,102,0.3)'
+                                }}>
+                                    ✓ Vocês são amigos
+                                </div>
+                            ) : (
+                                <div>
+                                    {requestStatus === 'sent' ? (
+                                        <button disabled className="btn-secondary" style={{ width: '100%', color: '#00ff66', borderColor: '#00ff66' }}>
+                                            ✓ Solicitação Enviada
+                                        </button>
+                                    ) : requestStatus === 'error' ? (
+                                        <button disabled className="btn-secondary" style={{ width: '100%', color: '#ff4444', borderColor: '#ff4444' }}>
+                                            Erro ao enviar
+                                        </button>
+                                    ) : (
+                                        <button onClick={handleSendRequest} className="btn-primary" style={{ width: '100%' }}>
+                                            {requestStatus === 'sending' ? 'Enviando...' : 'Enviar Solicitação de Amizade'}
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
                         </div>
                     </div>
                 )
             }
-
-            {/* Add Friend Section */}
-            <div className="card" style={{ marginBottom: '2rem' }}>
-                <h3 style={{ marginBottom: '1rem', color: '#fff' }}>Adicionar Amigo</h3>
-                <form onSubmit={handleAddFriend} style={{ display: 'flex', gap: '10px' }}>
-                    <input
-                        type="text"
-                        placeholder="ID do Amigo (6 números)"
-                        value={friendIdInput}
-                        onChange={(e) => setFriendIdInput(e.target.value)}
-                        maxLength={6}
-                        style={{
-                            flex: 1,
-                            padding: '12px',
-                            background: 'rgba(255,255,255,0.05)',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '8px',
-                            color: '#fff',
-                            outline: 'none'
-                        }}
-                    />
-                    <button className="btn-primary" type="submit" style={{ padding: '0 20px' }}>+</button>
-                </form>
-                {msg && <p style={{ marginTop: '10px', color: msg.includes('erro') ? '#ff0055' : '#00ff66', fontSize: '0.9rem' }}>{msg}</p>}
-            </div>
 
             {/* Medal Gallery */}
             <h2 className="section-title">Galeria de <span className="title-gradient">Medalhas</span></h2>
@@ -348,25 +366,22 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                         return (
                             <div style={{ textAlign: 'center', padding: '2rem', color: '#666', fontStyle: 'italic' }}>
                                 {rankingTab === 'friends'
-                                    ? "Você ainda não tem amigos no ranking. Adicione alguém pelo ID!"
+                                    ? "Você ainda não tem amigos no ranking."
                                     : "Ninguém no ranking ainda..."}
                             </div>
                         );
                     }
 
                     const renderRow = (user, idxOrRealRank) => {
-                        // idxOrRealRank is 0-indexed index usually, or (realRank - 1)
                         const rank = typeof idxOrRealRank === 'number' ? idxOrRealRank + 1 : idxOrRealRank;
                         const isMe = user.id === profile.id;
-
-                        // Badge Logic
                         const config = getBadgeConfig(user.xp);
 
                         return (
                             <div key={user.id} className="card"
                                 onClick={() => setSelectedUser(user)}
                                 style={{
-                                    padding: '0.8rem 1rem', // Compact padding
+                                    padding: '0.8rem 1rem',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '0.8rem',
@@ -375,35 +390,22 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                                     border: isMe ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.05)',
                                     background: isMe ? 'rgba(0,240,255,0.05)' : 'var(--color-bg-card)'
                                 }}>
-                                {/* Rank & Badge Row */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginRight: '5px' }}>
                                     <div style={{
-                                        fontSize: '1rem',
-                                        fontWeight: '800',
-                                        width: '30px',
-                                        textAlign: 'center',
+                                        fontSize: '1rem', fontWeight: '800', width: '30px', textAlign: 'center',
                                         color: rank === 1 ? '#ffd700' : rank === 2 ? '#c0c0c0' : rank === 3 ? '#cd7f32' : '#666'
                                     }}>
                                         #{rank}
                                     </div>
-
-                                    <div style={{
-                                        position: 'relative',
-                                        width: '50px', height: '50px', // Smaller badge
-                                        flexShrink: 0
-                                    }}>
+                                    <div style={{ position: 'relative', width: '50px', height: '50px', flexShrink: 0 }}>
                                         <BadgeIcon type={config.icon} color={config.color} />
                                     </div>
                                 </div>
 
                                 <div style={{
-                                    width: '40px', height: '40px', // Smaller avatar
-                                    borderRadius: '50%',
-                                    background: '#333',
+                                    width: '40px', height: '40px', borderRadius: '50%', background: '#333',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontWeight: 'bold',
-                                    color: '#fff',
-                                    fontSize: '0.8rem',
+                                    fontWeight: 'bold', color: '#fff', fontSize: '0.8rem',
                                     border: `2px solid ${rank <= 3 ? 'var(--color-primary)' : '#444'} `,
                                     overflow: 'hidden'
                                 }}>
@@ -434,25 +436,19 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                     return (
                         <>
                             {displayList.map((user, idx) => renderRow(user, idx))}
-
-                            {/* Remaining Players Summary */}
                             {rankingTab === 'global' && remainingCount > 0 && !showSeparator && (
                                 <div style={{ textAlign: 'center', fontSize: '0.9rem', color: '#666', marginTop: '1rem', paddingBottom: '1rem' }}>
                                     E outros {remainingCount} jogadores buscando a glória...
                                 </div>
                             )}
-
                             {showSeparator && (
-                                <div style={{ textAlign: 'center', fontSize: '1.5rem', color: '#666', margin: '0.5rem 0' }}>
-                                    ...
-                                </div>
+                                <div style={{ textAlign: 'center', fontSize: '1.5rem', color: '#666', margin: '0.5rem 0' }}>...</div>
                             )}
                             {myUserInList && renderRow(myUserInList, myUserInList.realRank - 1)}
                         </>
                     );
                 })()}
             </div>
-
         </section >
     );
 };

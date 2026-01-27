@@ -4,6 +4,7 @@ import { sendRankUpEmail } from '../utils/email';
 import { updateEmail, updateProfile as updateAuthProfile, updatePassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import DailyBonus from './DailyBonus';
+import FriendRequests from './FriendRequests';
 
 const getRankTitle = (level) => {
     if (level < 5) return 'Iniciante';
@@ -28,6 +29,7 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isBonusModalOpen, setIsBonusModalOpen] = useState(false);
+    const [isRequestsModalOpen, setIsRequestsModalOpen] = useState(false);
 
     // Delete Account State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -155,6 +157,10 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
     };
     const isBonusReady = profile.isLoggedIn && checkBonusReady();
 
+    // Calculate Friend Request Notifications
+    const hasPendingRequests = profile.friendRequests && profile.friendRequests.length > 0;
+    const hasAcceptedRequests = profile.friendRequestsAccepted && profile.friendRequestsAccepted.length > 0;
+
     return (
         <section className="container" style={{ paddingTop: '2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
@@ -184,6 +190,13 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                             position: 'absolute', bottom: 0, width: '100%', background: 'rgba(0,0,0,0.6)',
                             fontSize: '0.6rem', color: '#fff', textAlign: 'center', padding: '2px'
                         }}>Editar</div>
+                    )}
+                    {(isBonusReady || hasPendingRequests) && (
+                        <div style={{
+                            position: 'absolute', top: '0', right: '0',
+                            width: '18px', height: '18px', background: '#ff0055',
+                            borderRadius: '50%', border: '2px solid #000'
+                        }}></div>
                     )}
                 </div>
                 <div>
@@ -290,6 +303,22 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                 </div>
             )}
 
+            {/* Friend Requests Modal - Only if Logged In */}
+            {isRequestsModalOpen && profile.isLoggedIn && (
+                <div className="modal-overlay" onClick={() => setIsRequestsModalOpen(false)} style={{ zIndex: 10000 }}>
+                    <div className="wide-modal auth-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', padding: '2rem', background: '#111', border: '1px solid #333' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setIsRequestsModalOpen(false)} style={{ background: 'none', border: 'none', color: '#666', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+                        </div>
+                        <FriendRequests
+                            profile={profile}
+                            onUpdateProfile={onUpdateProfile}
+                            onClose={() => setIsRequestsModalOpen(false)}
+                        />
+                    </div>
+                </div>
+            )}
+
             {/* Main Action Buttons Area */}
             {profile.isLoggedIn && (
                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
@@ -307,6 +336,33 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                             <div style={{
                                 position: 'absolute', top: '-5px', right: '-5px',
                                 width: '12px', height: '12px', background: '#ff0055',
+                                borderRadius: '50%', border: '2px solid #000'
+                            }}></div>
+                        )}
+                    </button>
+
+                    <button
+                        className="btn-primary"
+                        onClick={() => setIsRequestsModalOpen(true)}
+                        style={{
+                            flex: 1, position: 'relative',
+                            background: 'linear-gradient(135deg, #FFD700, #ffaa00)', border: 'none',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                            color: '#000', fontWeight: 'bold'
+                        }}
+                    >
+                        👥 Solicitações
+                        {hasPendingRequests && (
+                            <div style={{
+                                position: 'absolute', top: '-5px', right: '-5px',
+                                width: '12px', height: '12px', background: '#ff0055',
+                                borderRadius: '50%', border: '2px solid #000'
+                            }}></div>
+                        )}
+                        {hasAcceptedRequests && !hasPendingRequests && (
+                            <div style={{
+                                position: 'absolute', top: '-5px', right: '-5px',
+                                width: '12px', height: '12px', background: '#00ff66',
                                 borderRadius: '50%', border: '2px solid #000'
                             }}></div>
                         )}
