@@ -1,4 +1,5 @@
 import { auth, db } from '../lib/firebase';
+import { sendWelcomeEmail } from './email';
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
@@ -80,6 +81,9 @@ export const registerUser = async (email, password, name) => {
         };
 
         await setDoc(doc(db, "users", user.uid), newUserProfile);
+
+        // Send Welcome Email
+        sendWelcomeEmail(newUserProfile).catch(err => console.error("Error sending welcome email:", err));
 
         return { user: newUserProfile };
     } catch (error) {
