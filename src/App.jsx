@@ -16,6 +16,8 @@ import { getRankTitle } from './utils/rankingSystem';
 import { getBadgeConfig } from './components/BadgeIcons';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore'; // Added imports
+import { db } from './lib/firebase'; // Ensure db is imported
 import './index.css';
 
 function App() {
@@ -66,7 +68,9 @@ function App() {
     // Sistema de Level
     xp: 0,
     level: 1,
-    friends: []
+    friends: [],
+    friendRequests: [],
+    friendRequestsAccepted: []
   };
 
   const [userProfile, setUserProfile] = useState(defaultProfile);
@@ -137,26 +141,44 @@ function App() {
     }
   };
 
-  // Load User from Firebase Session
+  // Load User from Firebase Session with Realtime Listener
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let unsubscribeSnapshot = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
         // User is signed in.
-        const profile = await getUserProfile(user.uid);
-        if (profile) {
-          setUserProfile({ ...profile, isLoggedIn: true, uid: user.uid });
-          // Run checks
-          checkMissedWorkouts(profile);
-        } else {
-          console.error("Auth exists but no profile found in Firestore for UID:", user.uid);
-        }
+        // Setup Firestore Listener
+        const userDocRef = doc(db, "users", user.uid);
+
+        unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setUserProfile(prev => ({
+              ...prev,
+              ...data,
+              isLoggedIn: true,
+              uid: user.uid
+            }));
+            // We could run checks here, but careful of loops.
+          } else {
+            console.error("Auth exists but no profile found in Firestore for UID:", user.uid);
+          }
+        }, (error) => {
+          console.error("Snapshot Error:", error);
+        });
+
       } else {
         // User is signed out.
+        if (unsubscribeSnapshot) unsubscribeSnapshot();
         setUserProfile(defaultProfile);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
+    };
   }, []);
 
   // Save changes to DB whenever profile changes
