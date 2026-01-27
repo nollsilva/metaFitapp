@@ -108,8 +108,43 @@ export const loginUser = async (email, password) => {
         if (docSnap.exists()) {
             return { user: docSnap.data() };
         } else {
-            // This case should ideally not happen if registration creates the doc
-            return { error: "Perfil de usuário não encontrado no banco de dados." };
+            // RECOVERY: Auth exists but Firestore Profile is missing. Use Auth data to recreate.
+            console.warn("Profile missing for existing Auth user. Recreating...");
+
+            let friendCode = generateId();
+            // Basic collision check unused for now as per register logic
+
+            const newUserProfile = {
+                uid: uid,
+                id: friendCode,
+                email: userCredential.user.email,
+                name: userCredential.user.displayName || "Usuário",
+                xp: 0, // Reset XP as it's a "new" profile technically
+                level: 1,
+                friends: [],
+                createdAt: new Date().toISOString(),
+                // Profile Defaults
+                weight: '',
+                height: '',
+                age: '',
+                activityLevel: '1.55',
+                goal: 'maintain',
+                urgentPart: 'corpo todo',
+                trainingDays: 3,
+                trainingDuration: 20,
+                workoutHistory: {},
+                selectedWeekDays: ['seg', 'qua', 'sex'],
+                targetCalories: 0,
+                idealWeight: 0,
+                mealPlan: null,
+                classification: '',
+                color: '#fff',
+                friendRequests: [],
+                friendRequestsAccepted: []
+            };
+
+            await setDoc(docRef, newUserProfile);
+            return { user: newUserProfile };
         }
     } catch (error) {
         console.error("Login Error:", error);

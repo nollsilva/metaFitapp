@@ -19,9 +19,13 @@ const AuthModal = ({ onClose, onSuccess }) => {
         setSuccess('');
         setLoading(true);
 
+        const cleanEmail = email.trim();
+        const cleanPassword = password.trim();
+        const cleanName = name.trim();
+
         try {
             if (isForgotMode) {
-                const res = await resetPassword(email);
+                const res = await resetPassword(cleanEmail);
                 if (res.error) {
                     setError(res.error);
                 } else {
@@ -29,15 +33,15 @@ const AuthModal = ({ onClose, onSuccess }) => {
                     // Optional: Switch back to login after delay
                 }
             } else if (isLoginMode) {
-                const res = await loginUser(email, password);
+                const res = await loginUser(cleanEmail, cleanPassword);
                 if (res.error) {
                     setError(res.error);
                 } else {
                     onSuccess(res.user);
                 }
             } else {
-                if (!name) { setError('Nome é obrigatório.'); setLoading(false); return; }
-                const res = await registerUser(email, password, name);
+                if (!cleanName) { setError('Nome é obrigatório.'); setLoading(false); return; }
+                const res = await registerUser(cleanEmail, cleanPassword, cleanName);
                 if (res.error) {
                     setError(res.error);
                 } else {

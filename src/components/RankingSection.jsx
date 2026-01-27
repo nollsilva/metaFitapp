@@ -344,34 +344,6 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
             <h2 className="section-title">Ranking <span className="title-gradient">{rankingTab === 'global' ? 'Global' : 'Amigos'}</span></h2>
             <div className="leaderboard" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                 {(() => {
-                    let displayList = leaderboard;
-                    let showSeparator = false;
-                    let myUserInList = null;
-                    let remainingCount = 0;
-
-                    if (rankingTab === 'global' && leaderboard.length > 0) {
-                        if (leaderboard.length > 10) {
-                            remainingCount = leaderboard.length - 10;
-                        }
-
-                        displayList = leaderboard.slice(0, 10);
-                        const myIndex = leaderboard.findIndex(u => u.id === profile.id);
-                        if (myIndex >= 10 && profile.isLoggedIn) {
-                            showSeparator = true;
-                            myUserInList = { ...leaderboard[myIndex], realRank: myIndex + 1 };
-                        }
-                    }
-
-                    if (displayList.length === 0 && !myUserInList) {
-                        return (
-                            <div style={{ textAlign: 'center', padding: '2rem', color: '#666', fontStyle: 'italic' }}>
-                                {rankingTab === 'friends'
-                                    ? "Você ainda não tem amigos no ranking."
-                                    : "Ninguém no ranking ainda..."}
-                            </div>
-                        );
-                    }
-
                     const renderRow = (user, idxOrRealRank) => {
                         const rank = typeof idxOrRealRank === 'number' ? idxOrRealRank + 1 : idxOrRealRank;
                         const isMe = user.id === profile.id;
@@ -433,23 +405,33 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                         );
                     };
 
+                    let displayList = leaderboard;
+
+                    if (displayList.length === 0) {
+                        return (
+                            <div style={{ textAlign: 'center', padding: '2rem', color: '#666', fontStyle: 'italic' }}>
+                                {rankingTab === 'friends'
+                                    ? "Você ainda não tem amigos no ranking."
+                                    : "Ninguém no ranking ainda..."}
+                            </div>
+                        );
+                    }
+
+                    // Scrollable Container
                     return (
-                        <>
-                            {displayList.map((user, idx) => renderRow(user, idx))}
-                            {rankingTab === 'global' && remainingCount > 0 && !showSeparator && (
-                                <div style={{ textAlign: 'center', fontSize: '0.9rem', color: '#666', marginTop: '1rem', paddingBottom: '1rem' }}>
-                                    E outros {remainingCount} jogadores buscando a glória...
-                                </div>
-                            )}
-                            {showSeparator && (
-                                <div style={{ textAlign: 'center', fontSize: '1.5rem', color: '#666', margin: '0.5rem 0' }}>...</div>
-                            )}
-                            {myUserInList && renderRow(myUserInList, myUserInList.realRank - 1)}
-                        </>
+                        <div style={{
+                            maxHeight: '500px',
+                            overflowY: 'auto',
+                            paddingRight: '5px'
+                        }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                                {displayList.map((user, index) => renderRow(user, index))}
+                            </div>
+                        </div>
                     );
                 })()}
             </div>
-        </section >
+        </section>
     );
 };
 
