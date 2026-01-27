@@ -194,8 +194,13 @@ function App() {
         setTimeout(() => setNotification(null), 5000);
         await handleLogout();
       } else {
-        setNotification("Erro ao excluir conta: " + result.error);
-        setTimeout(() => setNotification(null), 5000);
+        // Handle Requires Recent Login
+        if (result.error && result.error.includes('requires-recent-login')) {
+          setNotification("⚠️ Por segurança, faça Logout e Login novamente para excluir.");
+        } else {
+          setNotification("Erro ao excluir conta: " + result.error);
+        }
+        setTimeout(() => setNotification(null), 8000);
       }
     }
   };

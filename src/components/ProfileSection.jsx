@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { updateUser } from '../utils/db'; // Ensure this is imported effectively or passed down
+import { sendWelcomeEmail } from '../utils/email';
 import { updateEmail, updateProfile as updateAuthProfile, updatePassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import DailyBonus from './DailyBonus';
@@ -133,6 +134,20 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
             }
         } finally {
             setEditLoading(false);
+        }
+    };
+
+    const handleTestEmail = async () => {
+        if (!profile || !profile.email) {
+            setEditError("Você precisa de um email cadastrado para testar.");
+            return;
+        }
+        setEditError("Enviando email de teste...");
+        const result = await sendWelcomeEmail(profile);
+        if (result.success) {
+            setSuccessMsg("Email enviado com sucesso! Verifique sua caixa de entrada.");
+        } else {
+            setEditError("Erro ao enviar email: " + result.error);
         }
     };
 
@@ -365,7 +380,8 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                             {editError && <p style={{ color: '#ff0055', fontSize: '0.8rem', marginBottom: '1rem' }}>{editError}</p>}
                             {successMsg && <p style={{ color: '#00ff66', fontSize: '0.9rem', marginBottom: '1rem', textAlign: 'center' }}>{successMsg}</p>}
 
-                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                                <button type="button" onClick={handleTestEmail} className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.8rem' }}>📧 Testar Email</button>
                                 <button type="button" onClick={() => setIsEditModalOpen(false)} className="btn-secondary" style={{ padding: '8px 16px' }}>Cancelar</button>
                                 <button type="submit" disabled={editLoading} className="btn-primary" style={{ padding: '8px 16px' }}>
                                     {editLoading ? 'Salvando...' : 'Salvar'}
