@@ -11,7 +11,6 @@ import OnboardingGuide from './components/OnboardingGuide';
 import Footer from './components/Footer';
 import TutorialOverlay from './components/TutorialOverlay';
 import { getUserProfile, updateUser, logoutUser, deleteUserAccount } from './utils/db';
-import { getUserProfile, updateUser, logoutUser, deleteUserAccount } from './utils/db';
 import { sendLevelUpEmail } from './utils/email';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
