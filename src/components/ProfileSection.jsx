@@ -328,7 +328,8 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                         style={{
                             flex: 1, position: 'relative',
                             background: 'linear-gradient(135deg, #0077ff, #00c3ff)', border: 'none',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                            overflow: 'visible' // Allow dot to be seen
                         }}
                     >
                         🎁 Bônus Diário
@@ -348,7 +349,8 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                             flex: 1, position: 'relative',
                             background: 'linear-gradient(135deg, #FFD700, #ffaa00)', border: 'none',
                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                            color: '#000', fontWeight: 'bold'
+                            color: '#000', fontWeight: 'bold',
+                            overflow: 'visible' // Allow dot to be seen
                         }}
                     >
                         👥 Solicitações
