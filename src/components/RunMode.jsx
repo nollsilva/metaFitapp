@@ -86,14 +86,11 @@ const RunMode = ({ profile, onAddXp }) => {
                     const { latitude, longitude, speed, accuracy } = pos.coords;
                     const newPos = { lat: latitude, lng: longitude };
 
-                    // Update Map Position
-                    setPosition(newPos);
-
-                    // If Paused, don't track distance/path
-                    if (isPaused) return;
-
                     // FILTER: Accuracy Check (Ignore > 30m error)
                     if (accuracy > 30) return;
+
+                    // Update Map Position ONLY if accuracy is good
+                    setPosition(newPos);
 
                     // Update Path & Distance
                     setPathCoordinates(prev => {
@@ -364,14 +361,7 @@ const RunMode = ({ profile, onAddXp }) => {
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', alignItems: 'center' }}>
                     {!isRunning ? (
                         <>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-                                <button
-                                    className="btn-control-large"
-                                    style={{ background: '#00ff66', color: '#000', boxShadow: '0 0 25px rgba(0,255,102,0.4)', width: '100px', height: '100px' }}
-                                    onClick={startRun}
-                                >
-                                    ▶
-                                </button>
+                            <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', alignItems: 'center' }}>
                                 <button
                                     onClick={() => {
                                         if (profile && profile.uid) {
@@ -379,9 +369,27 @@ const RunMode = ({ profile, onAddXp }) => {
                                             setShowHistory(true);
                                         }
                                     }}
-                                    style={{ background: 'none', border: '1px solid #333', color: '#aaa', padding: '5px 10px', borderRadius: '5px', fontSize: '0.8rem' }}
+                                    style={{
+                                        background: 'rgba(0,0,0,0.6)',
+                                        border: '1px solid #333',
+                                        color: '#fff',
+                                        width: '60px',
+                                        height: '60px',
+                                        borderRadius: '50%',
+                                        fontSize: '1.5rem',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                    }}
+                                    title="Histórico"
                                 >
-                                    📜 Histórico
+                                    📜
+                                </button>
+
+                                <button
+                                    className="btn-control-large"
+                                    style={{ background: '#00ff66', color: '#000', boxShadow: '0 0 25px rgba(0,255,102,0.4)', width: '100px', height: '100px' }}
+                                    onClick={startRun}
+                                >
+                                    ▶
                                 </button>
                             </div>
                         </>
