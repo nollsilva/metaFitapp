@@ -16,4 +16,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 import { getStorage } from "firebase/storage";
+import { getMessaging } from "firebase/messaging"; // Import Messaging
+
 export const storage = getStorage(app);
+export const messaging = getMessaging(app); // Export Messaging

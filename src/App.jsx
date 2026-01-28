@@ -24,6 +24,8 @@ import RunMode from './components/RunMode';
 import BottomNav from './components/BottomNav';
 import HamburgerMenu from './components/HamburgerMenu';
 import DailyBonus from './components/DailyBonus';
+import NotificationPermissionModal from './components/NotificationPermissionModal'; // Imported
+import NotificationsScreen from './components/NotificationsScreen'; // Imported
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -266,6 +268,22 @@ function App() {
     }
   }, [userProfile.lastClaimDate, userProfile]); // Added userProfile to dependency array for robustness
 
+  // Check for Notification Permission on Login
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+
+  useEffect(() => {
+    if (userProfile.isLoggedIn && !userProfile.fcmToken) {
+      // Check if user has dismissed it this session or permanently? User request says "No login"
+      // We can store a local flag to not annoy them every refresh if they clicked "Not Now"
+      const hasDismissed = sessionStorage.getItem('metafit_notif_dismissed');
+      if (!hasDismissed) {
+        // Delay slightly for better UX
+        const timer = setTimeout(() => setShowNotificationModal(true), 2000);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [userProfile.isLoggedIn, userProfile.fcmToken]);
+
   return (
     <div className="app-container">
       <div className="bg-glow-container">
@@ -274,6 +292,18 @@ function App() {
       </div>
 
       {showTutorial && <TutorialOverlay onComplete={handleTutorialComplete} />}
+
+      {/* Notification Permission Modal */}
+      {showNotificationModal && (
+        <NotificationPermissionModal
+          profile={userProfile}
+          onClose={() => {
+            setShowNotificationModal(false);
+            sessionStorage.setItem('metafit_notif_dismissed', 'true');
+          }}
+          onPermissionGranted={() => setShowNotificationModal(false)}
+        />
+      )}
 
       {notification && (
         <div className="animate-fade-in" style={{
@@ -389,6 +419,11 @@ function App() {
 
         {activeTab === 'run' && (
           <RunMode profile={userProfile} onAddXp={addXp} />
+        )}
+
+        {/* Notification Screen */}
+        {activeTab === 'notifications' && (
+          <NotificationsScreen profile={userProfile} onUpdateProfile={updateProfile} />
         )}
 
         {/* Bonus is a Modal or Screen? Let's make it a Modal for consistency with previous, or a screen.
