@@ -73,7 +73,7 @@ const RunMode = ({ profile, onAddXp }) => {
         if (navigator.geolocation) {
             watchIdRef.current = navigator.geolocation.watchPosition(
                 (pos) => {
-                    const { latitude, longitude, speed } = pos.coords;
+                    const { latitude, longitude, speed, accuracy } = pos.coords;
                     const newPos = { lat: latitude, lng: longitude };
 
                     // Update Map Position
@@ -82,14 +82,17 @@ const RunMode = ({ profile, onAddXp }) => {
                     // If Paused, don't track distance/path
                     if (isPaused) return;
 
+                    // FILTER: Accuracy Check (Ignore > 30m error)
+                    if (accuracy > 30) return;
+
                     // Update Path & Distance
                     setPathCoordinates(prev => {
                         const last = prev.length > 0 ? prev[prev.length - 1] : null; // [lat, lng]
 
                         if (last) {
                             const dist = calculateDistance(last[0], last[1], latitude, longitude);
-                            // Filter noise: only count if move > 3m
-                            if (dist > 3) {
+                            // Filter noise: only count if move > 10m
+                            if (dist > 10) {
                                 setDistance(d => {
                                     const newDist = d + dist;
 
