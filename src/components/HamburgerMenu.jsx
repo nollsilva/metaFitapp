@@ -66,6 +66,15 @@ const HamburgerMenu = ({ isOpen, onClose, activeTab, setActiveTab, onLogout, pro
                         {profile?.avatar ? (
                             <img src={`/avatars/${profile.avatar}.png`} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
                         ) : (profile?.name?.substring(0, 2).toUpperCase() || '👤')}
+
+                        {notificationRequests && (
+                            <div style={{
+                                position: 'absolute', bottom: '0', right: '0',
+                                width: '20px', height: '20px', borderRadius: '50%',
+                                background: '#00ff66', border: '2px solid #1a1a1a',
+                                boxShadow: '0 0 5px #00ff66'
+                            }} />
+                        )}
                     </div>
                     <h3 style={{ margin: 0 }}>{profile?.name || 'Visitante'}</h3>
                     <p style={{ margin: 0, color: '#888', fontSize: '0.9rem' }}>Nível {profile?.level || 1}</p>
