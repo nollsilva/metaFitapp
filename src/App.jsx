@@ -20,12 +20,17 @@ import { doc, onSnapshot } from 'firebase/firestore'; // Added imports
 import { db } from './lib/firebase'; // Ensure db is imported
 import './index.css';
 
+import RunMode from './components/RunMode';
+import BottomNav from './components/BottomNav';
+import HamburgerMenu from './components/HamburgerMenu';
+
 function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [activeExercise, setActiveExercise] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isHamburgerOpen, setIsHamburgerOpen] = useState(false); // New State
   const [showTutorial, setShowTutorial] = useState(false);
-  const [sessionChecks, setSessionChecks] = useState(new Set()); // Track completed daily exercises indices
+  const [sessionChecks, setSessionChecks] = useState(new Set());
 
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('metafit_tutorial_seen');
@@ -42,30 +47,28 @@ function App() {
   // Initial empty state structure for fallback
   const defaultProfile = {
     isLoggedIn: false,
-    uid: null, // Auth ID
-    id: null,  // Friend Code
+    uid: null,
+    id: null,
     email: '',
     name: '',
     weight: '',
     height: '',
     age: '',
-    gender: 'male', // 'male' or 'female'
+    gender: 'male',
     activityLevel: '1.55',
-    goal: 'maintain', // lose, maintain, gain
+    goal: 'maintain',
     targetCalories: 0,
     idealWeight: 0,
     mealPlan: null,
     classification: '',
     color: '#fff',
-    // Novos campos de Treino
     urgentPart: 'corpo todo',
     trainingDays: 3,
-    selectedWeekDays: [], // ['seg', 'qua', 'sex']
+    selectedWeekDays: [],
     trainingDuration: 20,
     workoutHistory: {},
     targetMuscles: [],
     focusAreas: [],
-    // Sistema de Level
     xp: 0,
     level: 1,
     friends: [],
@@ -85,9 +88,6 @@ function App() {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
 
-    // Iterate from lastCheck + 1 day until yesterday
-    // If we haven't checked since X, we check all days between X and Today.
-
     let currentDate = new Date(lastCheck);
     currentDate.setDate(currentDate.getDate() + 1);
 
@@ -99,9 +99,7 @@ function App() {
       const dayKeyStr = dayKeys[currentDate.getDay()];
       const dateStr = currentDate.toISOString().split('T')[0];
 
-      // If this was a scheduled training day
       if (scheduledDays.includes(dayKeyStr)) {
-        // And it was NOT done
         if (history[dateStr] !== 'done') {
           penalty += 100;
           missedCount++;
@@ -113,9 +111,8 @@ function App() {
     if (penalty > 0) {
       const currentXp = profile.xp || 0;
       const newXp = Math.max(0, currentXp - penalty);
-      const newLevel = Math.floor(newXp / 1000) + 1; // 1000 XP/level assumed
+      const newLevel = Math.floor(newXp / 1000) + 1;
 
-      // Update State
       setUserProfile(prev => ({
         ...prev,
         xp: newXp,
@@ -126,16 +123,8 @@ function App() {
       setNotification(`Você perdeu ${penalty} XP por perder ${missedCount} dia(s) de treino! 😢`);
       setTimeout(() => setNotification(null), 8000);
     } else {
-      // Just update the check date if significant time passed, to avoid re-looping too much
       if (missedCount === 0 && new Date() > lastCheck) {
-        // We can silently update lastMissedCheck to today (or yesterday) to optimize next run
-        // However, simpler to just update state if we want to persist it. 
-        // Let's do nothing to avoid unnecessary writes unless a penalty happened, 
-        // OR we update it so we don't re-scan every reload.
-        // Better to update it.
         const todayStr = new Date().toISOString();
-        // We only need to write if it's been more than a day to avoid write spam?
-        // Let's just update local state, effect will write to DB.
         setUserProfile(prev => ({ ...prev, lastMissedCheck: todayStr }));
       }
     }
@@ -147,8 +136,6 @@ function App() {
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // User is signed in.
-        // Setup Firestore Listener
         const userDocRef = doc(db, "users", user.uid);
 
         unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
@@ -160,7 +147,6 @@ function App() {
               isLoggedIn: true,
               uid: user.uid
             }));
-            // We could run checks here, but careful of loops.
           } else {
             console.error("Auth exists but no profile found in Firestore for UID:", user.uid);
           }
@@ -169,7 +155,6 @@ function App() {
         });
 
       } else {
-        // User is signed out.
         if (unsubscribeSnapshot) unsubscribeSnapshot();
         setUserProfile(defaultProfile);
       }
@@ -184,10 +169,6 @@ function App() {
   // Save changes to DB whenever profile changes
   useEffect(() => {
     if (userProfile.uid) {
-      // Debounce? For now direct write.
-      // We pass userProfile.uid (Auth ID) to update.
-      // Ensure we don't send 'isLoggedIn' or derived UI state if purely DB data,
-      // but our updateUser just merges, so it's mostly fine.
       updateUser(userProfile.uid, userProfile);
     }
   }, [userProfile]);
@@ -199,9 +180,8 @@ function App() {
   const addXp = (amount) => {
     setUserProfile(prev => {
       const newXp = (prev.xp || 0) + amount;
-      const newLevel = Math.floor(newXp / 1000) + 1; // 1000 XP por nível
+      const newLevel = Math.floor(newXp / 1000) + 1;
 
-      // Check for Level Up
       if (newLevel > (prev.level || 1)) {
         setNotification(`SUBIU DE NÍVEL! AGORA VOCÊ É NÍVEL ${newLevel} 🚀`);
       }
@@ -225,7 +205,6 @@ function App() {
         setTimeout(() => setNotification(null), 5000);
         await handleLogout();
       } else {
-        // Handle Requires Recent Login
         if (result.error && result.error.includes('requires-recent-login')) {
           setNotification("⚠️ Por segurança, faça Logout e Login novamente para excluir.");
         } else {
@@ -237,10 +216,8 @@ function App() {
   };
 
   const handleAuthSuccess = (user) => {
-    // Optimistic update, but onAuthStateChanged will confirm
     setUserProfile({ ...user, isLoggedIn: true });
     setIsAuthModalOpen(false);
-    // checkInactivity(user); // check on fresh login too if needed
   };
 
   const handleDailyWorkoutComplete = (xpAmount) => {
@@ -248,13 +225,9 @@ function App() {
     const newHistory = { ...userProfile.workoutHistory };
     newHistory[todayKey] = 'done';
 
-    // Add the lump sum XP
     addXp(xpAmount);
-
-    // Update profile with new history
     updateProfile({ workoutHistory: newHistory });
 
-    // Notify
     setNotification(`Parabéns! Treino do dia concluído! +${xpAmount} XP`);
     setTimeout(() => setNotification(null), 5000);
   };
@@ -295,6 +268,25 @@ function App() {
         onShowTutorial={() => setShowTutorial(true)}
         isLoggedIn={userProfile.isLoggedIn}
         onLogout={handleLogout}
+        onOpenHamburger={() => setIsHamburgerOpen(true)} // Added
+      />
+
+      <HamburgerMenu
+        isOpen={isHamburgerOpen}
+        onClose={() => setIsHamburgerOpen(false)}
+        activeTab={activeTab}
+        setActiveTab={(tab) => {
+          // Handle special actions from menu
+          if (tab === 'help') { setShowTutorial(true); }
+          // Bonus might be a modal, but for now we can select tab if we had one, or open modal
+          // But since Bonus is in Profile usually, or separate. 
+          // Implementation plan said Hamburger Items: Perfil, Dieta, Bonus, Ajuda, Sair.
+          // If Bonus is clicked, we might want to trigger the bonus modal inside Profile or global.
+          // For now let's just setActiveTab, and handle rendering.
+          else { setActiveTab(tab); }
+        }}
+        onLogout={handleLogout}
+        profile={userProfile}
       />
 
       <main style={{ paddingBottom: activeTab === 'timer' ? 0 : '100px' }}>
@@ -331,10 +323,7 @@ function App() {
               setActiveExercise(null);
             }}
             onFinish={() => {
-              // If it's a "Daily/For You" exercise, we don't award XP here.
-              // We only award XP when the whole set is done in WorkoutsSection.
               if (activeExercise.isDaily) {
-                // Auto-mark check
                 if (activeExercise.index !== undefined) {
                   setSessionChecks(prev => new Set(prev).add(activeExercise.index));
                 }
@@ -345,7 +334,6 @@ function App() {
                 return;
               }
 
-              // If it's a standalone library exercise, award small XP (15)
               addXp(15);
               setNotification(`Exercício concluído! +15 XP`);
               setTimeout(() => setNotification(null), 3000);
@@ -369,43 +357,25 @@ function App() {
             onDeleteAccount={handleDeleteAccount}
           />
         )}
+
+        {activeTab === 'run' && (
+          <RunMode profile={userProfile} onAddXp={addXp} />
+        )}
+
       </main>
 
       {/* Auth Modal Global */}
       {isAuthModalOpen && (
         <AuthModal
           onClose={() => {
-            // If forcefully opened due to no session, maybe don't allow close unless logged in?
-            // For now allow close to view landing page.
             setIsAuthModalOpen(false);
           }}
           onSuccess={handleAuthSuccess}
         />
       )}
 
-      {/* Mobile Bottom Navigation Bar */}
-      <div className="mobile-nav mobile-only">
-        <div className={`mobile - nav - item ${activeTab === 'home' ? 'active' : ''} `} onClick={() => setActiveTab('home')}>
-          <span className="icon">🏠</span>
-          <span>Início</span>
-        </div>
-        <div className={`mobile - nav - item ${activeTab === 'workout' ? 'active' : ''} `} onClick={() => setActiveTab('workout')}>
-          <span className="icon">💪</span>
-          <span>Treino</span>
-        </div>
-        <div className={`mobile - nav - item ${activeTab === 'diet' ? 'active' : ''} `} onClick={() => setActiveTab('diet')}>
-          <span className="icon">🥗</span>
-          <span>Dieta</span>
-        </div>
-        <div className={`mobile - nav - item ${activeTab === 'tracker' ? 'active' : ''} `} onClick={() => setActiveTab('tracker')}>
-          <span className="icon">👤</span>
-          <span>Perfil</span>
-        </div>
-        <div className="mobile - nav - item" onClick={() => setShowTutorial(true)} style={{ color: '#D4AF37' }}>
-          <span className="icon">?</span>
-          <span>Ajuda</span>
-        </div>
-      </div>
+      {/* New Bottom Navigation */}
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <Footer />
     </div>

@@ -26,7 +26,7 @@ export const generateId = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-export const registerUser = async (email, password, name) => {
+export const registerUser = async (email, password, name, inviteCode = "") => {
     try {
         // 1. Create Auth User
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -36,30 +36,31 @@ export const registerUser = async (email, password, name) => {
         await updateAuthProfile(user, { displayName: name });
 
         // 3. Create Firestore Document
-        // We use a custom 6-digit ID for "friend code", but the doc ID usually matches Auth UID for security rules.
-        // Best practice: Doc ID = Auth UID. Inside doc: `friendCode: 123456`.
-        // To find friend by 6-digit ID, we'll need a query.
-
         let friendCode = generateId();
-        // Ideally check uniqueness, but for MVP random collision is rare.
-        // For a robust system, you'd query to ensure `friendCode` is unique before assigning.
-        // Example:
-        // let isUnique = false;
-        // while (!isUnique) {
-        //     friendCode = generateId();
-        //     const q = query(collection(db, "users"), where("id", "==", friendCode));
-        //     const snapshot = await getDocs(q);
-        //     if (snapshot.empty) {
-        //         isUnique = true;
-        //     }
-        // }
+
+        // Handle Referral Logic
+        if (inviteCode) {
+            const q = query(collection(db, "users"), where("id", "==", inviteCode));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                const referrerDoc = snapshot.docs[0];
+                const referrerData = referrerDoc.data();
+
+                // Award 100 XP to Referrer
+                await updateDoc(referrerDoc.ref, {
+                    xp: (referrerData.xp || 0) + 100
+                });
+
+                // Optional: Notify referrer (not implemented without cloud functions easily, but we update the doc)
+            }
+        }
 
         const newUserProfile = {
             uid: user.uid, // Auth ID
             id: friendCode, // Public Friend Code
             email,
             name,
-            xp: 100,
+            xp: 0, // Requirement: New users start with 0 XP
             level: 1,
             friends: [],
             createdAt: new Date().toISOString(),

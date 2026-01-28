@@ -237,6 +237,21 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                             </div>
                         </div>
                     )}
+                    {profile.isLoggedIn && (
+                        <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#888', background: 'rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '5px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <span>Código Convite: <strong style={{ color: '#fff' }}>{profile.id}</strong></span>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(profile.id);
+                                    alert('Código copiado!');
+                                }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}
+                                title="Copiar"
+                            >
+                                📋
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 

@@ -1,52 +1,37 @@
 import React from 'react';
 
-const Navbar = ({ activeTab, setActiveTab, onOpenAuth, isLoggedIn, onLogout, onShowTutorial }) => {
-    const getTabId = (name) => {
-        const map = { 'Início': 'home', 'Treino': 'workout', 'Dieta': 'diet', 'Perfil': 'tracker' };
-        return map[name];
-    };
-
+const Navbar = ({ activeTab, setActiveTab, onOpenAuth, isLoggedIn, onLogout, onShowTutorial, onOpenHamburger }) => {
     return (
         <nav className="navbar">
-            <div className="container nav-content">
+            <div className="container nav-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div className="logo" onClick={() => setActiveTab('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                     <img src="/logo.png" alt="MetaFit Logo" style={{ height: '50px', objectFit: 'contain' }} />
                 </div>
-                <ul className="nav-links">
-                    {['Início', 'Treino', 'Dieta', 'Perfil'].map((item) => (
-                        <li
-                            key={item}
-                            className={activeTab === getTabId(item) ? 'active' : ''}
-                            onClick={() => setActiveTab(getTabId(item))}
-                        >
-                            {item}
-                        </li>
-                    ))}
-                    <li onClick={onShowTutorial} style={{ color: '#D4AF37', cursor: 'pointer', fontWeight: 'bold' }}>
-                        Ver Tutorial
-                    </li>
-                </ul>
-                {!isLoggedIn ? (
-                    <button className="btn-primary" onClick={onOpenAuth}>Entrar</button>
-                ) : (
-                    // Optional: Logout button or user info, but requirement was just hide entry button. 
-                    // Adding small logout for convenience if onLogout is passed
-                    onLogout && (
-                        <button
-                            className="btn-secondary"
-                            style={{
-                                fontSize: '0.9rem',
-                                padding: '8px 16px',
-                                color: '#ff4d4d',
-                                borderColor: 'rgba(255, 77, 77, 0.5)',
-                                fontWeight: '600'
-                            }}
-                            onClick={onLogout}
-                        >
-                            Sair
-                        </button>
-                    )
-                )}
+
+                {/* Desktop Links - Optional, maybe hide if mobile-first approach is strict */}
+                <div className="desktop-links mobile-hidden" style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                    {/* Keep desktop links if needed, or rely on Hamburger for all */}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    {!isLoggedIn && (
+                        <button className="btn-primary" onClick={onOpenAuth} style={{ fontSize: '0.9rem', padding: '8px 16px' }}>Entrar</button>
+                    )}
+
+                    <button
+                        onClick={onOpenHamburger}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#fff',
+                            fontSize: '2rem',
+                            cursor: 'pointer',
+                            padding: '5px'
+                        }}
+                    >
+                        ☰
+                    </button>
+                </div>
             </div>
         </nav>
     );

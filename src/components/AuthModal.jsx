@@ -7,6 +7,7 @@ const AuthModal = ({ onClose, onSuccess }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
+    const [inviteCode, setInviteCode] = useState(''); // Added
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
@@ -22,6 +23,7 @@ const AuthModal = ({ onClose, onSuccess }) => {
         const cleanEmail = email.trim();
         const cleanPassword = password.trim();
         const cleanName = name.trim();
+        const cleanInvite = inviteCode.trim();
 
         try {
             if (isForgotMode) {
@@ -41,7 +43,7 @@ const AuthModal = ({ onClose, onSuccess }) => {
                 }
             } else {
                 if (!cleanName) { setError('Nome é obrigatório.'); setLoading(false); return; }
-                const res = await registerUser(cleanEmail, cleanPassword, cleanName);
+                const res = await registerUser(cleanEmail, cleanPassword, cleanName, cleanInvite);
                 if (res.error) {
                     setError(res.error);
                 } else {
@@ -76,16 +78,28 @@ const AuthModal = ({ onClose, onSuccess }) => {
                     </p>
 
                     {!isLoginMode && !isForgotMode && (
-                        <div className="input-group" style={{ marginBottom: '1.5rem' }}>
-                            <label>Nome</label>
-                            <input
-                                type="text"
-                                placeholder="Seu nome"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
-                            />
-                        </div>
+                        <>
+                            <div className="input-group" style={{ marginBottom: '1.5rem' }}>
+                                <label>Nome</label>
+                                <input
+                                    type="text"
+                                    placeholder="Seu nome"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                                />
+                            </div>
+                            <div className="input-group" style={{ marginBottom: '1.5rem' }}>
+                                <label>Código de Convite (Opcional)</label>
+                                <input
+                                    type="text"
+                                    placeholder="Ex: 123456"
+                                    value={inviteCode}
+                                    onChange={(e) => setInviteCode(e.target.value)}
+                                    style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                                />
+                            </div>
+                        </>
                     )}
 
                     <div className="input-group" style={{ marginBottom: '1.5rem' }}>
