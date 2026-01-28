@@ -104,8 +104,8 @@ const RunMode = ({ profile, onAddXp }) => {
 
                         if (last) {
                             const dist = calculateDistance(last[0], last[1], latitude, longitude);
-                            // Filter noise: only count if move > 10m
-                            if (dist > 10) {
+                            // Filter noise: only count if move > 3m (lowered from 10m to fix return path issue)
+                            if (dist > 3) {
                                 setDistance(d => {
                                     const newDist = d + dist;
 
@@ -380,7 +380,7 @@ const RunMode = ({ profile, onAddXp }) => {
     }
 
     return (
-        <div style={{ height: '100vh', position: 'relative', display: 'flex', flexDirection: 'column', paddingBottom: '80px' }}>
+        <div style={{ height: '100vh', width: '100vw', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', background: '#000' }}>
 
             {/* TOP CARD */}
             <div style={{

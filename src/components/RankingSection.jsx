@@ -134,6 +134,12 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                             </div>
                         </div>
                     )}
+
+                    {/* Invite Text */}
+                    <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#fff', background: 'rgba(255,255,255,0.1)', padding: '10px', borderRadius: '8px', lineHeight: '1.4' }}>
+                        💡 Olá, se alguém se cadastrar usando seu <strong>ID: {profile.id}</strong>, você ganha <strong>100 XP</strong>!
+                        <br /><span style={{ fontSize: '0.75rem', opacity: 0.7 }}>(O ID encontra-se abaixo do seu nome)</span>
+                    </div>
                 </div>
 
                 <button
