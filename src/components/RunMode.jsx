@@ -28,6 +28,7 @@ const RecenterAutomatically = ({ lat, lng }) => {
 };
 
 import { saveRun, getUserRuns } from '../utils/db'; // Import DB functions
+import html2canvas from 'html2canvas';
 
 const RunMode = ({ profile, onAddXp }) => {
     const [isRunning, setIsRunning] = useState(false);
@@ -219,70 +220,135 @@ const RunMode = ({ profile, onAddXp }) => {
         return `${m}'${s < 10 ? '0' : ''}${s}"/km`;
     };
 
+
+
+    // ... existing imports ...
+
+    // ... inside component ...
+
+    // SOCIAL SHARE FUNCTION
+    const handleShare = async () => {
+        const element = document.getElementById('run-summary-card');
+        if (!element) return;
+
+        try {
+            const canvas = await html2canvas(element, {
+                backgroundColor: '#000000', // Ensure dark background
+                scale: 2, // High res
+                useCORS: true
+            });
+
+            const image = canvas.toDataURL("image/png");
+
+            // Create a link to download
+            const link = document.createElement('a');
+            link.href = image;
+            link.download = `metafit-run-${new Date().toISOString().split('T')[0]}.png`;
+            link.click();
+
+            // Mobile Web Share
+            if (navigator.share) {
+                const blob = await (await fetch(image)).blob();
+                const file = new File([blob], 'run.png', { type: 'image/png' });
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'MetaFit Run',
+                        text: 'Minha corrida no MetaFit! 🚀'
+                    });
+                } catch (err) {
+                    console.log("Share failed or cancelled", err);
+                }
+            }
+        } catch (err) {
+            console.error("Screenshot failed:", err);
+            alert("Erro ao gerar imagem.");
+        }
+    };
+
+    // DEV: SIMULATE 500m
+    const simulateRun = () => {
+        setDistance(500);
+        setElapsedTime(300); // 5 mins
+        setAccumulatedXp(50); // 500m / 10 = 50 XP
+        setPathCoordinates([
+            [position?.lat || 0, position?.lng || 0],
+            [(position?.lat || 0) + 0.005, (position?.lng || 0) + 0.005] // Fake diagonal path
+        ]);
+        alert("Simulação: 500m, 50 XP. Clique em Parar Iniciar para ver o resumo.");
+    };
+
     if (showSummary) {
         return (
             <div style={{ padding: '80px 20px 120px', textAlign: 'center' }}>
-                <h1 className="title-gradient" style={{ fontSize: '2.5rem', marginBottom: '20px' }}>RESUMO DA CORRIDA</h1>
 
-                <div className="run-card-neon">
-                    <div style={{ fontSize: '3rem', fontWeight: '800', fontFamily: 'monospace' }}>{(distance / 1000).toFixed(2)}</div>
-                    <div className="run-stat-label">QUILÔMETROS</div>
-                </div>
+                {/* ID for screenshot targeting */}
+                <div id="run-summary-card" style={{ padding: '20px', background: '#000', borderRadius: '15px', border: '1px solid #333' }}>
+                    <h1 className="title-gradient" style={{ fontSize: '2.5rem', marginBottom: '20px' }}>RESUMO DA CORRIDA</h1>
 
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                    <div className="run-card-neon" style={{ flex: 1, padding: '10px' }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatTime(elapsedTime)}</div>
-                        <div className="run-stat-label">TEMPO</div>
+                    <div className="run-card-neon">
+                        <div style={{ fontSize: '3rem', fontWeight: '800', fontFamily: 'monospace' }}>{(distance / 1000).toFixed(2)}</div>
+                        <div className="run-stat-label">QUILÔMETROS</div>
                     </div>
-                    <div className="run-card-neon" style={{ flex: 1, padding: '10px' }}>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>+{accumulatedXp}</div>
-                        <div className="run-stat-label">XP GANHO</div>
+
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                        <div className="run-card-neon" style={{ flex: 1, padding: '10px' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatTime(elapsedTime)}</div>
+                            <div className="run-stat-label">TEMPO</div>
+                        </div>
+                        <div className="run-card-neon" style={{ flex: 1, padding: '10px' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>+{accumulatedXp}</div>
+                            <div className="run-stat-label">XP GANHO</div>
+                        </div>
+                    </div>
+
+                    {/* Branding for Share */}
+                    <div style={{ marginBottom: '10px', color: '#00f0ff', fontWeight: 'bold', letterSpacing: '2px' }}>
+                        METAFIT APP
                     </div>
                 </div>
 
-                <div className="map-container" style={{ height: '250px' }}>
-                    {position && (
-                        <MapContainer center={[position.lat, position.lng]} zoom={15} style={{ height: '100%', width: '100%' }} zoomControl={false}>
-                            <TileLayer
-                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                            />
-                            {pathCoordinates.length > 0 && <Polyline positions={pathCoordinates} color="#00f0ff" weight={5} />}
-                        </MapContainer>
-                    )}
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <button
                         className="btn-primary"
-                        style={{ flex: 1, backgroundColor: '#333' }}
-                        onClick={() => { setShowSummary(false); setDistance(0); setElapsedTime(0); setPathCoordinates([]); setIsRunning(false); }}
+                        onClick={handleShare}
+                        style={{ background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)', color: '#fff', border: 'none' }}
                     >
-                        Descartar
+                        📸 Compartilhar no Instagram
                     </button>
-                    <button
-                        className="btn-primary"
-                        style={{ flex: 1, background: 'var(--gradient-main)', color: '#000' }}
-                        onClick={async () => {
-                            if (profile && profile.uid) {
-                                await saveRun(profile.uid, {
-                                    distance,
-                                    time: elapsedTime,
-                                    xp: accumulatedXp,
-                                    path: pathCoordinates
-                                });
-                                alert("Salvo no histórico!");
-                            }
-                            setShowSummary(false);
-                            setDistance(0);
-                            setElapsedTime(0);
-                            setPathCoordinates([]);
-                            setAccumulatedXp(0);
-                            setIsRunning(false);
-                        }}
-                    >
-                        Salvar Atividade
-                    </button>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                            className="btn-primary"
+                            style={{ flex: 1, backgroundColor: '#333' }}
+                            onClick={() => { setShowSummary(false); setDistance(0); setElapsedTime(0); setPathCoordinates([]); setIsRunning(false); }}
+                        >
+                            Descartar
+                        </button>
+                        <button
+                            className="btn-primary"
+                            style={{ flex: 1, background: 'var(--gradient-main)', color: '#000' }}
+                            onClick={async () => {
+                                if (profile && profile.uid) {
+                                    await saveRun(profile.uid, {
+                                        distance,
+                                        time: elapsedTime,
+                                        xp: accumulatedXp,
+                                        path: pathCoordinates
+                                    });
+                                    alert("Salvo no histórico!");
+                                }
+                                setShowSummary(false);
+                                setDistance(0);
+                                setElapsedTime(0);
+                                setPathCoordinates([]);
+                                setAccumulatedXp(0);
+                                setIsRunning(false);
+                            }}
+                        >
+                            Salvar Atividade
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -290,6 +356,17 @@ const RunMode = ({ profile, onAddXp }) => {
 
     return (
         <div style={{ height: '100vh', position: 'relative', display: 'flex', flexDirection: 'column', paddingBottom: '80px' }}>
+
+            {/* DEV BUTTON (Hidden-ish or clearly visible for user test as requested) */}
+            <button
+                onClick={simulateRun}
+                style={{
+                    position: 'absolute', top: '100px', right: '10px', zIndex: 9999,
+                    padding: '5px', background: 'rgba(255, 0, 0, 0.5)', fontSize: '0.7rem', color: '#fff', border: 'none'
+                }}
+            >
+                [DEV] TEST 500m
+            </button>
 
             {/* TOP CARD */}
             <div style={{
