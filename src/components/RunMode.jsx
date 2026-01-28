@@ -92,13 +92,28 @@ const RunMode = ({ profile, onAddXp }) => {
                             if (dist > 3) {
                                 setDistance(d => {
                                     const newDist = d + dist;
-                                    // XP Logic: 50 XP per 500m
-                                    const oldMilestones = Math.floor(d / 500);
-                                    const newMilestones = Math.floor(newDist / 500);
-                                    if (newMilestones > oldMilestones) {
-                                        onAddXp(50);
-                                        setAccumulatedXp(xp => xp + 50);
+
+                                    // XP Logic: 10 XP per 100m (Formula: Distance / 10)
+                                    // Constraint: Minimum 100m to start scoring.
+                                    if (newDist >= 100) {
+                                        const currentTotalXp = Math.floor(newDist / 10);
+                                        const prevTotalXp = Math.floor(d / 10);
+
+                                        // If we just crossed 100m, we go from 0 to 10 XP immediately.
+                                        // If we are at 105m -> 10 XP. 110m -> 11 XP.
+                                        // We need to calculate the *diff* to add.
+
+                                        // Effective previous XP (considering the 100m thershold)
+                                        const effectivePrevXp = d < 100 ? 0 : prevTotalXp;
+
+                                        const xpToAdd = currentTotalXp - effectivePrevXp;
+
+                                        if (xpToAdd > 0) {
+                                            onAddXp(xpToAdd);
+                                            setAccumulatedXp(xp => xp + xpToAdd);
+                                        }
                                     }
+
                                     return newDist;
                                 });
                                 return [...prev, [latitude, longitude]];
