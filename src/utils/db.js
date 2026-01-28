@@ -10,6 +10,8 @@ import {
 } from 'firebase/auth';
 import {
     collection,
+    doc,
+    deleteDoc,
     query,
     where,
     getDocs,
