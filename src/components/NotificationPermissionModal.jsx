@@ -33,6 +33,11 @@ const NotificationPermissionModal = ({ profile, onClose, onPermissionGranted }) 
 
             if (permission === 'granted') {
                 const messaging = getMessaging();
+                if (!messaging) {
+                    console.warn("Messaging not supported/initialized");
+                    setLoading(false);
+                    return;
+                }
                 // Get Token (VAPID key is optional if not using web push protocol specific features, but good generic flow)
                 // Replacing 'YOUR_PUBLIC_VAPID_KEY_HERE' with empty for now or standard retrieval
                 const currentToken = await getToken(messaging, {

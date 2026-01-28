@@ -18,5 +18,13 @@ export const db = getFirestore(app);
 import { getStorage } from "firebase/storage";
 import { getMessaging } from "firebase/messaging"; // Import Messaging
 
+// Safe initialize messaging
+let messaging = null;
+try {
+    messaging = getMessaging(app);
+} catch (e) {
+    console.warn("Firebase Messaging failed to initialize:", e);
+}
+
+export { messaging };
 export const storage = getStorage(app);
-export const messaging = getMessaging(app); // Export Messaging
