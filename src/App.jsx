@@ -314,6 +314,8 @@ function App() {
         }}
         onLogout={handleLogout}
         profile={userProfile}
+        notificationBonus={hasBonusNotification}
+        notificationRequests={hasRequestNotification}
       />
 
       <main style={{ paddingBottom: activeTab === 'timer' ? 0 : '100px' }}>
