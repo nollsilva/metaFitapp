@@ -50,6 +50,7 @@ const RunMode = ({ profile, onAddXp }) => {
     // History State
     const [showHistory, setShowHistory] = useState(false);
     const [historyRuns, setHistoryRuns] = useState([]);
+    const [selectedHistoryRun, setSelectedHistoryRun] = useState(null);
 
     // Watch ID for geolocation
     const watchIdRef = useRef(null);
@@ -287,6 +288,16 @@ const RunMode = ({ profile, onAddXp }) => {
                     console.log("Share failed or cancelled", err);
                 }
             }
+
+            // Auto-close after share
+            setShowSummary(false);
+            setDistance(0);
+            setElapsedTime(0);
+            setPathCoordinates([]);
+            setAccumulatedXp(0);
+            setIsRunning(false);
+            setIsRunSaved(false);
+
         } catch (err) {
             console.error("Screenshot failed:", err);
             alert("Erro ao gerar imagem.");
@@ -294,16 +305,7 @@ const RunMode = ({ profile, onAddXp }) => {
     };
 
     // DEV: SIMULATE 500m
-    const simulateRun = () => {
-        setDistance(500);
-        setElapsedTime(300); // 5 mins
-        setAccumulatedXp(50); // 500m / 10 = 50 XP
-        setPathCoordinates([
-            [position?.lat || 0, position?.lng || 0],
-            [(position?.lat || 0) + 0.005, (position?.lng || 0) + 0.005] // Fake diagonal path
-        ]);
-        alert("Simulação: 500m, 50 XP. Clique em Parar Iniciar para ver o resumo.");
-    };
+
 
     if (showSummary) {
         return (
@@ -379,17 +381,6 @@ const RunMode = ({ profile, onAddXp }) => {
 
     return (
         <div style={{ height: '100vh', position: 'relative', display: 'flex', flexDirection: 'column', paddingBottom: '80px' }}>
-
-            {/* DEV BUTTON (Hidden-ish or clearly visible for user test as requested) */}
-            <button
-                onClick={simulateRun}
-                style={{
-                    position: 'absolute', top: '100px', right: '10px', zIndex: 9999,
-                    padding: '5px', background: 'rgba(255, 0, 0, 0.5)', fontSize: '0.7rem', color: '#fff', border: 'none'
-                }}
-            >
-                [DEV] TEST 500m
-            </button>
 
             {/* TOP CARD */}
             <div style={{
@@ -567,7 +558,14 @@ const RunMode = ({ profile, onAddXp }) => {
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                     {historyRuns.map((run, idx) => (
-                                        <div key={idx} className="card" style={{ padding: '15px', border: '1px solid #333' }}>
+                                        <div
+                                            key={idx}
+                                            className="card"
+                                            style={{ padding: '15px', border: '1px solid #333', cursor: 'pointer', transition: 'transform 0.2s' }}
+                                            onClick={() => setSelectedHistoryRun(run)}
+                                            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                                            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                                        >
                                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                                 <span style={{ color: '#00f0ff', fontWeight: 'bold' }}>{(run.distance / 1000).toFixed(2)} km</span>
                                                 <span style={{ color: '#aaa', fontSize: '0.9rem' }}>{new Date(run.date).toLocaleDateString()}</span>
@@ -580,6 +578,36 @@ const RunMode = ({ profile, onAddXp }) => {
                                     ))}
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* DETAIL MODAL FOR HISTORY ITEM */}
+            {selectedHistoryRun && (
+                <div className="modal-overlay" onClick={() => setSelectedHistoryRun(null)} style={{ zIndex: 3100 }}>
+                    <div className="wide-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', padding: '20px', background: '#000', border: '1px solid #333', borderRadius: '15px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setSelectedHistoryRun(null)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem' }}>×</button>
+                        </div>
+
+                        <h2 style={{ color: '#00f0ff', marginBottom: '20px', textTransform: 'uppercase' }}>Detalhes da Corrida</h2>
+                        <p style={{ color: '#aaa', marginBottom: '20px' }}>{new Date(selectedHistoryRun.date).toLocaleString()}</p>
+
+                        <div className="run-card-neon" style={{ marginBottom: '15px' }}>
+                            <div style={{ fontSize: '2.5rem', fontWeight: '800', fontFamily: 'monospace' }}>{(selectedHistoryRun.distance / 1000).toFixed(2)}</div>
+                            <div className="run-stat-label">QUILÔMETROS</div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <div className="run-card-neon" style={{ flex: 1, padding: '10px' }}>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{Math.floor(selectedHistoryRun.time / 60)}:{selectedHistoryRun.time % 60 < 10 ? '0' : ''}{selectedHistoryRun.time % 60}</div>
+                                <div className="run-stat-label">TEMPO</div>
+                            </div>
+                            <div className="run-card-neon" style={{ flex: 1, padding: '10px' }}>
+                                <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>+{selectedHistoryRun.xp}</div>
+                                <div className="run-stat-label">XP GANHO</div>
+                            </div>
                         </div>
                     </div>
                 </div>
