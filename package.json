@@ -21,7 +21,6 @@
     "react-leaflet": "^5.0.0",
     "serve": "^14.2.4",
     "vite": "^7.2.4",
-    "vite-plugin-pwa": "^0.21.1",
     "@vitejs/plugin-react": "^5.1.1"
   },
   "devDependencies": {
