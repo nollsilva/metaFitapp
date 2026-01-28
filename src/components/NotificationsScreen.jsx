@@ -137,8 +137,6 @@ const NotificationsScreen = ({ profile, onUpdateProfile }) => {
                     <SwitchItem id="run" label="Corridas 🏃" icon="🏃" />
                     <SwitchItem id="ranking" label="Ranking 🏆" icon="🏆" />
                     <SwitchItem id="inactivity" label="Inatividade (+2 dias) ⏳" icon="⏳" />
-                    <hr style={{ borderColor: 'rgba(255,255,255,0.1)', margin: '1rem 0' }} />
-                    <SwitchItem id="testMode" label="Modo de Teste (Notificações Rápidas) 🛠️" icon="🛠️" />
                 </div>
             )}
         </div>

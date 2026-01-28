@@ -44,12 +44,12 @@ const NotificationSystem = ({ profile, onShowNotification }) => {
         if (!profile || !profile.isLoggedIn || !profile.uid) return;
 
         const isDev = import.meta.env.DEV;
-        const settings = profile.notificationSettings || { water: true, meal: true, testMode: false };
+        const settings = profile.notificationSettings || { water: true, meal: true };
 
         // Intervalo de verificação: 
-        // Em Dev ou TestMode: a cada 1 segundo para maior precisão
+        // Em Dev (Local): a cada 1 segundo (usado para testes rápidos se necessário)
         // Em Prod: a cada 60 segundos
-        const intervalTime = (isDev || settings.testMode) ? 1000 : 60000;
+        const intervalTime = isDev ? 1000 : 60000;
 
         if (isDev) {
             console.log("NotificationSystem: Iniciado em modo DEV (Check a cada 1s)");
@@ -60,10 +60,10 @@ const NotificationSystem = ({ profile, onShowNotification }) => {
             const hours = now.getHours();
             const minutes = now.getMinutes();
             const seconds = now.getSeconds();
-            const settings = profile.notificationSettings || { water: true, meal: true, testMode: false };
+            const settings = profile.notificationSettings || { water: true, meal: true };
 
-            // --- MODO DE TESTE (Local ou Forçado) ---
-            if (isDev || settings.testMode) {
+            // --- MODO DE TESTE (Apenas Local) ---
+            if (isDev) {
                 // Alterna mensagens baseado nos segundos
                 // Checamos se o segundo é multiplo de 10 (10, 20, 30...)
                 if (seconds % 30 === 0) {
