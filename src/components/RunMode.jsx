@@ -104,8 +104,8 @@ const RunMode = ({ profile, onAddXp }) => {
 
                         if (last) {
                             const dist = calculateDistance(last[0], last[1], latitude, longitude);
-                            // Filter noise: only count if move > 3m (lowered from 10m to fix return path issue)
-                            if (dist > 3) {
+                            // Filter noise: almost zero filter to catch return path
+                            if (dist > 0.5) {
                                 setDistance(d => {
                                     const newDist = d + dist;
 
@@ -174,7 +174,7 @@ const RunMode = ({ profile, onAddXp }) => {
                     }
                 },
                 (err) => console.error(err),
-                { enableHighAccuracy: true, distanceFilter: 2 }
+                { enableHighAccuracy: true, distanceFilter: 0, maximumAge: 0, timeout: 5000 }
             );
         }
 
