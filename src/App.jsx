@@ -242,6 +242,30 @@ function App() {
     });
   };
 
+  // Notification Logic
+  const hasRequestNotification = userProfile.friendRequests && userProfile.friendRequests.length > 0;
+
+  const [hasBonusNotification, setHasBonusNotification] = useState(false);
+  useEffect(() => {
+    if (!userProfile) return;
+    const today = new Date();
+    const lastClaimStr = userProfile.lastClaimDate;
+
+    if (!lastClaimStr) {
+      setHasBonusNotification(true);
+    } else {
+      const lastClaim = new Date(lastClaimStr);
+      const d1 = new Date(lastClaim); d1.setHours(0, 0, 0, 0);
+      const d2 = new Date(today); d2.setHours(0, 0, 0, 0);
+      // If diff >= 1 day, bonus is ready
+      if (d2 > d1) {
+        setHasBonusNotification(true);
+      } else {
+        setHasBonusNotification(false);
+      }
+    }
+  }, [userProfile.lastClaimDate, userProfile]); // Added userProfile to dependency array for robustness
+
   return (
     <div className="app-container">
       <div className="bg-glow-container">
@@ -270,6 +294,8 @@ function App() {
         isLoggedIn={userProfile.isLoggedIn}
         onLogout={handleLogout}
         onOpenHamburger={() => setIsHamburgerOpen(true)} // Added
+        notificationBonus={hasBonusNotification}
+        notificationRequests={hasRequestNotification}
       />
 
       <HamburgerMenu

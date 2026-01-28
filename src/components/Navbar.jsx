@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Navbar = ({ activeTab, setActiveTab, onOpenAuth, isLoggedIn, onLogout, onShowTutorial, onOpenHamburger }) => {
+const Navbar = ({ activeTab, setActiveTab, onOpenAuth, isLoggedIn, onLogout, onShowTutorial, onOpenHamburger, notificationBonus, notificationRequests }) => {
     return (
         <nav className="navbar">
             <div className="container nav-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -26,10 +26,25 @@ const Navbar = ({ activeTab, setActiveTab, onOpenAuth, isLoggedIn, onLogout, onS
                             color: '#fff',
                             fontSize: '2rem',
                             cursor: 'pointer',
-                            padding: '5px'
+                            padding: '5px',
+                            position: 'relative'
                         }}
                     >
                         ☰
+                        {/* Priority: Requests (Green) > Bonus (Red) */}
+                        {notificationRequests ? (
+                            <div style={{
+                                position: 'absolute', top: '5px', right: '0px',
+                                width: '12px', height: '12px', borderRadius: '50%',
+                                background: '#00ff66', border: '2px solid #000'
+                            }} />
+                        ) : notificationBonus ? (
+                            <div style={{
+                                position: 'absolute', top: '5px', right: '0px',
+                                width: '12px', height: '12px', borderRadius: '50%',
+                                background: '#ff0055', border: '2px solid #000'
+                            }} />
+                        ) : null}
                     </button>
                 </div>
             </div>

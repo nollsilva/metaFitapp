@@ -1,6 +1,6 @@
 import React from 'react';
 
-const HamburgerMenu = ({ isOpen, onClose, activeTab, setActiveTab, onLogout, profile }) => {
+const HamburgerMenu = ({ isOpen, onClose, activeTab, setActiveTab, onLogout, profile, notificationBonus, notificationRequests }) => {
     if (!isOpen) return null;
 
     const handleNav = (tab) => {
@@ -9,10 +9,10 @@ const HamburgerMenu = ({ isOpen, onClose, activeTab, setActiveTab, onLogout, pro
     };
 
     const menuItems = [
-        { id: 'tracker', label: 'Perfil', icon: '👤' },
+        { id: 'tracker', label: 'Perfil', icon: '👤', hasNotification: notificationRequests, notificationColor: '#00ff66' },
         { id: 'diet', label: 'Dieta', icon: '🥗' },
         // Bonus and Help might trigger modals instead of tabs, we'll handle that passed in props or just tabs
-        { id: 'bonus', label: 'Bônus Diário', icon: '🎁', action: 'bonus' },
+        { id: 'bonus', label: 'Bônus Diário', icon: '🎁', action: 'bonus', hasNotification: notificationBonus, notificationColor: '#ff0055' },
         { id: 'help', label: 'Ajuda', icon: '❓', action: 'help' },
     ];
 
@@ -97,7 +97,14 @@ const HamburgerMenu = ({ isOpen, onClose, activeTab, setActiveTab, onLogout, pro
                             }}
                         >
                             <span style={{ fontSize: '1.2rem' }}>{item.icon}</span>
-                            <span style={{ fontSize: '1rem', fontWeight: '500' }}>{item.label}</span>
+                            <span style={{ fontSize: '1rem', fontWeight: '500', flex: 1 }}>{item.label}</span>
+                            {item.hasNotification && (
+                                <span style={{
+                                    width: '10px', height: '10px', borderRadius: '50%',
+                                    background: item.notificationColor || 'red',
+                                    boxShadow: `0 0 5px ${item.notificationColor || 'red'}`
+                                }}></span>
+                            )}
                         </div>
                     ))}
 
