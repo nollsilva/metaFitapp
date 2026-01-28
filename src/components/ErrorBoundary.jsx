@@ -18,7 +18,11 @@ class ErrorBoundary extends React.Component {
     render() {
         if (this.state.hasError) {
             return (
-                <div style={{ padding: '2rem', color: '#fff', background: '#000', height: '100vh', fontFamily: 'sans-serif' }}>
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                    padding: '2rem', color: '#000', background: '#fff',
+                    fontFamily: 'sans-serif', zIndex: 99999, overflow: 'auto'
+                }}>
                     <h1>Something went wrong.</h1>
                     <details style={{ whiteSpace: 'pre-wrap', marginTop: '1rem', background: '#222', padding: '1rem', borderRadius: '8px' }}>
                         <summary>Client Error Details</summary>

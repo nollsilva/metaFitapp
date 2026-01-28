@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { getMessaging, getToken } from "firebase/messaging";
-import { saveFCMToken, updateNotificationSettings } from '../utils/db'; // Assuming these are exported from db.js
+import { getToken } from "firebase/messaging";
+import { messaging } from '../lib/firebase'; // Use safe export
+import { saveFCMToken, updateNotificationSettings } from '../utils/db';
 
 const NotificationPermissionModal = ({ profile, onClose, onPermissionGranted }) => {
     const defaultSettings = {
@@ -13,7 +14,6 @@ const NotificationPermissionModal = ({ profile, onClose, onPermissionGranted }) 
     };
 
     const [settings, setSettings] = useState(profile?.notificationSettings || defaultSettings);
-    const [step, setStep] = useState(1); // 1: Settings, 2: System Permission Request
     const [loading, setLoading] = useState(false);
 
     const toggleSetting = (key) => {
@@ -32,33 +32,35 @@ const NotificationPermissionModal = ({ profile, onClose, onPermissionGranted }) 
             const permission = await Notification.requestPermission();
 
             if (permission === 'granted') {
-                const messaging = getMessaging();
                 if (!messaging) {
                     console.warn("Messaging not supported/initialized");
-                    setLoading(false);
+                    // Continue flow even if messaging is not available (e.g. on host without support)
+                    if (onPermissionGranted) onPermissionGranted();
                     return;
                 }
-                // Get Token (VAPID key is optional if not using web push protocol specific features, but good generic flow)
-                // Replacing 'YOUR_PUBLIC_VAPID_KEY_HERE' with empty for now or standard retrieval
+
+                // Get Token
                 const currentToken = await getToken(messaging, {
-                    vapidKey: 'BMD2P3GXXXXXXXXX' // Placeholder, usually needed for Web Push. 
-                    // If simple token, just getToken(messaging).
+                    vapidKey: ''
                 }).catch(err => console.log('An error occurred while retrieving token. ', err));
 
                 if (currentToken) {
                     await saveFCMToken(profile.uid, currentToken);
-                    if (onPermissionGranted) onPermissionGranted();
                 } else {
-                    console.log('No registration token available. Request permission to generate one.');
+                    console.log('No registration token available.');
                 }
+
+                if (onPermissionGranted) onPermissionGranted();
             } else {
                 console.log('Permission denied');
+                // User denied, but we saved prefs. Close modal.
+                onClose();
             }
         } catch (error) {
             console.error("Notification Setup Error:", error);
+            onClose();
         } finally {
             setLoading(false);
-            onClose();
         }
     };
 
