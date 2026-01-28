@@ -263,30 +263,11 @@ export const sendFriendRequest = async (myUid, targetUid) => {
         const myData = mySnap.data();
 
         const targetRef = doc(db, "users", targetUid);
-
-        // Check if already friends
-        if (myData.friends && myData.friends.includes(targetUid)) { // Storing UIDs now, not codes? 
-            // WAIT. The old system stored "Friend Codes" (6 digits).
-            // The NEW system should probably stick to UIDs for reliability, OR keep Friend Codes if we want backward compat?
-            // The prompt implies "clicar no nome", so we have the User Object (and UID).
-            // Let's migrate to using UIDs for friends list if possible, OR look up Friend Code.
-            // Current db.js uses `friends: [friendCode1, friendCode2]`.
-            // To be consistent, let's keep storing Friend Codes in `friends` array if we want compatibility with existing leaderboards.
-            // OR switch to UIDs. Leaderboards `getFriendsLeaderboard` fetches by `where("id", "in", chunk)`.
-            // field "id" is the Friend Code.
-            // So we MUST store Friend Codes in the `friends` array to keep leaderboard working without refactoring everything.
-
-            // So:
-            // 1. Get Target's Friend Code
-            // 2. Add request using My Friend Code + My Name + My Avatar
-        }
-
         const targetSnap = await getDoc(targetRef);
         if (!targetSnap.exists()) return { error: "Usuário não encontrado." };
         const targetData = targetSnap.data();
 
-        // Check compatibility:
-        // if `myData.friends` has `targetData.id`
+        // Check if already friends
         if (myData.friends && myData.friends.includes(targetData.id)) {
             return { error: "Vocês já são amigos!" };
         }
@@ -413,7 +394,8 @@ export const getFriendsLeaderboard = async (myUid) => {
 
         const friendCodes = myData.friends || [];
         // Add my own code to list to query everyone
-        const allCodes = [myData.id, ...friendCodes];
+        // Filter out any undefined/null/empty codes to safely query
+        const allCodes = [myData.id, ...friendCodes].filter(c => c && typeof c === 'string');
 
         if (allCodes.length === 0) {
             return [myData];
@@ -423,6 +405,8 @@ export const getFriendsLeaderboard = async (myUid) => {
         const chunkSize = 10;
         for (let i = 0; i < allCodes.length; i += chunkSize) {
             const chunk = allCodes.slice(i, i + chunkSize);
+            if (chunk.length === 0) continue;
+
             const q = query(collection(db, "users"), where("id", "in", chunk));
             const snapshot = await getDocs(q);
             snapshot.forEach(d => friendsData.push(d.data()));
@@ -540,32 +524,43 @@ export const getUserRuns = async (uid) => {
 // Remove Friend
 export const removeFriend = async (currentUid, targetId) => {
     try {
-        // 1. Get current user doc to find their ID (usually stored in profile, but we need the DB doc)
+        // 1. Get current user doc
         const currentUserRef = doc(db, "users", currentUid);
         const currentUserSnap = await getDoc(currentUserRef);
 
         if (!currentUserSnap.exists()) return { error: "User not found" };
         const currentData = currentUserSnap.data();
-        const currentId = currentData.id; // The unique ID string (not UID)
+        const currentId = currentData.id;
 
-        // 2. Find target user by their ID (targetId is the friend's ID string)
+        // 2. Find target user by their ID
         const targetQuery = query(collection(db, "users"), where("id", "==", targetId));
         const targetSnap = await getDocs(targetQuery);
 
-        if (targetSnap.empty) return { error: "Friend not found" };
+        // If friend not found in DB, just try to remove from local list anyway to self-heal
+        if (targetSnap.empty) {
+            await updateDoc(currentUserRef, {
+                friends: arrayRemove(targetId)
+            });
+            return { success: true, message: "Friend removed (User not found in DB)" };
+        }
 
         const targetDoc = targetSnap.docs[0];
         const targetUid = targetDoc.id;
 
-        // 3. Remove targetId from current user's friends list
+        // 3. Remove targetId from current user's friends list (CRITICAL STEP)
         await updateDoc(currentUserRef, {
             friends: arrayRemove(targetId)
         });
 
-        // 4. Remove currentId from target user's friends list
-        await updateDoc(doc(db, "users", targetUid), {
-            friends: arrayRemove(currentId)
-        });
+        // 4. Try to remove currentId from target user's friends list (Best Effort)
+        try {
+            await updateDoc(doc(db, "users", targetUid), {
+                friends: arrayRemove(currentId)
+            });
+        } catch (targetErr) {
+            console.warn("Could not remove from friend's list (likely permission issue):", targetErr);
+            // We ignore this error to allow the user to at least unfriend on their side
+        }
 
         return { success: true };
 
