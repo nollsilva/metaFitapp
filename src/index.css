@@ -531,3 +531,68 @@ p {
     display: none !important;
   }
 }
+
+/* Run Mode Neon Styles */
+.run-card-neon {
+  background: rgba(10, 10, 12, 0.9);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.run-stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  /* Tech feel */
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.run-stat-label {
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.map-container {
+  height: 40vh;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 2px solid rgba(0, 240, 255, 0.2);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+/* Custom Map Tiles to be Dark */
+.leaflet-layer,
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out,
+.leaflet-control-attribution {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+
+.btn-control-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: none;
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+}
+
+.btn-control-large:active {
+  transform: scale(0.9);
+}
