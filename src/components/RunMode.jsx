@@ -41,6 +41,7 @@ const RunMode = ({ profile, onAddXp }) => {
     const [pathCoordinates, setPathCoordinates] = useState([]); // [[lat, lng], ...]
     const [accumulatedXp, setAccumulatedXp] = useState(0);
     const [showSummary, setShowSummary] = useState(false);
+    const [isRunSaved, setIsRunSaved] = useState(false);
 
     // Anti-Cheat State
     const [violationCount, setViolationCount] = useState(0);
@@ -93,6 +94,9 @@ const RunMode = ({ profile, onAddXp }) => {
                     // Update Map Position ONLY if accuracy is good
                     setPosition(newPos);
 
+                    // If Paused, don't track distance/path
+                    if (isPaused) return;
+
                     // Update Path & Distance
                     setPathCoordinates(prev => {
                         const last = prev.length > 0 ? prev[prev.length - 1] : null; // [lat, lng]
@@ -109,10 +113,6 @@ const RunMode = ({ profile, onAddXp }) => {
                                     if (newDist >= 100) {
                                         const currentTotalXp = Math.floor(newDist / 10);
                                         const prevTotalXp = Math.floor(d / 10);
-
-                                        // If we just crossed 100m, we go from 0 to 10 XP immediately.
-                                        // If we are at 105m -> 10 XP. 110m -> 11 XP.
-                                        // We need to calculate the *diff* to add.
 
                                         // Effective previous XP (considering the 100m thershold)
                                         const effectivePrevXp = d < 100 ? 0 : prevTotalXp;
@@ -168,10 +168,6 @@ const RunMode = ({ profile, onAddXp }) => {
                                 }
                             });
                         } else {
-                            // Reset violation count if speed returns to normal?
-                            // Maybe not continuously, but if they slow down we shouldn't punish instantly unless consecutive.
-                            // For strictness, let's keep the count or decrement it slowly. 
-                            // Simplest: Decrement if normal speed.
                             setViolationCount(prev => Math.max(0, prev - 0.5)); // Recover slowly
                         }
                     }
@@ -220,14 +216,45 @@ const RunMode = ({ profile, onAddXp }) => {
         return `${m}'${s < 10 ? '0' : ''}${s}"/km`;
     };
 
+    // HANDLE SAVE
+    const handleSaveRun = async () => {
+        if (!profile || !profile.uid) {
+            alert("❌ Erro: Perfil de usuário não encontrado.");
+            return false;
+        }
 
+        if (isRunSaved) {
+            console.log("Already saved.");
+            return true;
+        }
 
-    // ... existing imports ...
+        console.log("Saving run for:", profile.uid);
 
-    // ... inside component ...
+        // FIX: Firestore doesn't support nested arrays. Convert to valid objects.
+        const pathForDb = pathCoordinates.map(p => ({ lat: p[0], lng: p[1] }));
+
+        const result = await saveRun(profile.uid, {
+            distance,
+            time: elapsedTime,
+            xp: accumulatedXp,
+            path: pathForDb
+        });
+
+        if (result.success) {
+            setIsRunSaved(true);
+            return true;
+        } else {
+            alert("❌ Erro ao salvar: " + result.error);
+            return false;
+        }
+    };
 
     // SOCIAL SHARE FUNCTION
     const handleShare = async () => {
+        // Auto Save on Share
+        const saved = await handleSaveRun();
+        if (!saved) return; // Stop if save failed (optional, or just warn)
+
         const element = document.getElementById('run-summary-card');
         if (!element) return;
 
@@ -321,7 +348,7 @@ const RunMode = ({ profile, onAddXp }) => {
                         <button
                             className="btn-primary"
                             style={{ flex: 1, backgroundColor: '#333' }}
-                            onClick={() => { setShowSummary(false); setDistance(0); setElapsedTime(0); setPathCoordinates([]); setIsRunning(false); }}
+                            onClick={() => { setShowSummary(false); setDistance(0); setElapsedTime(0); setPathCoordinates([]); setIsRunning(false); setIsRunSaved(false); }}
                         >
                             Descartar
                         </button>
@@ -329,32 +356,17 @@ const RunMode = ({ profile, onAddXp }) => {
                             className="btn-primary"
                             style={{ flex: 1, background: 'var(--gradient-main)', color: '#000' }}
                             onClick={async () => {
-                                if (profile && profile.uid) {
-                                    console.log("Saving run for:", profile.uid);
-
-                                    // FIX: Firestore doesn't support nested arrays. Convert to valid objects.
-                                    const pathForDb = pathCoordinates.map(p => ({ lat: p[0], lng: p[1] }));
-
-                                    const result = await saveRun(profile.uid, {
-                                        distance,
-                                        time: elapsedTime,
-                                        xp: accumulatedXp,
-                                        path: pathForDb
-                                    });
-                                    if (result.success) {
-                                        alert("✅ Salvo no histórico!");
-                                    } else {
-                                        alert("❌ Erro ao salvar: " + result.error);
-                                    }
-                                } else {
-                                    alert("❌ Erro: Perfil de usuário não encontrado.");
+                                const success = await handleSaveRun();
+                                if (success) {
+                                    alert("✅ Salvo no histórico!");
+                                    setShowSummary(false);
+                                    setDistance(0);
+                                    setElapsedTime(0);
+                                    setPathCoordinates([]);
+                                    setAccumulatedXp(0);
+                                    setIsRunning(false);
+                                    setIsRunSaved(false); // Reset for next run
                                 }
-                                setShowSummary(false);
-                                setDistance(0);
-                                setElapsedTime(0);
-                                setPathCoordinates([]);
-                                setAccumulatedXp(0);
-                                setIsRunning(false);
                             }}
                         >
                             Salvar Atividade
