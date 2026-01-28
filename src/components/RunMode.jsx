@@ -330,13 +330,20 @@ const RunMode = ({ profile, onAddXp }) => {
                             style={{ flex: 1, background: 'var(--gradient-main)', color: '#000' }}
                             onClick={async () => {
                                 if (profile && profile.uid) {
-                                    await saveRun(profile.uid, {
+                                    console.log("Saving run for:", profile.uid);
+                                    const result = await saveRun(profile.uid, {
                                         distance,
                                         time: elapsedTime,
                                         xp: accumulatedXp,
                                         path: pathCoordinates
                                     });
-                                    alert("Salvo no histórico!");
+                                    if (result.success) {
+                                        alert("✅ Salvo no histórico!");
+                                    } else {
+                                        alert("❌ Erro ao salvar: " + result.error);
+                                    }
+                                } else {
+                                    alert("❌ Erro: Perfil de usuário não encontrado.");
                                 }
                                 setShowSummary(false);
                                 setDistance(0);
@@ -442,8 +449,17 @@ const RunMode = ({ profile, onAddXp }) => {
                                 <button
                                     onClick={() => {
                                         if (profile && profile.uid) {
-                                            getUserRuns(profile.uid).then(runs => setHistoryRuns(runs));
+                                            // alert("Carregando histórico..."); // Optional: Too invasive? Maybe just better UX later.
+                                            getUserRuns(profile.uid).then(runs => {
+                                                console.log("Runs fetched:", runs);
+                                                setHistoryRuns(runs);
+                                                if (runs.length === 0) {
+                                                    // alert("Nenhum histórico encontrado no banco de dados.");
+                                                }
+                                            }).catch(err => alert("Erro ao buscar histórico: " + err));
                                             setShowHistory(true);
+                                        } else {
+                                            alert("Erro: Faça login para ver o histórico.");
                                         }
                                     }}
                                     style={{
