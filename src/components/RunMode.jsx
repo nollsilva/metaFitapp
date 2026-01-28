@@ -331,11 +331,15 @@ const RunMode = ({ profile, onAddXp }) => {
                             onClick={async () => {
                                 if (profile && profile.uid) {
                                     console.log("Saving run for:", profile.uid);
+
+                                    // FIX: Firestore doesn't support nested arrays. Convert to valid objects.
+                                    const pathForDb = pathCoordinates.map(p => ({ lat: p[0], lng: p[1] }));
+
                                     const result = await saveRun(profile.uid, {
                                         distance,
                                         time: elapsedTime,
                                         xp: accumulatedXp,
-                                        path: pathCoordinates
+                                        path: pathForDb
                                     });
                                     if (result.success) {
                                         alert("✅ Salvo no histórico!");
