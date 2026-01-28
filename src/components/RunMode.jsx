@@ -380,22 +380,22 @@ const RunMode = ({ profile, onAddXp }) => {
     }
 
     return (
-        <div style={{ height: '100vh', width: '100vw', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', background: '#000' }}>
+        <div style={{ height: '100dvh', width: '100vw', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', background: '#000' }}>
 
             {/* TOP CARD */}
             <div style={{
-                position: 'absolute', top: '20px', left: '20px', right: '20px', zIndex: 1000
+                position: 'absolute', top: '10px', left: '10px', right: '10px', zIndex: 1000, pointerEvents: 'none'
             }}>
-                <div className="run-card-neon" style={{ background: 'rgba(0,0,0,0.85)' }}>
-                    <h3 className="run-stat-label" style={{ marginBottom: '10px' }}>🏃‍♂️ CORRIDA EM ANDAMENTO</h3>
-                    <div className="run-stat-value" style={{ fontSize: '3.5rem', color: '#fff', textShadow: '0 0 15px #00f0ff' }}>
-                        {(distance / 1000).toFixed(2)} <span style={{ fontSize: '1rem', color: '#888' }}>km</span>
+                <div className="run-card-neon" style={{ background: 'rgba(0,0,0,0.85)', padding: '10px 15px' }}>
+                    <h3 className="run-stat-label" style={{ marginBottom: '5px', fontSize: '0.8rem' }}>🏃‍♂️ CORRIDA EM ANDAMENTO</h3>
+                    <div className="run-stat-value" style={{ fontSize: '2.5rem', color: '#fff', textShadow: '0 0 15px #00f0ff', lineHeight: '1' }}>
+                        {(distance / 1000).toFixed(2)} <span style={{ fontSize: '0.9rem', color: '#888' }}>km</span>
                     </div>
                 </div>
             </div>
 
             {/* MAP LAYOUT */}
-            <div style={{ flex: 1, height: '100%' }}>
+            <div style={{ flex: 1, height: '100%', width: '100%', position: 'relative' }}>
                 {!position ? (
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                         <p>Buscando GPS...</p>
@@ -428,23 +428,23 @@ const RunMode = ({ profile, onAddXp }) => {
 
             {/* BOTTOM METRICS & CONTROLS */}
             <div style={{
-                position: 'absolute', bottom: '90px', left: '0', right: '0',
-                background: 'linear-gradient(to top, #000 70%, transparent)',
-                padding: '20px', zIndex: 1000
+                position: 'absolute', bottom: '80px', left: '0', right: '0',
+                background: 'linear-gradient(to top, #000 85%, transparent)',
+                padding: '15px 10px 20px', zIndex: 1000
             }}>
                 {/* Metrics Grid */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', padding: '0 10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', padding: '0 5px' }}>
                     <div style={{ textAlign: 'center' }}>
-                        <div className="run-stat-value" style={{ fontSize: '1.5rem' }}>{formatTime(elapsedTime)}</div>
-                        <div className="run-stat-label">TEMPO</div>
+                        <div className="run-stat-value" style={{ fontSize: '1.2rem' }}>{formatTime(elapsedTime)}</div>
+                        <div className="run-stat-label" style={{ fontSize: '0.65rem' }}>TEMPO</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                        <div className="run-stat-value" style={{ fontSize: '1.5rem' }}>{formatPace(currentPace)}</div>
-                        <div className="run-stat-label">RITMO</div>
+                        <div className="run-stat-value" style={{ fontSize: '1.2rem' }}>{formatPace(currentPace)}</div>
+                        <div className="run-stat-label" style={{ fontSize: '0.65rem' }}>RITMO</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                        <div className="run-stat-value" style={{ fontSize: '1.5rem' }}>{currentSpeed.toFixed(1)}</div>
-                        <div className="run-stat-label">KM/H</div>
+                        <div className="run-stat-value" style={{ fontSize: '1.2rem' }}>{currentSpeed.toFixed(1)}</div>
+                        <div className="run-stat-label" style={{ fontSize: '0.65rem' }}>KM/H</div>
                     </div>
                 </div>
 
