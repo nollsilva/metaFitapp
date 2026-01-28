@@ -61,7 +61,8 @@ const HamburgerMenu = ({ isOpen, onClose, activeTab, setActiveTab, onLogout, pro
                         width: '80px', height: '80px', margin: '0 auto 10px',
                         borderRadius: '50%', background: 'linear-gradient(45deg, #FFD700, #FFA500)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '2rem', fontWeight: 'bold', border: '3px solid #fff'
+                        fontSize: '2rem', fontWeight: 'bold', border: '3px solid #fff',
+                        position: 'relative' // Added for correct dot positioning
                     }}>
                         {profile?.avatar ? (
                             <img src={`/avatars/${profile.avatar}.png`} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%' }} />
