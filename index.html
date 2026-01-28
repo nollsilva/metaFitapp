@@ -12,6 +12,38 @@
 
 <body>
   <div id="root"></div>
+  <script>
+    window.addEventListener('error', function (event) {
+      const root = document.getElementById('root');
+      if (root && root.innerHTML === '') {
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #f00; padding: 20px; z-index: 99999; overflow: auto; font-family: monospace;';
+        errorDiv.innerHTML = `
+          <h1 style="color: white;">Erro Fatal de Inicialização</h1>
+          <p style="color: #ff5555; font-size: 1.2em;">${event.message}</p>
+          <pre style="background: #111; padding: 10px; border: 1px solid #333;">${event.filename}:${event.lineno}:${event.colno}</pre>
+          <p style="color: #aaa;">Verifique o console (F12) para mais detalhes.</p>
+          <button onclick="window.location.reload()" style="padding: 10px 20px; background: #fff; border: none; cursor: pointer; margin-top: 20px;">Recarregar</button>
+        `;
+        document.body.appendChild(errorDiv);
+      }
+    });
+    window.addEventListener('unhandledrejection', function (event) {
+      const root = document.getElementById('root');
+      if (root && root.innerHTML === '') {
+        console.error("Unhandle Rejection:", event.reason);
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #f00; padding: 20px; z-index: 99999; overflow: auto; font-family: monospace;';
+        errorDiv.innerHTML = `
+            <h1 style="color: white;">Erro Assíncrono (Promise)</h1>
+            <p style="color: #ff5555; font-size: 1.2em;">${event.reason ? event.reason.message || event.reason : 'Erro desconhecido'}</p>
+            <p style="color: #aaa;">Verifique o console (F12) para mais detalhes.</p>
+            <button onclick="window.location.reload()" style="padding: 10px 20px; background: #fff; border: none; cursor: pointer; margin-top: 20px;">Recarregar</button>
+            `;
+        document.body.appendChild(errorDiv);
+      }
+    });
+  </script>
   <script type="module" src="/src/main.jsx"></script>
 </body>
 

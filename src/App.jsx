@@ -16,14 +16,17 @@ import { getRankTitle } from './utils/rankingSystem';
 import { getBadgeConfig } from './components/BadgeIcons';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore'; // Added imports
-import { db } from './lib/firebase'; // Ensure db is imported
+import { MESSAGES } from './utils/messages';
+
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from './lib/firebase';
 import './index.css';
 
 import RunMode from './components/RunMode';
 import BottomNav from './components/BottomNav';
 import HamburgerMenu from './components/HamburgerMenu';
 import DailyBonus from './components/DailyBonus';
+import NotificationSystem from './components/NotificationSystem'; // Imported
 import NotificationPermissionModal from './components/NotificationPermissionModal'; // Imported
 import NotificationsScreen from './components/NotificationsScreen'; // Imported
 
@@ -57,9 +60,9 @@ function App() {
     weight: '',
     height: '',
     age: '',
-    gender: 'male',
+    gender: 'masculino',
     activityLevel: '1.55',
-    goal: 'maintain',
+    goal: 'manter',
     targetCalories: 0,
     idealWeight: 0,
     mealPlan: null,
@@ -123,7 +126,7 @@ function App() {
         lastMissedCheck: new Date().toISOString()
       }));
 
-      setNotification(`Você perdeu ${penalty} XP por perder ${missedCount} dia(s) de treino! 😢`);
+      setNotification(MESSAGES.XP.LOST_STREAK(penalty, missedCount));
       setTimeout(() => setNotification(null), 8000);
     } else {
       if (missedCount === 0 && new Date() > lastCheck) {
@@ -186,7 +189,7 @@ function App() {
       const newLevel = Math.floor(newXp / 1000) + 1;
 
       if (newLevel > (prev.level || 1)) {
-        setNotification(`SUBIU DE NÍVEL! AGORA VOCÊ É NÍVEL ${newLevel} 🚀`);
+        setNotification(MESSAGES.XP.LEVEL_UP(newLevel));
       }
 
       return { ...prev, xp: newXp, level: newLevel };
@@ -204,14 +207,14 @@ function App() {
     if (userProfile.uid) {
       const result = await deleteUserAccount(userProfile.uid);
       if (result.success) {
-        setNotification("Conta excluída com sucesso. Sentiremos sua falta! 😢");
+        setNotification(MESSAGES.ACCOUNT.DELETE_SUCCESS);
         setTimeout(() => setNotification(null), 5000);
         await handleLogout();
       } else {
         if (result.error && result.error.includes('requires-recent-login')) {
-          setNotification("⚠️ Por segurança, faça Logout e Login novamente para excluir.");
+          setNotification(MESSAGES.ACCOUNT.DELETE_SECURITY_ERROR);
         } else {
-          setNotification("Erro ao excluir conta: " + result.error);
+          setNotification(MESSAGES.ACCOUNT.DELETE_ERROR(result.error));
         }
         setTimeout(() => setNotification(null), 8000);
       }
@@ -231,7 +234,7 @@ function App() {
     addXp(xpAmount);
     updateProfile({ workoutHistory: newHistory });
 
-    setNotification(`Parabéns! Treino do dia concluído! +${xpAmount} XP`);
+    setNotification(MESSAGES.XP.GAIN_DAILY(xpAmount));
     setTimeout(() => setNotification(null), 5000);
   };
 
@@ -292,6 +295,15 @@ function App() {
       </div>
 
       {showTutorial && <TutorialOverlay onComplete={handleTutorialComplete} />}
+
+      {/* Background Check System */}
+      <NotificationSystem
+        profile={userProfile}
+        onShowNotification={(msg) => {
+          setNotification(msg);
+          setTimeout(() => setNotification(null), 8000);
+        }}
+      />
 
       {/* Notification Permission Modal */}
       {showNotificationModal && (
@@ -386,7 +398,7 @@ function App() {
                 if (activeExercise.index !== undefined) {
                   setSessionChecks(prev => new Set(prev).add(activeExercise.index));
                 }
-                setNotification(`Exercício finalizado! ✓`);
+                setNotification(MESSAGES.WORKOUT.FINISHED_EXERCISE);
                 setTimeout(() => setNotification(null), 3000);
                 setActiveTab('workout');
                 setActiveExercise(null);
@@ -394,7 +406,7 @@ function App() {
               }
 
               addXp(15);
-              setNotification(`Exercício concluído! +15 XP`);
+              setNotification(MESSAGES.XP.GAIN_DEFAULT(15));
               setTimeout(() => setNotification(null), 3000);
             }}
             onAddXp={addXp}

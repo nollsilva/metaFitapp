@@ -12,19 +12,40 @@ const firebaseConfig = {
     measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-import { getStorage } from "firebase/storage";
-import { getMessaging } from "firebase/messaging"; // Import Messaging
+console.log("Inicializando Firebase com config:", {
+    ...firebaseConfig,
+    apiKey: firebaseConfig.apiKey ? "DEFINIDA (Oculta)" : "INDEFINIDA"
+});
 
-// Safe initialize messaging
+let app;
+let auth;
+let db;
+let storage;
 let messaging = null;
+
 try {
-    messaging = getMessaging(app);
+    if (!firebaseConfig.apiKey) {
+        throw new Error("VITE_FIREBASE_API_KEY não encontrada no .env");
+    }
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+
+    // Safely initialize messaging only in supported environments (browser)
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        try {
+            messaging = getMessaging(app);
+        } catch (e) {
+            console.warn("Firebase Messaging failed to initialize (pode ser normal em ambientes sem HTTPS ou local):", e);
+        }
+    }
+
 } catch (e) {
-    console.warn("Firebase Messaging failed to initialize:", e);
+    console.error("ERRO CRÍTICO NA INICIALIZAÇÃO DO FIREBASE:", e);
+    // Não re-lançamos o erro para permitir que o ErrorBoundary do React ou o handler do index.html capturem ou mostrem UI alternativa
+    // Mas se app não for criado, exports abaixo falharão se usados antes da verificação.
 }
 
-export { messaging };
-export const storage = getStorage(app);
+export { auth, db, storage, messaging };
+export default app;

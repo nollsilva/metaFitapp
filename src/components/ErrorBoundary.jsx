@@ -23,15 +23,16 @@ class ErrorBoundary extends React.Component {
                     padding: '2rem', color: '#000', background: '#fff',
                     fontFamily: 'sans-serif', zIndex: 99999, overflow: 'auto'
                 }}>
-                    <h1>Something went wrong.</h1>
-                    <details style={{ whiteSpace: 'pre-wrap', marginTop: '1rem', background: '#222', padding: '1rem', borderRadius: '8px' }}>
-                        <summary>Client Error Details</summary>
+                    <h1>Ops! Algo deu errado.</h1>
+                    <p>Ocorreu um erro inesperado na aplicação. Tente recarregar a página.</p>
+                    <details style={{ whiteSpace: 'pre-wrap', marginTop: '1rem', background: '#eee', padding: '1rem', borderRadius: '8px', color: '#333' }}>
+                        <summary>Detalhes do Erro (Técnico)</summary>
                         {this.state.error && this.state.error.toString()}
                         <br />
                         {this.state.errorInfo && this.state.errorInfo.componentStack}
                     </details>
-                    <button onClick={() => window.location.reload()} style={{ marginTop: '2rem', padding: '10px 20px', fontSize: '1rem' }}>
-                        Reload Page
+                    <button onClick={() => window.location.reload()} style={{ marginTop: '2rem', padding: '10px 20px', fontSize: '1rem', cursor: 'pointer', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px' }}>
+                        Recarregar Página
                     </button>
                 </div>
             );
