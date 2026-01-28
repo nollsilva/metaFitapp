@@ -284,7 +284,7 @@ const RunMode = ({ profile, onAddXp }) => {
 
                 {/* ID for screenshot targeting */}
                 <div id="run-summary-card" style={{ padding: '20px', background: '#000', borderRadius: '15px', border: '1px solid #333' }}>
-                    <h1 className="title-gradient" style={{ fontSize: '2.5rem', marginBottom: '20px' }}>RESUMO DA CORRIDA</h1>
+                    <h1 style={{ fontSize: '2.5rem', marginBottom: '20px', color: '#00f0ff', textTransform: 'uppercase' }}>RESUMO DA CORRIDA</h1>
 
                     <div className="run-card-neon">
                         <div style={{ fontSize: '3rem', fontWeight: '800', fontFamily: 'monospace' }}>{(distance / 1000).toFixed(2)}</div>
