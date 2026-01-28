@@ -201,6 +201,8 @@ function App() {
     setUserProfile(defaultProfile);
     setActiveTab('home');
     setIsAuthModalOpen(true);
+    // Limpa o estado de descarte para que o modal de permissão reapareça no próximo login
+    sessionStorage.removeItem('metafit_notif_dismissed');
   };
 
   const handleDeleteAccount = async () => {
