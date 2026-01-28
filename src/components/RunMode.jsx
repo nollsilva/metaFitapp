@@ -27,6 +27,8 @@ const RecenterAutomatically = ({ lat, lng }) => {
     return null;
 };
 
+import { saveRun, getUserRuns } from '../utils/db'; // Import DB functions
+
 const RunMode = ({ profile, onAddXp }) => {
     const [isRunning, setIsRunning] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
@@ -38,6 +40,14 @@ const RunMode = ({ profile, onAddXp }) => {
     const [pathCoordinates, setPathCoordinates] = useState([]); // [[lat, lng], ...]
     const [accumulatedXp, setAccumulatedXp] = useState(0);
     const [showSummary, setShowSummary] = useState(false);
+
+    // Anti-Cheat State
+    const [violationCount, setViolationCount] = useState(0);
+    const [showCheatWarning, setShowCheatWarning] = useState(false);
+
+    // History State
+    const [showHistory, setShowHistory] = useState(false);
+    const [historyRuns, setHistoryRuns] = useState([]);
 
     // Watch ID for geolocation
     const watchIdRef = useRef(null);
@@ -137,6 +147,35 @@ const RunMode = ({ profile, onAddXp }) => {
                         } else {
                             setCurrentPace(0);
                         }
+
+                        // ANTI-CHEAT: Speed Limit > 40 km/h
+                        if (kph > 40) {
+                            // console.warn("Over Speed Limit:", kph);
+                            setViolationCount(prev => {
+                                const newCount = prev + 1;
+                                if (newCount >= 3) {
+                                    // CANCEL RUN
+                                    alert("Corrida cancelada por uso de veículo (velocidade > 40km/h).");
+                                    setIsPaused(true);
+                                    setIsRunning(false);
+                                    setDistance(0);
+                                    setElapsedTime(0);
+                                    setPathCoordinates([]);
+                                    setAccumulatedXp(0);
+                                    return 0;
+                                } else {
+                                    // WARNING
+                                    if (!showCheatWarning) setShowCheatWarning(true);
+                                    return newCount;
+                                }
+                            });
+                        } else {
+                            // Reset violation count if speed returns to normal?
+                            // Maybe not continuously, but if they slow down we shouldn't punish instantly unless consecutive.
+                            // For strictness, let's keep the count or decrement it slowly. 
+                            // Simplest: Decrement if normal speed.
+                            setViolationCount(prev => Math.max(0, prev - 0.5)); // Recover slowly
+                        }
                     }
                 },
                 (err) => console.error(err),
@@ -227,7 +266,23 @@ const RunMode = ({ profile, onAddXp }) => {
                     <button
                         className="btn-primary"
                         style={{ flex: 1, background: 'var(--gradient-main)', color: '#000' }}
-                        onClick={() => { alert("Salvo no histórico!"); setShowSummary(false); setDistance(0); setElapsedTime(0); setPathCoordinates([]); setIsRunning(false); }}
+                        onClick={async () => {
+                            if (profile && profile.uid) {
+                                await saveRun(profile.uid, {
+                                    distance,
+                                    time: elapsedTime,
+                                    xp: accumulatedXp,
+                                    path: pathCoordinates
+                                });
+                                alert("Salvo no histórico!");
+                            }
+                            setShowSummary(false);
+                            setDistance(0);
+                            setElapsedTime(0);
+                            setPathCoordinates([]);
+                            setAccumulatedXp(0);
+                            setIsRunning(false);
+                        }}
                     >
                         Salvar Atividade
                     </button>
@@ -308,13 +363,28 @@ const RunMode = ({ profile, onAddXp }) => {
                 {/* Controls */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', alignItems: 'center' }}>
                     {!isRunning ? (
-                        <button
-                            className="btn-control-large"
-                            style={{ background: '#00ff66', color: '#000', boxShadow: '0 0 25px rgba(0,255,102,0.4)', width: '100px', height: '100px' }}
-                            onClick={startRun}
-                        >
-                            ▶
-                        </button>
+                        <>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+                                <button
+                                    className="btn-control-large"
+                                    style={{ background: '#00ff66', color: '#000', boxShadow: '0 0 25px rgba(0,255,102,0.4)', width: '100px', height: '100px' }}
+                                    onClick={startRun}
+                                >
+                                    ▶
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (profile && profile.uid) {
+                                            getUserRuns(profile.uid).then(runs => setHistoryRuns(runs));
+                                            setShowHistory(true);
+                                        }
+                                    }}
+                                    style={{ background: 'none', border: '1px solid #333', color: '#aaa', padding: '5px 10px', borderRadius: '5px', fontSize: '0.8rem' }}
+                                >
+                                    📜 Histórico
+                                </button>
+                            </div>
+                        </>
                     ) : (
                         <>
                             {isPaused ? (
@@ -346,6 +416,57 @@ const RunMode = ({ profile, onAddXp }) => {
                     )}
                 </div>
             </div>
+
+            {/* CHEAT WARNING MODAL */}
+            {showCheatWarning && isRunning && (
+                <div style={{
+                    position: 'fixed', top: '20%', left: '50%', transform: 'translateX(-50%)',
+                    background: 'rgba(255, 0, 0, 0.9)', color: '#fff', padding: '20px',
+                    borderRadius: '15px', zIndex: 2000, textAlign: 'center', border: '3px solid #fff',
+                    boxShadow: '0 0 30px #ff0000'
+                }}>
+                    <div style={{ fontSize: '3rem' }}>⚠️</div>
+                    <h2>Velocidade Alta Detectada!</h2>
+                    <p>É proibido usar veículos.</p>
+                    <p>Se continuar, a corrida será <strong>CANCELADA</strong>.</p>
+                    <button onClick={() => setShowCheatWarning(false)} style={{ marginTop: '10px', padding: '10px 20px', background: '#fff', color: '#000', border: 'none', borderRadius: '5px', fontWeight: 'bold' }}>
+                        Entendido
+                    </button>
+                </div>
+            )}
+
+            {/* HISTORY MODAL wrapper */}
+            {showHistory && (
+                <div className="modal-overlay" onClick={() => setShowHistory(false)} style={{ zIndex: 3000 }}>
+                    <div className="wide-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', padding: '20px', background: '#111', border: '1px solid #333' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h2 className="title-gradient">Histórico de Corridas</h2>
+                            <button onClick={() => setShowHistory(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem' }}>×</button>
+                        </div>
+
+                        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                            {historyRuns.length === 0 ? (
+                                <p style={{ color: '#888', textAlign: 'center' }}>Nenhuma corrida registrada.</p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {historyRuns.map((run, idx) => (
+                                        <div key={idx} className="card" style={{ padding: '15px', border: '1px solid #333' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span style={{ color: '#00f0ff', fontWeight: 'bold' }}>{(run.distance / 1000).toFixed(2)} km</span>
+                                                <span style={{ color: '#aaa', fontSize: '0.9rem' }}>{new Date(run.date).toLocaleDateString()}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px', fontSize: '0.9rem' }}>
+                                                <span>⏱ {Math.floor(run.time / 60)}:{run.time % 60 < 10 ? '0' : ''}{run.time % 60}</span>
+                                                <span style={{ color: '#ff0055' }}>+{run.xp} XP</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

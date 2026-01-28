@@ -337,25 +337,8 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
             {/* Main Action Buttons Area */}
             {profile.isLoggedIn && (
                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
-                    <button
-                        className="btn-primary"
-                        onClick={() => setIsBonusModalOpen(true)}
-                        style={{
-                            flex: 1, position: 'relative',
-                            background: 'linear-gradient(135deg, #0077ff, #00c3ff)', border: 'none',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                            overflow: 'visible' // Allow dot to be seen
-                        }}
-                    >
-                        🎁 Bônus Diário
-                        {isBonusReady && (
-                            <div style={{
-                                position: 'absolute', top: '-5px', right: '-5px',
-                                width: '12px', height: '12px', background: '#ff0055',
-                                borderRadius: '50%', border: '2px solid #000'
-                            }}></div>
-                        )}
-                    </button>
+
+                    {/* Bonus button removed as requested */}
 
                     <button
                         className="btn-primary"

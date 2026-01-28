@@ -23,6 +23,7 @@ import './index.css';
 import RunMode from './components/RunMode';
 import BottomNav from './components/BottomNav';
 import HamburgerMenu from './components/HamburgerMenu';
+import DailyBonus from './components/DailyBonus';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -360,6 +361,19 @@ function App() {
 
         {activeTab === 'run' && (
           <RunMode profile={userProfile} onAddXp={addXp} />
+        )}
+
+        {/* Bonus is a Modal or Screen? Let's make it a Modal for consistency with previous, or a screen.
+            Since Hamburger sets activeTab='bonus', we can render it as a section or a modal. 
+            User said "va para o bonus diario do menu". 
+            Let's reuse the logic from ProfileSection but lift it to App level or render here.
+            Because DailyBonus is a component, we can render it as a tab content or modal over current tab.
+            Let's render it as a tab content for simplicity if activeTab is 'bonus'.
+        */}
+        {activeTab === 'bonus' && (
+          <div className="container" style={{ paddingTop: '2rem' }}>
+            <DailyBonus profile={userProfile} onUpdateProfile={updateProfile} />
+          </div>
         )}
 
       </main>

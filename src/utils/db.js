@@ -18,7 +18,8 @@ import {
     getDocs,
     query,
     where,
-    deleteDoc
+    deleteDoc,
+    addDoc
 } from 'firebase/firestore';
 
 // Generate 6-digit ID
@@ -480,6 +481,57 @@ export const getGlobalLeaderboard = async () => {
         return users.sort((a, b) => b.xp - a.xp);
     } catch (e) {
         console.error("Global Leaderboard Error:", e);
+        return [];
+    }
+};
+// --- RUN HISTORY SYSTEM ---
+export const saveRun = async (uid, runData) => {
+    try {
+        const userRef = doc(db, "users", uid);
+        const runsRef = collection(userRef, "runs");
+
+        await addDoc(runsRef, {
+            ...runData,
+            date: new Date().toISOString()
+        });
+
+        // Also update total stats on profile if needed
+        // e.g. totalDistance += runData.distance
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+            const userData = userSnap.data();
+            const currentTotalKm = userData.totalKm || 0;
+            const newTotalKm = currentTotalKm + (runData.distance / 1000);
+
+            await updateDoc(userRef, {
+                totalKm: newTotalKm
+            });
+        }
+
+        return { success: true };
+    } catch (e) {
+        console.error("Save Run Error:", e);
+        return { error: e.message };
+    }
+};
+
+export const getUserRuns = async (uid) => {
+    try {
+        const runsRef = collection(db, "users", uid, "runs");
+        // Order by date desc
+        // Requires index for compound queries if we filter, but basic sort might need index too?
+        // Let's try client side sort if index fails, or just default order.
+        // For subcollections, indexes are needed for ordering.
+        // Keep it simple: fetch all and sort client side for now (assuming < 1000 runs)
+        const q = query(runsRef);
+        const snap = await getDocs(q);
+
+        const runs = [];
+        snap.forEach(d => runs.push(d.data()));
+
+        return runs.sort((a, b) => new Date(b.date) - new Date(a.date));
+    } catch (e) {
+        console.error("Get Runs Error:", e);
         return [];
     }
 };
