@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getFriendsLeaderboard, getGlobalLeaderboard, checkSeasonReset, sendFriendRequest } from '../utils/db'; // Updated imports
+import { getFriendsLeaderboard, getGlobalLeaderboard, checkSeasonReset, sendFriendRequest, removeFriend } from '../utils/db'; // Updated imports
 import { BadgeIcon, getBadgeConfig } from './BadgeIcons';
 import { getRankTitle } from '../utils/rankingSystem';
 import ShareStoryCard from './ShareStoryCard';
@@ -9,7 +9,41 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
     const [leaderboard, setLeaderboard] = useState([]);
     const [rankingTab, setRankingTab] = useState('global'); // 'global' or 'friends'
     const [selectedUser, setSelectedUser] = useState(null);
-    const [requestStatus, setRequestStatus] = useState(''); // '' | 'sending' | 'sent' | 'error' | 'already_friends'
+    const [requestStatus, setRequestStatus] = useState(null); // null, 'sending', 'sent', 'error'
+    const [showUnfriendConfirm, setShowUnfriendConfirm] = useState(false); // New State
+
+    // Reset states when selectedUser changes
+    useEffect(() => {
+        if (selectedUser) {
+            setRequestStatus(null);
+            setShowUnfriendConfirm(false);
+        }
+    }, [selectedUser]);
+
+    // Handle Unfriend
+    const handleUnfriend = async () => {
+        if (!profile || !selectedUser) return;
+        setRequestStatus('sending'); // Reuse sending state for loading UI
+
+        const result = await removeFriend(profile.uid, selectedUser.id);
+
+        if (result.success) {
+            // Update local state to reflect change immediately
+            onUpdateProfile({
+                friends: (profile.friends || []).filter(fid => fid !== selectedUser.id)
+            });
+            setShowUnfriendConfirm(false);
+            setRequestStatus(null);
+            // Close main modal or just refresh relationship? 
+            // Better to keep modal open but update UI to show "Send Request" again.
+            // Relationship is derived from props/state, so it should auto-update if parent re-renders or we force update?
+            // "relationship" var is calculated in render. We rely on onUpdateProfile causing a re-render of this component with new profile.
+            alert("Amizade desfeita.");
+        } else {
+            alert("Erro ao desfazer amizade.");
+            setRequestStatus(null);
+        }
+    };
 
     // Check for season reset on mount for the current user
     useEffect(() => {
@@ -238,11 +272,22 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                             {relationship === 'me' ? (
                                 <div style={{ color: '#666', fontStyle: 'italic' }}>Este é o seu perfil</div>
                             ) : relationship === 'friend' ? (
-                                <div style={{
-                                    padding: '10px', background: 'rgba(0,255,102,0.1)',
-                                    color: '#00ff66', borderRadius: '8px', border: '1px solid rgba(0,255,102,0.3)'
-                                }}>
-                                    ✓ Vocês são amigos
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div style={{
+                                        padding: '10px', background: 'rgba(0,255,102,0.1)',
+                                        color: '#00ff66', borderRadius: '8px', border: '1px solid rgba(0,255,102,0.3)'
+                                    }}>
+                                        ✓ Vocês são amigos
+                                    </div>
+                                    <button
+                                        onClick={() => setShowUnfriendConfirm(true)}
+                                        style={{
+                                            background: 'none', border: 'none', color: '#ff4444',
+                                            fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline'
+                                        }}
+                                    >
+                                        Desfazer amizade
+                                    </button>
                                 </div>
                             ) : (
                                 <div>
@@ -259,6 +304,40 @@ const RankingSection = ({ profile, onUpdateProfile }) => {
                                             {requestStatus === 'sending' ? 'Enviando...' : 'Enviar Solicitação de Amizade'}
                                         </button>
                                     )}
+                                </div>
+                            )}
+
+                            {/* Unfriend Confirmation Overlay */}
+                            {showUnfriendConfirm && (
+                                <div style={{
+                                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                    background: 'rgba(0,0,0,0.95)', zIndex: 200,
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                    borderRadius: '16px', padding: '20px', textAlign: 'center'
+                                }}>
+                                    <div style={{ fontSize: '3rem', marginBottom: '10px' }}>⚠️</div>
+                                    <h3 style={{ color: '#ff4444', marginBottom: '10px' }}>Desfazer Amizade?</h3>
+                                    <p style={{ color: '#ccc', marginBottom: '20px', fontSize: '0.9rem' }}>
+                                        Você e <strong>{selectedUser.name}</strong> deixarão de ser amigos. Nenhuma notificação será enviada.
+                                    </p>
+                                    <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+                                        <button
+                                            onClick={() => setShowUnfriendConfirm(false)}
+                                            className="btn-secondary"
+                                            style={{ flex: 1 }}
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            onClick={handleUnfriend}
+                                            style={{
+                                                flex: 1, padding: '10px', borderRadius: '8px', border: 'none',
+                                                background: '#ff4444', color: '#fff', fontWeight: 'bold', cursor: 'pointer'
+                                            }}
+                                        >
+                                            Desfazer
+                                        </button>
+                                    </div>
                                 </div>
                             )}
 

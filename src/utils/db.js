@@ -9,17 +9,18 @@ import {
     sendPasswordResetEmail
 } from 'firebase/auth';
 import {
-    doc,
-    setDoc,
-    getDoc,
-    updateDoc,
-    arrayUnion,
     collection,
-    getDocs,
     query,
     where,
-    deleteDoc,
-    addDoc
+    getDocs,
+    getDoc,
+    setDoc,
+    addDoc,
+    updateDoc,
+    arrayUnion,
+    arrayRemove, // Imported
+    increment,
+    limit
 } from 'firebase/firestore';
 
 // Generate 6-digit ID
@@ -533,5 +534,43 @@ export const getUserRuns = async (uid) => {
     } catch (e) {
         console.error("Get Runs Error:", e);
         return [];
+    }
+};
+
+// Remove Friend
+export const removeFriend = async (currentUid, targetId) => {
+    try {
+        // 1. Get current user doc to find their ID (usually stored in profile, but we need the DB doc)
+        const currentUserRef = doc(db, "users", currentUid);
+        const currentUserSnap = await getDoc(currentUserRef);
+
+        if (!currentUserSnap.exists()) return { error: "User not found" };
+        const currentData = currentUserSnap.data();
+        const currentId = currentData.id; // The unique ID string (not UID)
+
+        // 2. Find target user by their ID (targetId is the friend's ID string)
+        const targetQuery = query(collection(db, "users"), where("id", "==", targetId));
+        const targetSnap = await getDocs(targetQuery);
+
+        if (targetSnap.empty) return { error: "Friend not found" };
+
+        const targetDoc = targetSnap.docs[0];
+        const targetUid = targetDoc.id;
+
+        // 3. Remove targetId from current user's friends list
+        await updateDoc(currentUserRef, {
+            friends: arrayRemove(targetId)
+        });
+
+        // 4. Remove currentId from target user's friends list
+        await updateDoc(doc(db, "users", targetUid), {
+            friends: arrayRemove(currentId)
+        });
+
+        return { success: true };
+
+    } catch (e) {
+        console.error("Remove Friend Error:", e);
+        return { error: e.message };
     }
 };
