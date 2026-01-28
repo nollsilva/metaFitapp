@@ -202,7 +202,7 @@ function App() {
     setActiveTab('home');
     setIsAuthModalOpen(true);
     // Limpa o estado de descarte para que o modal de permissão reapareça no próximo login
-    sessionStorage.removeItem('metafit_notif_dismissed');
+    localStorage.removeItem('metafit_notif_dismissed');
   };
 
   const handleDeleteAccount = async () => {
@@ -277,10 +277,17 @@ function App() {
   const [showNotificationModal, setShowNotificationModal] = useState(false);
 
   useEffect(() => {
-    if (userProfile.isLoggedIn && !userProfile.fcmToken) {
-      // Check if user has dismissed it this session or permanently? User request says "No login"
-      // We can store a local flag to not annoy them every refresh if they clicked "Not Now"
-      const hasDismissed = sessionStorage.getItem('metafit_notif_dismissed');
+    if (userProfile.isLoggedIn) {
+      // Se o navegador já tem uma decisão (granted ou denied), não precisamos mostrar o modal
+      if (window.Notification && Notification.permission !== 'default') {
+        return;
+      }
+
+      // Se o usuário já tiver um fcmToken, ele já autorizou no passado
+      if (userProfile.fcmToken) return;
+
+      // Check if user has dismissed it permanently
+      const hasDismissed = localStorage.getItem('metafit_notif_dismissed');
       if (!hasDismissed) {
         // Delay slightly for better UX
         const timer = setTimeout(() => setShowNotificationModal(true), 2000);
@@ -313,7 +320,7 @@ function App() {
           profile={userProfile}
           onClose={() => {
             setShowNotificationModal(false);
-            sessionStorage.setItem('metafit_notif_dismissed', 'true');
+            localStorage.setItem('metafit_notif_dismissed', 'true');
           }}
           onPermissionGranted={() => setShowNotificationModal(false)}
         />
