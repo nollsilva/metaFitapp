@@ -571,3 +571,63 @@ export const removeFriend = async (currentUid, targetId) => {
         return { error: e.message };
     }
 };
+
+// --- NOTIFICATION SYSTEM ---
+
+export const saveFCMToken = async (uid, token) => {
+    try {
+        const userRef = doc(db, "users", uid);
+        await updateDoc(userRef, {
+            fcmToken: token,
+            fcmTokenLastUpdated: new Date().toISOString()
+        });
+        return { success: true };
+    } catch (e) {
+        console.error("Save Token Error:", e);
+        return { error: e.message };
+    }
+};
+
+export const updateNotificationSettings = async (uid, settings) => {
+    try {
+        const userRef = doc(db, "users", uid);
+        await updateDoc(userRef, {
+            notificationSettings: settings
+        });
+        return { success: true };
+    } catch (e) {
+        console.error("Update Notification Settings Error:", e);
+        return { error: e.message };
+    }
+};
+
+export const getNotificationHistory = async (uid) => {
+    try {
+        const notifRef = collection(db, "users", uid, "notifications");
+        const q = query(notifRef);
+        const snap = await getDocs(q);
+        const list = [];
+        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+        return list.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    } catch (e) {
+        return [];
+    }
+};
+
+export const markAsRead = async (uid, notificationId) => {
+    try {
+        const notifRef = doc(db, "users", uid, "notifications", notificationId);
+        await updateDoc(notifRef, { read: true });
+        return { success: true };
+    } catch (e) { return { error: e }; }
+};
+
+export const markAllRead = async (uid) => {
+    try {
+        const notifRef = collection(db, "users", uid, "notifications");
+        const snap = await getDocs(notifRef);
+        const updates = snap.docs.map(d => updateDoc(d.ref, { read: true }));
+        await Promise.all(updates);
+        return { success: true };
+    } catch (e) { return { error: e }; }
+};
