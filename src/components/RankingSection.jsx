@@ -81,7 +81,7 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
 
     const handleSendChallenge = async () => {
         if (!selectedUser) return;
-        const result = await ChallengeService.sendChallenge(profile, selectedUser.id); // Note: selectedUser.id might be friend code? Use .uid
+        const result = await ChallengeService.sendChallenge(profile, selectedUser.uid);
         // Wait, selectedUser from leaderboard has .uid
         // Let's verify data structure. Ranking returns full profile usually.
         // check lines 541 renderRow(user). user has .uid?
