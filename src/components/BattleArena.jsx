@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { BadgeIcon, getBadgeConfig } from './BadgeIcons';
 import { updateUser } from '../utils/db'; // Import DB update
+import { ChallengeService } from '../services/ChallengeService';
 
 // Sub-component for a Player Card
 const BattleCard = ({ profile, health, maxHealth, isEnemy, activeTurn, resultStatus }) => {
