@@ -450,7 +450,7 @@ function App() {
         }}
       />
 
-    // Notification Permission Request (Mobile Only or PWA)
+      {/* Notification Permission Request (Mobile Only or PWA) */}
       {showNotificationModal && (
         <NotificationPermissionModal
           profile={userProfile}
