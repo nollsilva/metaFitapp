@@ -469,27 +469,7 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                         >
                             👑 VIP
                         </button>
-                        <button
-                            onClick={async () => {
-                                if (window.confirm("Remover VIP (Teste)?")) {
-                                    await updateUser(profile.uid, { vip: false, vipPlan: null });
-                                    if (onUpdateProfile) onUpdateProfile({ vip: false, vipPlan: null });
-                                }
-                            }}
-                            style={{
-                                padding: '0 10px',
-                                background: 'rgba(255, 68, 68, 0.2)',
-                                color: '#ff4444',
-                                border: '1px solid #ff4444',
-                                borderRadius: '8px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                fontSize: '0.8rem'
-                            }}
-                            title="Cancelar VIP (Teste)"
-                        >
-                            ✕
-                        </button>
+
                     </div>
                 )}
 
