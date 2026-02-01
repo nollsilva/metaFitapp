@@ -29,6 +29,7 @@ const RecenterAutomatically = ({ lat, lng }) => {
 
 import { saveRun, getUserRuns } from '../utils/db'; // Import DB functions
 import html2canvas from 'html2canvas';
+import { RewardedAdButton } from './AdSystem';
 
 const RunMode = ({ profile, onAddXp }) => {
     const [isRunning, setIsRunning] = useState(false);
@@ -55,6 +56,7 @@ const RunMode = ({ profile, onAddXp }) => {
     // Watch ID for geolocation
     const watchIdRef = useRef(null);
     const timerRef = useRef(null);
+    const [bonusApplied, setBonusApplied] = useState(false); // Track if ad bonus was used
 
     // Initial Location
     useEffect(() => {
@@ -121,7 +123,7 @@ const RunMode = ({ profile, onAddXp }) => {
                                         const xpToAdd = currentTotalXp - effectivePrevXp;
 
                                         if (xpToAdd > 0) {
-                                            onAddXp(xpToAdd);
+                                            onAddXp(xpToAdd, 'Corrida');
                                             setAccumulatedXp(xp => xp + xpToAdd);
                                         }
                                     }
@@ -307,6 +309,18 @@ const RunMode = ({ profile, onAddXp }) => {
     // DEV: SIMULATE 500m
 
 
+    // AD BONUS HANDLER
+    const handleAdReward = () => {
+        if (bonusApplied) return;
+        const bonus = Math.floor(accumulatedXp * 0.10); // 10%
+        if (bonus > 0) {
+            setAccumulatedXp(prev => prev + bonus);
+            onAddXp(bonus, 'Bônus Ad: Corrida');
+            setBonusApplied(true);
+        }
+    };
+
+
     if (showSummary) {
         return (
             <div style={{ padding: '80px 20px 120px', textAlign: 'center' }}>
@@ -345,6 +359,15 @@ const RunMode = ({ profile, onAddXp }) => {
                     >
                         📸 Compartilhar no Instagram
                     </button>
+
+                    {/* AD REWARD BUTTON */}
+                    {!isRunSaved && (
+                        <RewardedAdButton
+                            isVip={profile.vip}
+                            onReward={handleAdReward}
+                            label={`Assistir Anúncio (+${Math.floor(accumulatedXp * 0.1)} XP)`}
+                        />
+                    )}
 
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <button

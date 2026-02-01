@@ -10,7 +10,7 @@ import HeroSection from './components/HeroSection';
 import OnboardingGuide from './components/OnboardingGuide';
 import Footer from './components/Footer';
 import TutorialOverlay from './components/TutorialOverlay';
-import { getUserProfile, updateUser, logoutUser, deleteUserAccount } from './utils/db';
+import { getUserProfile, updateUser, logoutUser, deleteUserAccount, checkVipExpiration } from './utils/db';
 import { sendRankUpEmail } from './utils/email';
 import { getRankTitle } from './utils/rankingSystem';
 import { getBadgeConfig } from './components/BadgeIcons';
@@ -29,6 +29,7 @@ import DailyBonus from './components/DailyBonus';
 import NotificationSystem from './components/NotificationSystem'; // Imported
 import NotificationPermissionModal from './components/NotificationPermissionModal'; // Imported
 import NotificationsScreen from './components/NotificationsScreen'; // Imported
+import BattleArena from './components/BattleArena'; // PvP System
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -79,11 +80,14 @@ function App() {
     level: 1,
     friends: [],
     friendRequests: [],
-    friendRequestsAccepted: []
+    friendRequestsAccepted: [],
+    xpHistory: [] // New: History of XP transactions
   };
 
   const [userProfile, setUserProfile] = useState(defaultProfile);
   const [notification, setNotification] = useState(null);
+  const [vipNotification, setVipNotification] = useState(null); // VIP Notification State
+  const [battleOpponent, setBattleOpponent] = useState(null); // PvP Opponent State
 
   // Check for missed workouts logic
   const checkMissedWorkouts = (profile) => {
@@ -119,11 +123,21 @@ function App() {
       const newXp = Math.max(0, currentXp - penalty);
       const newLevel = Math.floor(newXp / 1000) + 1;
 
+      // Create history entry
+      const historyEntry = {
+        id: Date.now(),
+        date: new Date().toISOString(),
+        amount: -penalty,
+        reason: 'Penalidade: Dias perdidos',
+        type: 'loss'
+      };
+
       setUserProfile(prev => ({
         ...prev,
         xp: newXp,
         level: newLevel,
-        lastMissedCheck: new Date().toISOString()
+        lastMissedCheck: new Date().toISOString(),
+        xpHistory: [historyEntry, ...(prev.xpHistory || [])].slice(0, 100)
       }));
 
       setNotification(MESSAGES.XP.LOST_STREAK(penalty, missedCount));
@@ -147,12 +161,16 @@ function App() {
         unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
-            setUserProfile(prev => ({
-              ...prev,
-              ...data,
-              isLoggedIn: true,
-              uid: user.uid
-            }));
+
+            // Check VIP Expiration
+            checkVipExpiration(data).then(validatedData => {
+              setUserProfile(prev => ({
+                ...prev,
+                ...validatedData,
+                isLoggedIn: true,
+                uid: user.uid
+              }));
+            });
           } else {
             console.error("Auth exists but no profile found in Firestore for UID:", user.uid);
           }
@@ -183,16 +201,51 @@ function App() {
     setUserProfile(prev => ({ ...prev, ...newData }));
   };
 
-  const addXp = (amount) => {
+  const addXp = (amount, reason = 'Geral') => {
     setUserProfile(prev => {
-      const newXp = (prev.xp || 0) + amount;
+      let finalAmount = amount;
+      let historyToAdd = [];
+
+      // Main Entry
+      historyToAdd.push({
+        id: Date.now() + Math.random(),
+        date: new Date().toISOString(),
+        amount: amount,
+        reason: reason,
+        type: amount >= 0 ? 'gain' : 'loss'
+      });
+
+      // VIP Bonus Check (Only for gains)
+      if (prev.vip && amount > 0) {
+        const bonus = Math.floor(amount * 0.10);
+        if (bonus > 0) {
+          finalAmount += bonus;
+          historyToAdd.push({
+            id: Date.now() + Math.random() + 1,
+            date: new Date().toISOString(),
+            amount: bonus,
+            reason: `Bônus VIP (+10%)`,
+            type: 'gain'
+          });
+          // Trigger VIP Notification
+          setVipNotification(`+${bonus} XP (Bônus VIP)`);
+          setTimeout(() => setVipNotification(null), 4000);
+        }
+      }
+
+      const newXp = (prev.xp || 0) + finalAmount;
       const newLevel = Math.floor(newXp / 1000) + 1;
 
       if (newLevel > (prev.level || 1)) {
         setNotification(MESSAGES.XP.LEVEL_UP(newLevel));
       }
 
-      return { ...prev, xp: newXp, level: newLevel };
+      return {
+        ...prev,
+        xp: newXp,
+        level: newLevel,
+        xpHistory: [...historyToAdd, ...(prev.xpHistory || [])].slice(0, 100)
+      };
     });
   };
 
@@ -233,7 +286,13 @@ function App() {
     const newHistory = { ...userProfile.workoutHistory };
     newHistory[todayKey] = 'done';
 
-    addXp(xpAmount);
+    // We update history locally first for immediate UI, 
+    // but updateProfile will merge it. 
+    // Wait, addXp updates state, updateProfile updates state. 
+    // We should call addXp first, then updateProfile for other fields.
+    // Ideally we merge state updates.
+
+    addXp(xpAmount, 'Treino Diário Completo');
     updateProfile({ workoutHistory: newHistory });
 
     setNotification(MESSAGES.XP.GAIN_DAILY(xpAmount));
@@ -337,6 +396,18 @@ function App() {
         </div>
       )}
 
+      {vipNotification && (
+        <div className="animate-fade-in" style={{
+          position: 'fixed', top: '80px', left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(255, 165, 0, 0.9)', color: '#fff', padding: '10px 20px',
+          borderRadius: '50px', zIndex: 10000, fontWeight: 'bold', border: '1px solid #ffae00',
+          boxShadow: '0 5px 20px rgba(255, 165, 0, 0.4)', textAlign: 'center', width: '85%', maxWidth: '350px',
+          fontSize: '0.9rem'
+        }}>
+          👑 {vipNotification}
+        </div>
+      )}
+
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -372,7 +443,14 @@ function App() {
       <main style={{ paddingBottom: activeTab === 'timer' ? 0 : '100px' }}>
         {activeTab === 'home' && (
           userProfile.isLoggedIn ? (
-            <RankingSection profile={userProfile} onUpdateProfile={updateProfile} />
+            <RankingSection
+              profile={userProfile}
+              onUpdateProfile={updateProfile}
+              onBattle={(opponent) => {
+                setBattleOpponent(opponent);
+                setActiveTab('battle');
+              }}
+            />
           ) : (
             <>
               <HeroSection onStart={() => setIsAuthModalOpen(true)} />
@@ -398,6 +476,7 @@ function App() {
         {activeTab === 'timer' && activeExercise && (
           <WorkoutTimer
             exercise={activeExercise}
+            profile={userProfile}
             onExit={() => {
               setActiveTab('workout');
               setActiveExercise(null);
@@ -414,7 +493,7 @@ function App() {
                 return;
               }
 
-              addXp(15);
+              addXp(15, activeExercise ? `Treino: ${activeExercise.name}` : 'Treino Avulso');
               setNotification(MESSAGES.XP.GAIN_DEFAULT(15));
               setTimeout(() => setNotification(null), 3000);
             }}
@@ -440,6 +519,19 @@ function App() {
 
         {activeTab === 'run' && (
           <RunMode profile={userProfile} onAddXp={addXp} />
+        )}
+
+        {/* Battle Arena Overlay */}
+        {activeTab === 'battle' && battleOpponent && (
+          <BattleArena
+            myProfile={userProfile}
+            enemyProfile={battleOpponent}
+            onUpdateProfile={updateProfile}
+            onExit={() => {
+              setActiveTab('home');
+              setBattleOpponent(null);
+            }}
+          />
         )}
 
         {/* Notification Screen */}

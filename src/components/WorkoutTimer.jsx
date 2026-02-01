@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { RewardedAdButton } from './AdSystem';
 
-const WorkoutTimer = ({ exercise, onExit, onFinish }) => {
+const WorkoutTimer = ({ exercise, onExit, onFinish, profile, onAddXp }) => {
     // Phases: 'prep', 'work', 'rest', 'summary'
     const [phase, setPhase] = useState('prep');
     const [timeLeft, setTimeLeft] = useState(5); // 5s prep
@@ -9,6 +10,9 @@ const WorkoutTimer = ({ exercise, onExit, onFinish }) => {
 
     const [isActive, setIsActive] = useState(true);
     const timerRef = useRef(null);
+
+    // Ad State
+    const [xpReward, setXpReward] = useState(15); // Base estimation
 
     useEffect(() => {
         if (isActive && timeLeft > 0) {
@@ -58,11 +62,24 @@ const WorkoutTimer = ({ exercise, onExit, onFinish }) => {
             : phase === 'rest' ? (timeLeft / 10) * 100 : 0;
 
     if (phase === 'summary') {
+        const bonus = Math.floor(xpReward * 0.10);
         return (
             <div className="timer-overlay animate-fade-in">
                 <div className="summary-card">
                     <h2 className="section-title">Treino <span className="title-gradient">Concluído</span></h2>
-                    <p style={{ marginBottom: '2rem', opacity: 0.8 }}>Você completou {totalSets} séries de {exercise.name}.</p>
+                    <p style={{ marginBottom: '1rem', opacity: 0.8 }}>Você completou {totalSets} séries de {exercise.name}.</p>
+
+                    {/* AD BUTTON */}
+                    <div style={{ marginBottom: '2rem' }}>
+                        <RewardedAdButton
+                            isVip={profile && profile.vip}
+                            label={`Assistir Anúncio (+${bonus} XP)`}
+                            onReward={() => {
+                                onAddXp(bonus, 'Bônus Ad: Treino');
+                            }}
+                        />
+                    </div>
+
                     <button className="btn-primary" onClick={() => {
                         onFinish && onFinish();
                         onExit();
@@ -103,7 +120,7 @@ const WorkoutTimer = ({ exercise, onExit, onFinish }) => {
 
                 <div className="timer-controls">
                     <button className="btn-sec-timer" onClick={() => setIsActive(!isActive)}>
-                        {isActive ? 'PAUSAR' : 'RECURAR'}
+                        {isActive ? 'PAUSAR' : 'RETOMAR'}
                     </button>
                 </div>
             </div>

@@ -30,6 +30,7 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isBonusModalOpen, setIsBonusModalOpen] = useState(false);
     const [isRequestsModalOpen, setIsRequestsModalOpen] = useState(false);
+    const [showXpHistory, setShowXpHistory] = useState(false);
 
     // Delete Account State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -173,7 +174,7 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: '2rem', fontWeight: 'bold', color: '#333',
                         cursor: profile.isLoggedIn ? 'pointer' : 'default',
-                        overflow: 'hidden',
+                        overflow: 'visible', // Changed to visible for frame
                         position: 'relative',
                         border: '3px solid var(--color-primary)',
                         transition: 'transform 0.2s'
@@ -181,27 +182,46 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                     className={profile.isLoggedIn ? "hover-scale" : ""}
                 >
                     {profile.avatar ? (
-                        <img src={`/avatars/${profile.avatar}.png`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={`/avatars/${profile.avatar}.png`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', position: 'relative', zIndex: 5 }} />
                     ) : (
-                        (profile.name || profile.userName) ? (profile.name || profile.userName).substring(0, 2).toUpperCase() : 'JD'
+                        <div style={{ position: 'relative', zIndex: 5 }}>
+                            {(profile.name || profile.userName) ? (profile.name || profile.userName).substring(0, 2).toUpperCase() : 'JD'}
+                        </div>
                     )}
                     {profile.isLoggedIn && (
                         <div style={{
                             position: 'absolute', bottom: 0, width: '100%', background: 'rgba(0,0,0,0.6)',
-                            fontSize: '0.6rem', color: '#fff', textAlign: 'center', padding: '2px'
+                            fontSize: '0.6rem', color: '#fff', textAlign: 'center', padding: '2px', zIndex: 6,
+                            borderBottomLeftRadius: '50px', borderBottomRightRadius: '50px'
                         }}>Editar</div>
                     )}
                     {(isBonusReady || hasPendingRequests) && (
                         <div style={{
                             position: 'absolute', top: '0', right: '0',
                             width: '18px', height: '18px', background: '#ff0055',
-                            borderRadius: '50%', border: '2px solid #000'
+                            borderRadius: '50%', border: '2px solid #000', zIndex: 7
                         }}></div>
+                    )}
+                    {profile.vip && (
+                        <img
+                            src="/vip-frame.png?v=2"
+                            alt="VIP Frame"
+                            style={{
+                                position: 'absolute',
+                                top: '50%', left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                width: '155%', height: '155%',
+                                zIndex: 10,
+                                pointerEvents: 'none',
+                                objectFit: 'contain'
+                            }}
+                        />
                     )}
                 </div>
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <h1 style={{ marginBottom: '0.2rem', fontSize: '1.5rem' }}>
+                            {profile.vip && <span style={{ marginRight: '5px' }}>👑</span>}
                             {profile.isLoggedIn ? (profile.name || profile.userName) : 'Perfil'}
                         </h1>
                         {profile.isLoggedIn && (
@@ -232,8 +252,14 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                                     background: 'var(--color-primary)', transition: 'width 0.5s ease'
                                 }}></div>
                             </div>
-                            <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '4px', textAlign: 'right' }}>
-                                {(profile.xp || 0) % 1000} / 1000 XP
+                            <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '4px', textAlign: 'right', display: 'flex', justifyContent: 'space-between' }}>
+                                <button
+                                    onClick={() => setShowXpHistory(true)}
+                                    style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '0.7rem', textDecoration: 'underline' }}
+                                >
+                                    Ver Histórico
+                                </button>
+                                <span>{(profile.xp || 0) % 1000} / 1000 XP</span>
                             </div>
                         </div>
                     )}
@@ -254,6 +280,52 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                     )}
                 </div>
             </div>
+
+            {/* XP History Modal */}
+            {showXpHistory && (
+                <div className="modal-overlay" onClick={() => setShowXpHistory(false)} style={{ zIndex: 10000 }}>
+                    <div className="wide-modal auth-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', padding: '1.5rem', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ margin: 0 }}>Histórico de XP</h3>
+                            <button onClick={() => setShowXpHistory(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+                        </div>
+
+                        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '5px' }}>
+                            {(!profile.xpHistory || profile.xpHistory.length === 0) ? (
+                                <p style={{ color: '#888', textAlign: 'center', marginTop: '2rem' }}>Nenhum registro de XP ainda.</p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {profile.xpHistory.map((item, idx) => (
+                                        <div key={item.id || idx} style={{
+                                            background: 'rgba(255,255,255,0.03)',
+                                            padding: '12px',
+                                            borderRadius: '8px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            borderLeft: item.amount >= 0 ? '3px solid #00ff66' : '3px solid #ff0055'
+                                        }}>
+                                            <div>
+                                                <div style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '2px' }}>{item.reason || 'Geral'}</div>
+                                                <div style={{ fontSize: '0.75rem', color: '#888' }}>
+                                                    {new Date(item.date).toLocaleDateString()} • {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </div>
+                                            <div style={{
+                                                fontWeight: 'bold',
+                                                color: item.amount >= 0 ? '#00ff66' : '#ff0055',
+                                                fontSize: '1rem'
+                                            }}>
+                                                {item.amount >= 0 ? '+' : ''}{item.amount}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Avatar Selection Modal */}
             {isAvatarModalOpen && (

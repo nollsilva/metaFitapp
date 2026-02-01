@@ -4,7 +4,7 @@ importScripts('https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-comp
 // Initialize the Firebase app in the service worker by passing in the
 // messagingSenderId.
 firebase.initializeApp({
-    apiKey: "AIzaSyDK4jus-gIfISwLuT", // Placeholder, usually sw needs hardcoded or env injection strategy. 
+    apiKey: "AIzaSyDK4jus-gIfISwLuT-3IEGz_GSLjfVAkzU",
     // For simplicity in this env, we rely on default or just messagingSenderId if possible, 
     // but usually full config is best. Ideally, we just need messagingSenderId for basic background handling.
     // IMPORTANT: For security, use the values from your project manually or use a build step to inject.

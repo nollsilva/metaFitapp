@@ -84,6 +84,9 @@ export const registerUser = async (email, password, name, inviteCode = "") => {
             mealPlan: null,
             classification: '',
             color: '#fff',
+            // Battle System Defaults
+            attributes: { strength: 0, speed: 0, defense: 0, points: 0 },
+            battleStats: { wins: 0, losses: 0 },
         };
 
         await setDoc(doc(db, "users", user.uid), newUserProfile);
@@ -144,6 +147,9 @@ export const loginUser = async (email, password) => {
                 mealPlan: null,
                 classification: '',
                 color: '#fff',
+                // Battle System Defaults
+                attributes: { strength: 0, speed: 0, defense: 0, points: 0 },
+                battleStats: { wins: 0, losses: 0 },
                 friendRequests: [],
                 friendRequestsAccepted: []
             };
@@ -630,4 +636,33 @@ export const markAllRead = async (uid) => {
         await Promise.all(updates);
         return { success: true };
     } catch (e) { return { error: e }; }
+};
+// Check VIP Expiration
+export const checkVipExpiration = async (profile) => {
+    if (!profile || !profile.vip || !profile.uid) return profile;
+
+    // If vip is permanent (no expiresAt), skip
+    if (!profile.vipExpiresAt) return profile;
+
+    const expiresAt = new Date(profile.vipExpiresAt);
+    const now = new Date();
+
+    if (now > expiresAt) {
+        console.log(`[VIP] Expired for user ${profile.uid}. Removing status...`);
+
+        await updateUser(profile.uid, {
+            vip: false,
+            vipPlan: null,
+            vipExpiresAt: null
+        });
+
+        return {
+            ...profile,
+            vip: false,
+            vipPlan: null,
+            vipExpiresAt: null
+        };
+    }
+
+    return profile;
 };
