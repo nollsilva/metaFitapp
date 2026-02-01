@@ -63,7 +63,7 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                     // Opponent Accepted!
                     setWaitingForOpponent(false);
                     setSentChallenge(null);
-                    onBattle(selectedUser); // Enter battle
+                    onBattle(selectedUser, sentChallenge.id, 'challenger'); // Enter battle
                 } else if (battle.status === 'rejected') {
                     alert("O oponente recusou o desafio.");
                     setWaitingForOpponent(false);

@@ -91,7 +91,6 @@ function App() {
   const [userProfile, setUserProfile] = useState(defaultProfile);
   const [notification, setNotification] = useState(null);
   const [vipNotification, setVipNotification] = useState(null); // VIP Notification State
-  const [battleOpponent, setBattleOpponent] = useState(null); // PvP Opponent State
 
   // Check for missed workouts logic
   const checkMissedWorkouts = (profile) => {
@@ -212,6 +211,9 @@ function App() {
     return () => clearInterval(interval);
   }, [userProfile.uid]);
 
+  const [battleOpponent, setBattleOpponent] = useState(null); // PvP Opponent State
+  const [battleMetadata, setBattleMetadata] = useState(null); // { battleId, role: 'challenger'|'opponent' }
+
   // --- CHALLENGE SYSTEM LISTENER ---
   const [incomingChallenges, setIncomingChallenges] = useState([]);
   const [activeChallenge, setActiveChallenge] = useState(null); // The accepted challenge to show rules for
@@ -236,42 +238,18 @@ function App() {
   };
 
   const enterBattleFromChallenge = () => {
-    // Navigate to Battle Tab and Set Opponent
-    // We need updates to battle stats or just passing data?
-    // App.jsx handles generic tab switching. We need to pass the opponent to BattleArena.
-    // For now, we assume RankingSection triggers battle, but here we are entering from App.
-    // We need a way to set "battleOpponent" state if it exists, or pass it down.
-    // Let's assume BattleArena gets props or we set it here.
-    // Looking at App.jsx, we need see how `onBattle` works.
-    // We will create a state `battleData` or similar if needed, or just setTab('battle') and pass props?
-    // Let's check how BattleArena is used.
     setBattleOpponent({
       uid: activeChallenge.challengerId,
       name: activeChallenge.challengerName,
       avatar: activeChallenge.challengerAvatar
     });
-    setActiveTab('ranking'); // Battle is usually inside Ranking or separate?
-    // Wait, BattleArena seems to be a full screen overlay often triggered from Ranking.
-    // If I change activeTab to 'ranking', I need to trigger the battle view there.
-    // OR better: Just render BattleArena directly if we are in battle mode.
-    // Let's set a global 'isBattling' state or check how RankingSection initiates it.
-    // Actually, BattleArena was rendered in RankingSection in previous context.
-    // But if I accept here in App.jsx, I need to tell RankingSection to open BattleArena.
-    // Pass `initialBattleConfig` to RankingSection?
-    // Simpler: Just render BattleArena as a top-level overlay in App.jsx if active.
-    setActiveChallenge(null);
-    // We need to trigger the battle start.
-    // I will use a new prop on RankingSection or a global state.
-    // Let's add `pendingBattle` state to App.jsx and pass to RankingSection.
-    setPendingBattle({
-      uid: activeChallenge.challengerId,
-      name: activeChallenge.challengerName,
-      avatar: activeChallenge.challengerAvatar
+    setBattleMetadata({
+      battleId: activeChallenge.id,
+      role: 'opponent'
     });
     setActiveTab('battle');
+    setActiveChallenge(null);
   };
-
-  const [pendingBattle, setPendingBattle] = useState(null);
 
 
   const updateProfile = (newData) => {
@@ -523,8 +501,9 @@ function App() {
             <RankingSection
               profile={userProfile}
               onUpdateProfile={updateProfile}
-              onBattle={(opponent) => {
+              onBattle={(opponent, battleId, role) => {
                 setBattleOpponent(opponent);
+                setBattleMetadata({ battleId, role });
                 setActiveTab('battle');
               }}
             />
@@ -603,10 +582,13 @@ function App() {
           <BattleArena
             myProfile={userProfile}
             enemyProfile={battleOpponent}
+            battleId={battleMetadata?.battleId}
+            role={battleMetadata?.role}
             onUpdateProfile={updateProfile}
             onExit={() => {
               setActiveTab('home');
               setBattleOpponent(null);
+              setBattleMetadata(null);
             }}
           />
         )}

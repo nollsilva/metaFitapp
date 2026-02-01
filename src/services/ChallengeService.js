@@ -79,5 +79,16 @@ export const ChallengeService = {
         try {
             await deleteDoc(doc(db, 'battles', challengeId));
         } catch (e) { console.error(e); }
+    },
+
+    // --- TURN SYNC METHODS ---
+    submitTurn: async (battleId, role, turn, tactics) => {
+        try {
+            const field = `turn${turn}_${role}`; // e.g. turn1_challenger
+            await updateDoc(doc(db, 'battles', battleId), {
+                [field]: tactics
+            });
+            return { success: true };
+        } catch (e) { return { error: e.message }; }
     }
 };

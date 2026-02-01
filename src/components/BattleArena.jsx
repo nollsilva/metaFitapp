@@ -13,10 +13,10 @@ const BattleCard = ({ profile, health, maxHealth, isEnemy, activeTurn, resultSta
     const isLoser = resultStatus === 'loser';
 
     const resultStyle = resultStatus ? {
-        transform: isWinner ? 'scale(1.4) translateY(-50px) translateZ(50px)' : 'scale(0.9) translateY(100px) translateZ(-50px)',
+        transform: isWinner ? 'scale(1.3) translateY(-40px) translateZ(50px)' : 'scale(0.8) translateY(140px) rotate(-12deg) translateZ(-50px)',
         zIndex: isWinner ? 100 : 1,
-        opacity: isLoser ? 0.7 : 1,
-        filter: isLoser ? 'grayscale(0.8) blur(1px)' : 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.5))',
+        opacity: isLoser ? 0.9 : 1,
+        filter: isLoser ? 'grayscale(0.4)' : 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.5))',
         border: isWinner ? '4px solid #ffd700' : '2px solid #555',
         boxShadow: isWinner ? '0 0 50px rgba(255, 215, 0, 0.4)' : 'none'
     } : {};
@@ -129,9 +129,57 @@ const StatisticSelector = ({ label, icon, value, onSelect, color, allEfforts }) 
     );
 };
 
-const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile }) => {
+const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleId, role }) => {
     const [turn, setTurn] = useState(1);
-    const [phase, setPhase] = useState('setup'); // setup, combat, result
+    const [phase, setPhase] = useState('setup'); // setup, waiting, animating, combat, result
+    const [showDuelAnimation, setShowDuelAnimation] = useState(false);
+
+    // Network Sync State
+    const [myTurnConfirmed, setMyTurnConfirmed] = useState(false);
+    const [opponentTurnConfirmed, setOpponentTurnConfirmed] = useState(false);
+    const [opponentTactics, setOpponentTactics] = useState(null);
+
+    // Sync Listener
+    useEffect(() => {
+        if (!battleId) return;
+
+        const unsub = ChallengeService.listenToChallenge(battleId, (battle) => {
+            if (!battle) return;
+
+            const opponentRole = role === 'challenger' ? 'opponent' : 'challenger';
+            const oppField = `turn${turn}_${opponentRole}`;
+            const myField = `turn${turn}_${role}`;
+
+            if (battle[oppField]) {
+                setOpponentTactics(battle[oppField]);
+                setOpponentTurnConfirmed(true);
+            }
+
+            if (battle[myField]) {
+                setMyTurnConfirmed(true);
+            }
+        });
+
+        return () => unsub();
+    }, [battleId, turn, role]);
+
+    // Transition to Animating when both confirmed
+    useEffect(() => {
+        if (myTurnConfirmed && opponentTurnConfirmed && phase === 'waiting') {
+            setPhase('animating');
+            setShowDuelAnimation(true);
+
+            // Wait 2.5s for animation, then process results
+            const timer = setTimeout(() => {
+                const logs = calculateTurn(effort, opponentTactics);
+                setBattleLog(logs);
+                setShowDuelAnimation(false);
+                setPhase('combat');
+            }, 2500);
+
+            return () => clearTimeout(timer);
+        }
+    }, [myTurnConfirmed, opponentTurnConfirmed, phase, effort, opponentTactics]);
 
     // Battle Stats Formula: 150 + (Level * 15)
     const getMaxHp = (p) => 150 + ((p.level || 1) * 15);
@@ -305,25 +353,27 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile }) => {
         return log;
     };
 
-    const handleConfirmTurn = () => {
-        setPhase('combat');
-
-        // AI Logic: Unique Permutation of [50, 75, 100]
-        const options = [50, 75, 100];
-        // Shuffle
-        for (let i = options.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [options[i], options[j]] = [options[j], options[i]];
+    const handleConfirmTurn = async () => {
+        if (battleId) {
+            // PVP Sync Mode
+            setPhase('waiting');
+            await ChallengeService.submitTurn(battleId, role, turn, effort);
+        } else {
+            // AI Mode (Keep old logic)
+            setPhase('combat');
+            const options = [50, 75, 100];
+            for (let i = options.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [options[i], options[j]] = [options[j], options[i]];
+            }
+            const enemyEffort = {
+                speed: options[0],
+                strength: options[1],
+                defense: options[2]
+            };
+            const logs = calculateTurn(effort, enemyEffort);
+            setBattleLog(logs);
         }
-
-        const enemyEffort = {
-            speed: options[0],
-            strength: options[1],
-            defense: options[2]
-        };
-
-        const logs = calculateTurn(effort, enemyEffort);
-        setBattleLog(logs);
     };
 
     const handleNextTurn = () => {
@@ -333,6 +383,11 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile }) => {
                 setPhase('result');
                 return prev;
             }
+
+            // Reset for next turn
+            setMyTurnConfirmed(false);
+            setOpponentTurnConfirmed(false);
+            setOpponentTactics(null);
             setPhase('setup');
             return nextTurn;
         });
@@ -481,6 +536,46 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile }) => {
 
                 {/* Visual Line */}
                 <div style={{ position: 'absolute', width: '100%', height: '1px', background: 'linear-gradient(90deg, transparent, #00f0ff, transparent)', opacity: 0.3, top: '50%' }}></div>
+
+                {/* Waiting Overlay */}
+                {phase === 'waiting' && (
+                    <div style={{ position: 'absolute', zIndex: 1000, top: '30%', textAlign: 'center', background: 'rgba(0,0,0,0.8)', padding: '20px', borderRadius: '15px', border: '1px solid #00f0ff' }}>
+                        <div className="pulse" style={{ fontSize: '1.5rem', marginBottom: '10px' }}>⏳</div>
+                        <div style={{ color: '#00f0ff', fontWeight: 'bold' }}>Aguardando oponente...</div>
+                    </div>
+                )}
+
+                {/* Duel Animation Overlay */}
+                {showDuelAnimation && (
+                    <div style={{ position: 'absolute', zIndex: 2000, top: '0', left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
+                        <div className="sword-animation" style={{ fontSize: '5rem', display: 'flex', gap: '20px' }}>
+                            <span className="sword-left">⚔️</span>
+                            <span className="sword-right" style={{ transform: 'scaleX(-1)' }}>⚔️</span>
+                        </div>
+                        <h2 style={{ color: '#fff', textShadow: '0 0 10px #f00', marginTop: '20px' }}>BATALHANDO!</h2>
+
+                        <style>{`
+                            @keyframes clash-left {
+                                0% { transform: translateX(-50px) rotate(-45deg); }
+                                50% { transform: translateX(10px) rotate(0deg); }
+                                100% { transform: translateX(-50px) rotate(-45deg); }
+                            }
+                            @keyframes clash-right {
+                                0% { transform: translateX(50px) scaleX(-1) rotate(-45deg); }
+                                50% { transform: translateX(-10px) scaleX(-1) rotate(0deg); }
+                                100% { transform: translateX(50px) scaleX(-1) rotate(-45deg); }
+                            }
+                            .sword-left { animation: clash-left 0.5s infinite; }
+                            .sword-right { animation: clash-right 0.5s infinite; }
+                            .pulse { animation: pulse 1.5s infinite; }
+                            @keyframes pulse {
+                                0% { opacity: 0.5; transform: scale(1); }
+                                50% { opacity: 1; transform: scale(1.1); }
+                                100% { opacity: 0.5; transform: scale(1); }
+                            }
+                        `}</style>
+                    </div>
+                )}
 
                 {/* Result Message Overlay (Part of Capture) */}
                 {phase === 'result' && (
