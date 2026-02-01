@@ -666,89 +666,70 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                             }}>
                                 <h4 style={{ color: '#ff4444', marginBottom: '10px', fontSize: '0.8rem' }}>🔧 PAINEL ROOT</h4>
 
-                                {!selectedUser.vip ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                        <div style={{ fontSize: '0.8rem', color: '#ccc' }}>Conceder VIP por:</div>
-                                        <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-                                            <button
-                                                onClick={async () => {
-                                                    if (window.confirm(`Dar VIP de 1 Mês para ${selectedUser.name}?`)) {
-                                                        const expiresAt = new Date();
-                                                        expiresAt.setDate(expiresAt.getDate() + 30);
-                                                        await updateUser(selectedUser.uid, {
-                                                            vip: true,
-                                                            vipPlan: 'manual_monthly',
-                                                            vipExpiresAt: expiresAt.toISOString()
-                                                        });
-                                                        alert("VIP de 1 Mês Ativado!");
-                                                        setSelectedUser({ ...selectedUser, vip: true });
-                                                        refreshLeaderboard();
-                                                    }
-                                                }}
-                                                style={{ padding: '6px 10px', background: '#ffd700', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem' }}
-                                            >
-                                                1 Mês
-                                            </button>
-                                            <button
-                                                onClick={async () => {
-                                                    if (window.confirm(`Dar VIP de 6 Meses para ${selectedUser.name}?`)) {
-                                                        const expiresAt = new Date();
-                                                        expiresAt.setDate(expiresAt.getDate() + 180);
-                                                        await updateUser(selectedUser.uid, {
-                                                            vip: true,
-                                                            vipPlan: 'manual_semiannual',
-                                                            vipExpiresAt: expiresAt.toISOString()
-                                                        });
-                                                        alert("VIP de 6 Meses Ativado!");
-                                                        setSelectedUser({ ...selectedUser, vip: true });
-                                                        refreshLeaderboard();
-                                                    }
-                                                }}
-                                                style={{ padding: '6px 10px', background: '#ffd700', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem' }}
-                                            >
-                                                6 Meses
-                                            </button>
-                                            <button
-                                                onClick={async () => {
-                                                    if (window.confirm(`Dar VIP de 1 Ano para ${selectedUser.name}?`)) {
-                                                        const expiresAt = new Date();
-                                                        expiresAt.setDate(expiresAt.getDate() + 365);
-                                                        await updateUser(selectedUser.uid, {
-                                                            vip: true,
-                                                            vipPlan: 'manual_annual',
-                                                            vipExpiresAt: expiresAt.toISOString()
-                                                        });
-                                                        alert("VIP de 1 Ano Ativado!");
-                                                        setSelectedUser({ ...selectedUser, vip: true });
-                                                        refreshLeaderboard();
-                                                    }
-                                                }}
-                                                style={{ padding: '6px 10px', background: '#ffd700', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem' }}
-                                            >
-                                                1 Ano
-                                            </button>
-                                        </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <div style={{ fontSize: '0.8rem', color: '#ccc' }}>
+                                        {selectedUser.vip ? 'Estender/Alterar VIP:' : 'Conceder VIP por:'}
                                     </div>
-                                ) : (
-                                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                                    <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
                                         <button
                                             onClick={async () => {
-                                                if (window.confirm(`Remover VIP de ${selectedUser.name}?`)) {
-                                                    await updateUser(selectedUser.uid, { vip: false, vipPlan: null, vipExpiresAt: null });
-                                                    alert("VIP Removido!");
-                                                    setSelectedUser({ ...selectedUser, vip: false });
+                                                if (window.confirm(`Dar VIP de 1 Mês para ${selectedUser.name}?`)) {
+                                                    const expiresAt = new Date();
+                                                    expiresAt.setDate(expiresAt.getDate() + 30);
+                                                    await updateUser(selectedUser.uid, {
+                                                        vip: true,
+                                                        vipPlan: 'manual_monthly',
+                                                        vipExpiresAt: expiresAt.toISOString()
+                                                    });
+                                                    alert("VIP de 1 Mês Ativado!");
+                                                    setSelectedUser({ ...selectedUser, vip: true });
                                                     refreshLeaderboard();
                                                 }
                                             }}
-                                            style={{
-                                                padding: '8px 16px', background: '#333', color: '#fff',
-                                                border: '1px solid #666', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer'
-                                            }}
+                                            style={{ padding: '6px 10px', background: '#ffd700', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem' }}
                                         >
-                                            Remover VIP ✕
+                                            1 Mês
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                if (window.confirm(`Dar VIP de 6 Meses para ${selectedUser.name}?`)) {
+                                                    const expiresAt = new Date();
+                                                    expiresAt.setDate(expiresAt.getDate() + 180);
+                                                    await updateUser(selectedUser.uid, {
+                                                        vip: true,
+                                                        vipPlan: 'manual_semiannual',
+                                                        vipExpiresAt: expiresAt.toISOString()
+                                                    });
+                                                    alert("VIP de 6 Meses Ativado!");
+                                                    setSelectedUser({ ...selectedUser, vip: true });
+                                                    refreshLeaderboard();
+                                                }
+                                            }}
+                                            style={{ padding: '6px 10px', background: '#ffd700', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem' }}
+                                        >
+                                            6 Meses
+                                        </button>
+                                        <button
+                                            onClick={async () => {
+                                                if (window.confirm(`Dar VIP de 1 Ano para ${selectedUser.name}?`)) {
+                                                    const expiresAt = new Date();
+                                                    expiresAt.setDate(expiresAt.getDate() + 365);
+                                                    await updateUser(selectedUser.uid, {
+                                                        vip: true,
+                                                        vipPlan: 'manual_annual',
+                                                        vipExpiresAt: expiresAt.toISOString()
+                                                    });
+                                                    alert("VIP de 1 Ano Ativado!");
+                                                    setSelectedUser({ ...selectedUser, vip: true });
+                                                    refreshLeaderboard();
+                                                }
+                                            }}
+                                            style={{ padding: '6px 10px', background: '#ffd700', color: '#000', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.8rem' }}
+                                        >
+                                            1 Ano
                                         </button>
                                     </div>
-                                )}
+                                </div>
                             </div>
                         )}
 
