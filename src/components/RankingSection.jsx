@@ -7,6 +7,7 @@ import { shareHiddenElement } from '../utils/share';
 
 import { BannerAd } from './AdSystem';
 import { PaymentService } from '../services/PaymentService';
+import { ChallengeService } from '../services/ChallengeService';
 
 const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
     const [leaderboard, setLeaderboard] = useState([]);
@@ -14,6 +15,11 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [requestStatus, setRequestStatus] = useState(null); // null, 'sending', 'sent', 'error'
     const [showUnfriendConfirm, setShowUnfriendConfirm] = useState(false);
+
+    // PvP Challenge State
+    const [sentChallenge, setSentChallenge] = useState(null); // { id, opponent }
+    const [waitingForOpponent, setWaitingForOpponent] = useState(false);
+    const [challengeTimer, setChallengeTimer] = useState(10);
 
     // VIP States
     const [showVipModal, setShowVipModal] = useState(false);
@@ -25,6 +31,78 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
             setShowUnfriendConfirm(false);
         }
     }, [selectedUser]);
+
+    // CHALLENGE WAITING LOGIC
+    useEffect(() => {
+        let timer = null;
+        let unsub = null;
+
+        if (waitingForOpponent && sentChallenge) {
+            // 1. Countdown Timer
+            setChallengeTimer(15); // Start with 15s (gives buffer)
+            timer = setInterval(() => {
+                setChallengeTimer(prev => {
+                    if (prev <= 1) {
+                        // Timeout
+                        handleCancelChallenge();
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+
+            // 2. Listen for Status Changes
+            unsub = ChallengeService.listenToChallenge(sentChallenge.id, (battle) => {
+                if (!battle) {
+                    // Deleted (maybe by timeout or error)
+                    setWaitingForOpponent(false);
+                    setSentChallenge(null);
+                    return;
+                }
+                if (battle.status === 'accepted') {
+                    // Opponent Accepted!
+                    setWaitingForOpponent(false);
+                    setSentChallenge(null);
+                    onBattle(selectedUser); // Enter battle
+                } else if (battle.status === 'rejected') {
+                    alert("O oponente recusou o desafio.");
+                    setWaitingForOpponent(false);
+                    setSentChallenge(null);
+                    ChallengeService.cleanup(sentChallenge.id);
+                }
+            });
+        }
+
+        return () => {
+            if (timer) clearInterval(timer);
+            if (unsub) unsub();
+        };
+    }, [waitingForOpponent, sentChallenge]);
+
+    const handleSendChallenge = async () => {
+        if (!selectedUser) return;
+        const result = await ChallengeService.sendChallenge(profile, selectedUser.id); // Note: selectedUser.id might be friend code? Use .uid
+        // Wait, selectedUser from leaderboard has .uid
+        // Let's verify data structure. Ranking returns full profile usually.
+        // check lines 541 renderRow(user). user has .uid?
+        // db.js registerUser sets uid: user.uid.
+
+        if (result.error) {
+            alert("Erro ao enviar desafio: " + result.error);
+            return;
+        }
+
+        setSentChallenge({ id: result.id, opponent: selectedUser });
+        setWaitingForOpponent(true);
+    };
+
+    const handleCancelChallenge = async () => {
+        setWaitingForOpponent(false);
+        if (sentChallenge) {
+            await ChallengeService.cleanup(sentChallenge.id);
+            setSentChallenge(null);
+        }
+    };
 
     // Handle Unfriend
     const handleUnfriend = async () => {
@@ -505,6 +583,20 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                                             }}
                                         />
                                     )}
+                                    {/* Online Indicator */}
+                                    {user.lastActive && (Date.now() - user.lastActive < 2 * 60 * 1000) && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            bottom: '-2px',
+                                            right: '-2px',
+                                            width: '12px',
+                                            height: '12px',
+                                            backgroundColor: '#00ff66',
+                                            borderRadius: '50%',
+                                            border: '2px solid #333',
+                                            zIndex: 25
+                                        }}></div>
+                                    )}
                                 </div>
 
                                 <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -746,7 +838,8 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                                 </div>
                                 <button
                                     onClick={() => {
-                                        if (onBattle) onBattle(selectedUser);
+                                        // if (onBattle) onBattle(selectedUser);
+                                        handleSendChallenge();
                                     }}
                                     style={{
                                         width: '100%', padding: '12px',
@@ -757,7 +850,7 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                                         boxShadow: '0 4px 12px rgba(255, 0, 85, 0.3)'
                                     }}
                                 >
-                                    ⚔️ DUELAR
+                                    {waitingForOpponent ? '⏳ AGUARDANDO...' : '⚔️ DUELAR'}
                                 </button>
                                 <button
                                     onClick={() => setShowUnfriendConfirm(true)}
@@ -826,6 +919,38 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                 </div>
             )}
 
+            {/* WAITING FOR OPPONENT MODAL */}
+            {waitingForOpponent && selectedUser && (
+                <div className="modal-overlay animate-fade-in" style={{ zIndex: 11000 }}>
+                    <div className="card" style={{
+                        width: '90%', maxWidth: '350px',
+                        background: '#000', border: '1px solid #ff4444',
+                        textAlign: 'center', padding: '2rem'
+                    }}>
+                        <div className="spinner" style={{ margin: '0 auto 1rem', borderColor: '#ff4444', borderRightColor: 'transparent' }}></div>
+                        <h2 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Aguardando {selectedUser.name}...</h2>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ff4444', marginBottom: '1rem' }}>{challengeTimer}s</div>
+
+                        <div style={{ textAlign: 'left', fontSize: '0.85rem', color: '#ccc', marginBottom: '1.5rem', background: '#111', padding: '10px', borderRadius: '8px' }}>
+                            <div style={{ fontWeight: 'bold', marginBottom: '5px', color: '#fff' }}>Enquanto espera, lembre-se:</div>
+                            <p>• Força vence Defesa</p>
+                            <p>• Defesa vence Agilidade</p>
+                            <p>• Agilidade vence Força</p>
+                        </div>
+
+                        <button
+                            onClick={handleCancelChallenge}
+                            style={{
+                                background: 'transparent', border: '1px solid #666', color: '#aaa',
+                                padding: '8px 16px', borderRadius: '6px', cursor: 'pointer'
+                            }}
+                        >
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Banner Ad (Variable Bottom) */}
             <BannerAd isVip={profile.vip} />
 
@@ -833,7 +958,7 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
             {showVipModal && <VipPlansModal />}
             {/* Support Link */}
             <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#666', fontSize: '0.8rem' }}>
-                Precisa de ajuda? Entre em contato com o <a href="mailto:nollramsilva9@gmail.com" style={{ color: '#888', textDecoration: 'underline' }}>suporte</a>
+                Precisa de ajuda? Entre em contato com o <a href="mailto:metafitsuporte4@gmail.com" style={{ color: '#888', textDecoration: 'underline' }}>suporte</a>
             </div>
         </section>
     );

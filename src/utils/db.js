@@ -666,3 +666,15 @@ export const checkVipExpiration = async (profile) => {
 
     return profile;
 };
+
+export const updateHeartbeat = async (uid) => {
+    if (!uid) return;
+    try {
+        const userRef = doc(db, "users", uid);
+        await updateDoc(userRef, {
+            lastActive: Date.now()
+        });
+    } catch (e) {
+        console.error("Error updating heartbeat:", e);
+    }
+};

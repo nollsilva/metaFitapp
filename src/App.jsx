@@ -10,7 +10,10 @@ import HeroSection from './components/HeroSection';
 import OnboardingGuide from './components/OnboardingGuide';
 import Footer from './components/Footer';
 import TutorialOverlay from './components/TutorialOverlay';
-import { getUserProfile, updateUser, logoutUser, deleteUserAccount, checkVipExpiration } from './utils/db';
+import {
+  loginUser, registerUser, logoutUser, resetPassword, getUserProfile,
+  updateUser, checkSeasonReset, checkVipExpiration, updateHeartbeat // Add updateHeartbeat
+} from './utils/db';
 import { sendRankUpEmail } from './utils/email';
 import { getRankTitle } from './utils/rankingSystem';
 import { getBadgeConfig } from './components/BadgeIcons';
@@ -26,6 +29,7 @@ import RunMode from './components/RunMode';
 import BottomNav from './components/BottomNav';
 import HamburgerMenu from './components/HamburgerMenu';
 import DailyBonus from './components/DailyBonus';
+import { ChallengeService } from './services/ChallengeService';
 import NotificationSystem from './components/NotificationSystem'; // Imported
 import NotificationPermissionModal from './components/NotificationPermissionModal'; // Imported
 import NotificationsScreen from './components/NotificationsScreen'; // Imported
@@ -196,6 +200,79 @@ function App() {
       updateUser(userProfile.uid, userProfile);
     }
   }, [userProfile]);
+
+  // Heartbeat Effect (Online Status)
+  useEffect(() => {
+    if (!userProfile.uid) return;
+    // Initial call
+    updateHeartbeat(userProfile.uid);
+    const interval = setInterval(() => {
+      updateHeartbeat(userProfile.uid);
+    }, 60 * 1000); // 1 minute
+    return () => clearInterval(interval);
+  }, [userProfile.uid]);
+
+  // --- CHALLENGE SYSTEM LISTENER ---
+  const [incomingChallenges, setIncomingChallenges] = useState([]);
+  const [activeChallenge, setActiveChallenge] = useState(null); // The accepted challenge to show rules for
+
+  useEffect(() => {
+    if (!userProfile.uid) return;
+    const unsub = ChallengeService.listenForIncomingChallenges(userProfile.uid, (challenges) => {
+      setIncomingChallenges(challenges);
+    });
+    return () => unsub();
+  }, [userProfile.uid]);
+
+  const handleAcceptChallenge = async (challenge) => {
+    await ChallengeService.acceptChallenge(challenge.id);
+    setActiveChallenge(challenge); // Show rules modal
+    // Remove from incoming list locally to close invite modal immediately
+    setIncomingChallenges(prev => prev.filter(c => c.id !== challenge.id));
+  };
+
+  const handleRejectChallenge = async (challengeId) => {
+    await ChallengeService.rejectChallenge(challengeId);
+  };
+
+  const enterBattleFromChallenge = () => {
+    // Navigate to Battle Tab and Set Opponent
+    // We need updates to battle stats or just passing data?
+    // App.jsx handles generic tab switching. We need to pass the opponent to BattleArena.
+    // For now, we assume RankingSection triggers battle, but here we are entering from App.
+    // We need a way to set "battleOpponent" state if it exists, or pass it down.
+    // Let's assume BattleArena gets props or we set it here.
+    // Looking at App.jsx, we need see how `onBattle` works.
+    // We will create a state `battleData` or similar if needed, or just setTab('battle') and pass props?
+    // Let's check how BattleArena is used.
+    setBattleOpponent({
+      uid: activeChallenge.challengerId,
+      name: activeChallenge.challengerName,
+      avatar: activeChallenge.challengerAvatar
+    });
+    setActiveTab('ranking'); // Battle is usually inside Ranking or separate?
+    // Wait, BattleArena seems to be a full screen overlay often triggered from Ranking.
+    // If I change activeTab to 'ranking', I need to trigger the battle view there.
+    // OR better: Just render BattleArena directly if we are in battle mode.
+    // Let's set a global 'isBattling' state or check how RankingSection initiates it.
+    // Actually, BattleArena was rendered in RankingSection in previous context.
+    // But if I accept here in App.jsx, I need to tell RankingSection to open BattleArena.
+    // Pass `initialBattleConfig` to RankingSection?
+    // Simpler: Just render BattleArena as a top-level overlay in App.jsx if active.
+    setActiveChallenge(null);
+    // We need to trigger the battle start.
+    // I will use a new prop on RankingSection or a global state.
+    // Let's add `pendingBattle` state to App.jsx and pass to RankingSection.
+    setPendingBattle({
+      uid: activeChallenge.challengerId,
+      name: activeChallenge.challengerName,
+      avatar: activeChallenge.challengerAvatar
+    });
+    setActiveTab('battle');
+  };
+
+  const [pendingBattle, setPendingBattle] = useState(null);
+
 
   const updateProfile = (newData) => {
     setUserProfile(prev => ({ ...prev, ...newData }));
@@ -373,7 +450,7 @@ function App() {
         }}
       />
 
-      {/* Notification Permission Modal */}
+    // Notification Permission Request (Mobile Only or PWA)
       {showNotificationModal && (
         <NotificationPermissionModal
           profile={userProfile}
@@ -568,9 +645,81 @@ function App() {
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <Footer />
+      {/* CHALLENGE INVITE MODAL (OPPONENT) */}
+      {incomingChallenges.length > 0 && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 11000 }}>
+          <div className="card" style={{
+            width: '90%', maxWidth: '350px', textAlign: 'center',
+            background: 'linear-gradient(145deg, #1a0b0b 0%, #000 100%)',
+            border: '1px solid #ff4444',
+            boxShadow: '0 0 30px rgba(255,0,0,0.3)'
+          }}>
+            <h2 style={{ color: '#ff4444', fontSize: '1.5rem', marginBottom: '1rem' }}>⚔️ DESAFIO!</h2>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ width: '80px', height: '80px', borderRadius: '50%', margin: '0 auto 10px', overflow: 'hidden', border: '3px solid #ff4444' }}>
+                {incomingChallenges[0].challengerAvatar ? (
+                  <img src={`/avatars/${incomingChallenges[0].challengerAvatar}.png`} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', background: '#333' }}></div>
+                )}
+              </div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{incomingChallenges[0].challengerName}</div>
+              <div style={{ color: '#aaa', fontSize: '0.9rem' }}>te desafiou para um duelo!</div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button
+                onClick={() => handleRejectChallenge(incomingChallenges[0].id)}
+                style={{
+                  padding: '10px 20px', borderRadius: '8px', border: '1px solid #ff4444',
+                  background: 'transparent', color: '#ff4444', fontWeight: 'bold'
+                }}>
+                RECUSAR
+              </button>
+              <button
+                onClick={() => handleAcceptChallenge(incomingChallenges[0])}
+                style={{
+                  padding: '10px 20px', borderRadius: '8px', border: 'none',
+                  background: '#ff4444', color: '#fff', fontWeight: 'bold',
+                  boxShadow: '0 0 15px rgba(255, 68, 68, 0.4)'
+                }}>
+                ACEITAR
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RULES MODAL (OPPONENT ACCEPTED) */}
+      {activeChallenge && (
+        <div className="modal-overlay animate-fade-in" style={{ zIndex: 11000 }}>
+          <div className="card" style={{
+            width: '90%', maxWidth: '350px', textAlign: 'center',
+            background: '#000', border: '1px solid #333'
+          }}>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: '#fff' }}>📋 Regras do Duelo</h2>
+            <div style={{ textAlign: 'left', fontSize: '0.9rem', color: '#ccc', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+              <p>1. O duelo é baseado em turnos.</p>
+              <p>2. Você escolhe: <strong>Força</strong>, <strong>Agilidade</strong> ou <strong>Defesa</strong>.</p>
+              <p>3. <strong>Força</strong> vence Defesa.</p>
+              <p>4. <strong>Defesa</strong> vence Agilidade.</p>
+              <p>5. <strong>Agilidade</strong> vence Força.</p>
+              <p>6. Quem zerar a vida do oponente vence!</p>
+            </div>
+            <button
+              onClick={enterBattleFromChallenge}
+              className="btn-primary"
+              style={{ width: '100%', fontSize: '1.1rem', padding: '12px' }}
+            >
+              ENTRAR NA ARENA ⚔️
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
 
 export default App;
-

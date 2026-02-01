@@ -595,7 +595,7 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
             */}
             {/* Support Link */}
             <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#666', fontSize: '0.8rem' }}>
-                Precisa de ajuda? Entre em contato com o <a href="mailto:nollramsilva9@gmail.com" style={{ color: '#888', textDecoration: 'underline' }}>suporte</a>
+                Precisa de ajuda? Entre em contato com o <a href="mailto:metafitsuporte4@gmail.com" style={{ color: '#888', textDecoration: 'underline' }}>suporte</a>
             </div>
         </section>
     );
