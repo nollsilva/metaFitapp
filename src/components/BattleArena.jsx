@@ -181,37 +181,41 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             const isBot = enemyProfile.id === 'BOT_METAFIT';
 
             if (isBot) {
-                // Rule-based Intelligence
+                // Extreme Bot Intelligence (Aggressive & Unpredictable)
                 if (turn === 3) {
-                    // Turn 3: Dump everything
                     aiBid.strength = enemyPool.strength;
                     aiBid.speed = enemyPool.speed;
                     aiBid.defense = enemyPool.defense;
                 } else if (turn === 1) {
-                    // Turn 1: Balanced/Conservative (~25-30%)
-                    aiBid.strength = Math.floor(enemyPool.strength * 0.3);
-                    aiBid.speed = Math.floor(enemyPool.speed * 0.25);
-                    aiBid.defense = Math.floor(enemyPool.defense * 0.25);
+                    // Start strong and fast (Agility/Strength focus)
+                    const aggressiveness = 0.35 + (Math.random() * 0.15); // 35-50% spend
+                    aiBid.speed = Math.floor(enemyPool.speed * (0.4 + Math.random() * 0.2)); // Prioritize initiative
+                    aiBid.strength = Math.floor(enemyPool.strength * aggressiveness);
+                    aiBid.defense = Math.floor(enemyPool.defense * (0.1 + Math.random() * 0.2));
                 } else {
-                    // Turn 2: Reactive
                     const myHpPercent = (myHp / getMaxHp(myProfile)) * 100;
                     const botHpPercent = (enemyHp / getMaxHp(enemyProfile)) * 100;
 
-                    if (botHpPercent < 40) {
-                        // Critical HP: Focus on Defense
-                        aiBid.defense = Math.floor(enemyPool.defense * 0.6);
-                        aiBid.strength = Math.floor(enemyPool.strength * 0.2);
-                        aiBid.speed = Math.floor(enemyPool.speed * 0.2);
-                    } else if (myHpPercent < 40) {
-                        // Opponent Low HP: Focus on finishing (Strength/Speed)
-                        aiBid.strength = Math.floor(enemyPool.strength * 0.5);
-                        aiBid.speed = Math.floor(enemyPool.speed * 0.4);
-                        aiBid.defense = Math.floor(enemyPool.defense * 0.1);
-                    } else {
-                        // Standard Turn 2
-                        aiBid.strength = Math.floor(enemyPool.strength * 0.4);
-                        aiBid.speed = Math.floor(enemyPool.speed * 0.4);
+                    if (botHpPercent < 60 && myHpPercent > botHpPercent) {
+                        // Bot is losing: High damage gamble or heavy defense
+                        if (Math.random() > 0.4) {
+                            aiBid.strength = Math.floor(enemyPool.strength * 0.7);
+                            aiBid.speed = Math.floor(enemyPool.speed * 0.5);
+                            aiBid.defense = Math.floor(enemyPool.defense * 0.3);
+                        } else {
+                            aiBid.defense = Math.floor(enemyPool.defense * 0.8);
+                            aiBid.strength = Math.floor(enemyPool.strength * 0.3);
+                        }
+                    } else if (myHpPercent < 60) {
+                        // Opponent is weak: Go for the finish
+                        aiBid.strength = Math.floor(enemyPool.strength * 0.6);
+                        aiBid.speed = Math.floor(enemyPool.speed * 0.6);
                         aiBid.defense = Math.floor(enemyPool.defense * 0.2);
+                    } else {
+                        // Standard aggressive turn
+                        aiBid.strength = Math.floor(enemyPool.strength * 0.5);
+                        aiBid.speed = Math.floor(enemyPool.speed * 0.5);
+                        aiBid.defense = Math.floor(enemyPool.defense * 0.3);
                     }
                 }
             } else {
@@ -293,7 +297,8 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         if (phase === 'result') {
             // Revision: Bot battles don't grant attribute points
             if (enemyProfile.id === 'BOT_METAFIT') {
-                setDistPoints(0);
+                const points = myHp > enemyHp ? 0.0001 : 0; // Small hack to trigger results UI correctly
+                setDistPoints(myHp > enemyHp ? 1 : 0);
             } else {
                 const points = myHp > enemyHp ? 3 : 1;
                 setDistPoints(points);
@@ -329,36 +334,16 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         };
 
         // Update DB
-        if (myProfile.uid) {
-            // Revision: Award 1 skill point if winning against MetaFit Bot
-            const isBotWinner = isWin && enemyProfile.id === 'BOT_METAFIT';
-            if (isBotWinner) {
-                // Exclude other rewards, only +1 skill point
-                const currentPoints = (myProfile.attributes?.points || 0);
-                await updateUser(myProfile.uid, {
-                    "attributes.points": currentPoints + 1
-                });
-
-                if (onUpdateProfile) {
-                    onUpdateProfile({
-                        attributes: { ...myProfile.attributes, points: currentPoints + 1 }
-                    });
-                }
-            } else {
-                // Normal PvP Reward Path
-                await updateUser(myProfile.uid, {
-                    attributes: newAttrs,
-                    battleStats: newStats
-                });
-
-                if (onUpdateProfile) {
-                    onUpdateProfile({
-                        attributes: newAttrs,
-                        battleStats: newStats
-                    });
-                }
-            }
-        }
+        <button
+            onClick={handleClaimRewards}
+            style={{
+                width: '100%', padding: '15px',
+                background: 'linear-gradient(90deg, #00ff66, #00cc55)', border: 'none',
+                borderRadius: '12px', color: '#000', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer'
+            }}
+        >
+            {enemyProfile.id === 'BOT_METAFIT' ? 'CONCLUIR TREINO' : 'CONFIRMAR EVOLUÇÃO'}
+        </button>
 
         // Show Share Screen
         setShowShare(true);
