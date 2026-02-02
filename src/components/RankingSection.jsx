@@ -4,6 +4,7 @@ import { BadgeIcon, getBadgeConfig } from './BadgeIcons';
 import { getRankTitle } from '../utils/rankingSystem';
 import ShareStoryCard from './ShareStoryCard';
 import { shareHiddenElement } from '../utils/share';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { BannerAd } from './AdSystem';
 import { PaymentService } from '../services/PaymentService';
@@ -96,7 +97,17 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
             return;
         }
 
-        setSentChallenge({ id: result.id, opponent: selectedUser });
+        setWaitingForOpponent(true);
+    };
+
+    const handleChallengeDirect = async (user) => {
+        if (!user) return;
+        const result = await ChallengeService.sendChallenge(profile, user.uid);
+        if (result.error) {
+            alert("Erro ao enviar desafio: " + result.error);
+            return;
+        }
+        setSentChallenge({ id: result.id, opponent: user });
         setWaitingForOpponent(true);
     };
 
@@ -500,7 +511,10 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
 
             {rankingTab === 'duel' && (
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem', background: 'rgba(255,0,85,0.05)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,0,85,0.2)' }}>
-                    <p style={{ color: '#aaa', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                    <p style={{ color: '#00f0ff', fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        👉 Arraste o card da esquerda para a direita para duelar! ⚔️
+                    </p>
+                    <p style={{ color: '#aaa', fontSize: '0.75rem', marginBottom: '1.2rem' }}>
                         🛡️ Só pode jogar com quem está online no app.
                     </p>
                     <button
@@ -508,25 +522,28 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                             id: 'BOT_METAFIT',
                             uid: 'BOT_METAFIT',
                             name: 'MetaFit Bot',
-                            level: Math.max(1, profile.level - 2),
+                            level: profile.level || 1,
+                            vip: 'diamond',
+                            avatar: 'logo',
                             attributes: {
-                                strength: Math.max(0, (profile.attributes?.strength || 1) - 1),
-                                speed: Math.max(0, (profile.attributes?.speed || 1) - 1),
-                                defense: Math.max(0, (profile.attributes?.defense || 1) - 1)
+                                strength: profile.attributes?.strength || 10,
+                                speed: profile.attributes?.speed || 10,
+                                defense: profile.attributes?.defense || 10
                             }
                         }, null, 'challenger')}
                         style={{
                             width: '100%', padding: '12px',
-                            background: 'linear-gradient(90deg, #ff0055, #ff4444)',
-                            border: 'none', borderRadius: '8px',
-                            color: '#fff', fontWeight: 'bold',
+                            background: 'linear-gradient(90deg, #111, #222)',
+                            border: '1px solid #b9f2ff', borderRadius: '8px',
+                            color: '#b9f2ff', fontWeight: 'bold',
                             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                            boxShadow: '0 4px 12px rgba(255, 0, 85, 0.3)'
+                            boxShadow: '0 0 15px rgba(185, 242, 255, 0.2)',
+                            transition: '0.3s'
                         }}
                     >
-                        🤖 TREINAR CONTRA BOT METAFIT
+                        <span style={{ fontSize: '1.2rem' }}>💎</span> TREINAR CONTRA BOT METAFIT (DIFÍCIL)
                     </button>
-                    <p style={{ marginTop: '5px', fontSize: '0.7rem', color: '#666' }}>Vencer o bot concede +1 Ponto de Habilidade</p>
+                    <p style={{ marginTop: '8px', fontSize: '0.7rem', color: '#666' }}>Vencer o bot concede +1 Ponto de Habilidade</p>
                 </div>
             )}
 
@@ -547,93 +564,144 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                         if (rankingTab === 'duel' && (!isOnline || isMe)) return null;
 
                         return (
-                            <div key={user.id} className="card"
-                                onClick={() => setSelectedUser(user)}
-                                style={{
-                                    padding: '0.8rem 1rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.8rem',
-                                    cursor: 'pointer',
-                                    transition: '0.2s',
-                                    border: isMe ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.05)',
-                                    background: isMe ? 'rgba(0,240,255,0.05)' : 'var(--color-bg-card)',
-                                    minHeight: '80px' // ensure consistent height
+                            <div key={user.id} style={{ position: 'relative', overflow: 'hidden', borderRadius: '16px' }}>
+                                {/* Challenge Trigger Background */}
+                                <div style={{
+                                    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                                    background: 'linear-gradient(90deg, #ff0055, transparent)',
+                                    display: 'flex', alignItems: 'center', paddingLeft: '20px',
+                                    color: '#fff', fontWeight: 'bold', fontSize: '1.2rem',
+                                    zIndex: 1, opacity: 0.8
                                 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginRight: '5px' }}>
-                                    <div style={{
-                                        fontSize: '1rem', fontWeight: '800', width: '30px', textAlign: 'center',
-                                        color: rank === 1 ? '#ffd700' : rank === 2 ? '#c0c0c0' : rank === 3 ? '#cd7f32' : '#666'
-                                    }}>
-                                        #{rank}
-                                    </div>
-                                    <div style={{ position: 'relative', width: '50px', height: '50px', flexShrink: 0 }}>
-                                        <BadgeIcon type={config.icon} color={config.color} />
-                                    </div>
+                                    ⚔️ DUELAR!
                                 </div>
 
-                                <div style={{
-                                    width: '40px', height: '40px', borderRadius: '50%', background: '#333',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontWeight: 'bold', color: '#fff', fontSize: '0.8rem',
-                                    border: `2px solid ${user.vip ? '#ffd700' : (rank <= 3 ? 'var(--color-primary)' : '#444')} `,
-                                    position: 'relative',
-                                    overflow: 'visible', // Allow frame to overflow
-                                    boxShadow: user.vip ? '0 0 15px 2px rgba(255, 215, 0, 0.6)' : 'none'
-                                }}>
-                                    {user.avatar ? (
-                                        <img src={`/avatars/${user.avatar}.png`} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', overflow: 'hidden', position: 'relative', zIndex: 10 }} />
-                                    ) : (
-                                        <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 10, background: '#333' }}>
-                                            {user.name ? user.name.substring(0, 2).toUpperCase() : 'JD'}
+                                <motion.div
+                                    drag={rankingTab === 'duel' ? "x" : false}
+                                    dragConstraints={{ left: 0, right: 300 }}
+                                    dragElastic={0.1}
+                                    onDragEnd={(e, info) => {
+                                        if (info.offset.x > 150) {
+                                            setSelectedUser(user);
+                                            // Trigger challenge directly if enough swipe
+                                            setTimeout(() => {
+                                                const btn = document.getElementById(`challenge-btn-${user.id}`);
+                                                if (btn) btn.click();
+                                                else handleChallengeDirect(user);
+                                            }, 50);
+                                        }
+                                    }}
+                                    className="card"
+                                    onClick={() => setSelectedUser(user)}
+                                    style={{
+                                        padding: '0.8rem 1rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.8rem',
+                                        cursor: 'pointer',
+                                        transition: 'background 0.2s',
+                                        border: isMe ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.05)',
+                                        background: isMe ? 'rgba(0,240,255,0.05)' : 'var(--color-bg-card)',
+                                        minHeight: '80px',
+                                        position: 'relative',
+                                        zIndex: 5,
+                                        x: 0 // Reset x on render
+                                    }}>
+
+                                    {rankingTab === 'duel' && (
+                                        <div className="pulse" style={{
+                                            position: 'absolute', left: '2px', top: '50%', transform: 'translateY(-50%)',
+                                            color: '#ff0055', fontSize: '1.2rem', fontWeight: 'bold', zIndex: 10
+                                        }}>
+                                            →
                                         </div>
                                     )}
-                                    {user.vip && (
-                                        <img
-                                            src="/vip-frame.png?v=2"
-                                            alt="VIP Frame"
-                                            style={{
-                                                position: 'absolute',
-                                                top: '50%', left: '50%',
-                                                transform: 'translate(-50%, -50%)',
-                                                width: '155%', height: '155%',
-                                                zIndex: 20,
-                                                pointerEvents: 'none',
-                                                objectFit: 'contain'
-                                            }}
-                                        />
-                                    )}
-                                    {/* Online Indicator */}
-                                    {isOnline && (
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginRight: '5px' }}>
                                         <div style={{
-                                            position: 'absolute',
-                                            bottom: '-2px',
-                                            right: '-2px',
-                                            width: '12px',
-                                            height: '12px',
-                                            backgroundColor: '#00ff66',
-                                            borderRadius: '50%',
-                                            border: '2px solid #333',
-                                            zIndex: 25
-                                        }}></div>
-                                    )}
-                                </div>
-
-                                <div style={{ flex: 1, overflow: 'hidden' }}>
-                                    <div style={{ fontWeight: 'bold', fontSize: '1rem', color: isMe ? 'var(--color-primary)' : '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        {user.vip && <span style={{ marginRight: '2px', fontSize: '1rem' }}>👑</span>}
-                                        {user.name}
-                                        {isMe && <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>(Você)</span>}
+                                            fontSize: '1rem', fontWeight: '800', width: '30px', textAlign: 'center',
+                                            color: rank === 1 ? '#ffd700' : rank === 2 ? '#c0c0c0' : rank === 3 ? '#cd7f32' : '#666'
+                                        }}>
+                                            #{rank}
+                                        </div>
+                                        <div style={{ position: 'relative', width: '50px', height: '50px', flexShrink: 0 }}>
+                                            <BadgeIcon type={config.icon} color={config.color} />
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                        {getRankTitle(user.xp)}
-                                    </div>
-                                </div>
 
-                                <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontWeight: '800', fontSize: '1rem' }}>{user.xp} XP</div>
-                                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Lvl {user.level}</div>
-                                </div>
+                                    {/* ... rest of the card content ... */}
+                                    <div style={{
+                                        width: '40px', height: '40px', borderRadius: '50%', background: '#333',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontWeight: 'bold', color: '#fff', fontSize: '0.8rem',
+                                        border: `2px solid ${user.vip ? '#ffd700' : (rank <= 3 ? 'var(--color-primary)' : '#444')} `,
+                                        position: 'relative',
+                                        overflow: 'visible',
+                                        boxShadow: user.vip ? '0 0 15px 2px rgba(255, 215, 0, 0.6)' : 'none'
+                                    }}>
+                                        {user.avatar ? (
+                                            <img src={`/avatars/${user.avatar}.png`} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', overflow: 'hidden', position: 'relative', zIndex: 10 }} />
+                                        ) : (
+                                            <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 10, background: '#333' }}>
+                                                {user.name ? user.name.substring(0, 2).toUpperCase() : 'JD'}
+                                            </div>
+                                        )}
+                                        {user.vip && (
+                                            <img
+                                                src="/vip-frame.png?v=2"
+                                                alt="VIP Frame"
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: '50%', left: '50%',
+                                                    transform: 'translate(-50%, -50%)',
+                                                    width: '155%', height: '155%',
+                                                    zIndex: 20,
+                                                    pointerEvents: 'none',
+                                                    objectFit: 'contain'
+                                                }}
+                                            />
+                                        )}
+                                        {isOnline && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                bottom: '-2px',
+                                                right: '-2px',
+                                                width: '12px',
+                                                height: '12px',
+                                                backgroundColor: '#00ff66',
+                                                borderRadius: '50%',
+                                                border: '2px solid #333',
+                                                zIndex: 25
+                                            }}></div>
+                                        )}
+                                    </div>
+
+                                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                                        <div style={{ fontWeight: 'bold', fontSize: '1rem', color: isMe ? 'var(--color-primary)' : '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            {user.vip && <span style={{ marginRight: '2px', fontSize: '1rem' }}>👑</span>}
+                                            {user.name}
+                                            {isMe && <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>(Você)</span>}
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                            {getRankTitle(user.xp)}
+                                        </div>
+                                    </div>
+
+                                    <div style={{ textAlign: 'right' }}>
+                                        {rankingTab === 'duel' ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                <div style={{ fontWeight: '800', fontSize: '0.85rem', color: '#ff4444' }}>💪 {user.attributes?.strength || 0}</div>
+                                                <div style={{ fontWeight: '800', fontSize: '0.85rem', color: '#00f0ff' }}>⚡ {user.attributes?.speed || 0}</div>
+                                                <div style={{ fontWeight: '800', fontSize: '0.85rem', color: '#00ff66' }}>🛡️ {user.attributes?.defense || 0}</div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div style={{ fontWeight: '800', fontSize: '1rem' }}>{user.xp} XP</div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Lvl {user.level}</div>
+                                            </>
+                                        )}
+                                    </div>
+                                </motion.div>
                             </div>
                         );
                     };

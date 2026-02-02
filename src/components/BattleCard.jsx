@@ -8,6 +8,7 @@ const BattleCard = ({ profile, health, maxHealth, isEnemy, activeTurn, resultSta
     // Result Styles
     const isWinner = resultStatus === 'winner';
     const isLoser = resultStatus === 'loser';
+    const isDiamond = profile.vip === 'diamond';
 
     const resultStyle = resultStatus ? {
         transform: isWinner
@@ -19,6 +20,11 @@ const BattleCard = ({ profile, health, maxHealth, isEnemy, activeTurn, resultSta
         border: isWinner ? '4px solid #ffd700' : '2px solid #555',
         boxShadow: isWinner ? '0 0 50px rgba(255, 215, 0, 0.4)' : 'none',
         transition: 'all 0.8s ease'
+    } : {};
+
+    const diamondGlow = isDiamond ? {
+        border: '2px solid #b9f2ff',
+        boxShadow: activeTurn ? '0 0 35px rgba(185, 242, 255, 0.6)' : '0 0 20px rgba(185, 242, 255, 0.3)',
     } : {};
 
     return (
@@ -35,31 +41,52 @@ const BattleCard = ({ profile, health, maxHealth, isEnemy, activeTurn, resultSta
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            ...resultStyle
+            ...resultStyle,
+            ...diamondGlow
         }}>
             {/* Avatar & Level */}
             <div style={{ position: 'relative', marginBottom: '1rem' }}>
                 <div style={{
                     width: '80px', height: '80px', borderRadius: '50%',
-                    border: `3px solid ${isEnemy ? '#ff0055' : '#00f0ff'}`,
+                    border: `3px solid ${isDiamond ? '#b9f2ff' : (isEnemy ? '#ff0055' : '#00f0ff')}`,
                     overflow: 'hidden',
                     background: '#000',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    position: 'relative'
                 }}>
-                    {profile.avatar ? (
+                    {profile.avatar === 'logo' ? (
+                        <img src="/logo.png" alt="MetaFit" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+                    ) : profile.avatar ? (
                         <img src={`/avatars/${profile.avatar}.png`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                         <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fff' }}>
                             {profile.name ? profile.name.substring(0, 2).toUpperCase() : 'JD'}
                         </div>
                     )}
+
+                    {profile.vip && (
+                        <img
+                            src="/vip-frame.png"
+                            alt="VIP Frame"
+                            style={{
+                                position: 'absolute',
+                                top: '50%', left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                width: '155%', height: '155%',
+                                zIndex: 20,
+                                pointerEvents: 'none',
+                                objectFit: 'contain'
+                            }}
+                        />
+                    )}
                 </div>
                 <div style={{
                     position: 'absolute', bottom: '-5px', left: '50%', transform: 'translateX(-50%)',
-                    background: '#000', color: '#ffd700', border: '1px solid #ffd700',
-                    padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 'bold', whiteSpace: 'nowrap'
+                    background: '#000', color: isDiamond ? '#b9f2ff' : '#ffd700', border: `1px solid ${isDiamond ? '#b9f2ff' : '#ffd700'}`,
+                    padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 'bold', whiteSpace: 'nowrap',
+                    zIndex: 30
                 }}>
-                    Lvl {profile.level || 1}
+                    {isDiamond ? '💎 ' : ''}Lvl {profile.level || 1}
                 </div>
             </div>
 

@@ -176,17 +176,56 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
             // Simple AI: Spend ~33% of remaining pool + random variance
             // If Last turn, dump everything!
-            const aiBid = {};
-            ['strength', 'speed', 'defense'].forEach(attr => {
-                const available = enemyPool[attr];
+            // Smarter AI Strategy
+            const aiBid = { strength: 0, speed: 0, defense: 0 };
+            const isBot = enemyProfile.id === 'BOT_METAFIT';
+
+            if (isBot) {
+                // Rule-based Intelligence
                 if (turn === 3) {
-                    aiBid[attr] = available; // Dump all on last turn
+                    // Turn 3: Dump everything
+                    aiBid.strength = enemyPool.strength;
+                    aiBid.speed = enemyPool.speed;
+                    aiBid.defense = enemyPool.defense;
+                } else if (turn === 1) {
+                    // Turn 1: Balanced/Conservative (~25-30%)
+                    aiBid.strength = Math.floor(enemyPool.strength * 0.3);
+                    aiBid.speed = Math.floor(enemyPool.speed * 0.25);
+                    aiBid.defense = Math.floor(enemyPool.defense * 0.25);
                 } else {
-                    // Random between 20% and 40% of remaining
-                    const percent = 0.2 + (Math.random() * 0.3);
-                    aiBid[attr] = Math.floor(available * percent);
+                    // Turn 2: Reactive
+                    const myHpPercent = (myHp / getMaxHp(myProfile)) * 100;
+                    const botHpPercent = (enemyHp / getMaxHp(enemyProfile)) * 100;
+
+                    if (botHpPercent < 40) {
+                        // Critical HP: Focus on Defense
+                        aiBid.defense = Math.floor(enemyPool.defense * 0.6);
+                        aiBid.strength = Math.floor(enemyPool.strength * 0.2);
+                        aiBid.speed = Math.floor(enemyPool.speed * 0.2);
+                    } else if (myHpPercent < 40) {
+                        // Opponent Low HP: Focus on finishing (Strength/Speed)
+                        aiBid.strength = Math.floor(enemyPool.strength * 0.5);
+                        aiBid.speed = Math.floor(enemyPool.speed * 0.4);
+                        aiBid.defense = Math.floor(enemyPool.defense * 0.1);
+                    } else {
+                        // Standard Turn 2
+                        aiBid.strength = Math.floor(enemyPool.strength * 0.4);
+                        aiBid.speed = Math.floor(enemyPool.speed * 0.4);
+                        aiBid.defense = Math.floor(enemyPool.defense * 0.2);
+                    }
                 }
-            });
+            } else {
+                // Legacy AI for generic opponents
+                ['strength', 'speed', 'defense'].forEach(attr => {
+                    const available = enemyPool[attr];
+                    if (turn === 3) {
+                        aiBid[attr] = available;
+                    } else {
+                        const percent = 0.2 + (Math.random() * 0.3);
+                        aiBid[attr] = Math.floor(available * percent);
+                    }
+                });
+            }
 
             // AI commits, update Enemy Tactics state so animation can use it
             setOpponentTactics(aiBid); // Emulate network response
@@ -252,8 +291,13 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
     useEffect(() => {
         if (phase === 'result') {
-            const points = myHp > enemyHp ? 3 : 1;
-            setDistPoints(points);
+            // Revision: Bot battles don't grant attribute points
+            if (enemyProfile.id === 'BOT_METAFIT') {
+                setDistPoints(0);
+            } else {
+                const points = myHp > enemyHp ? 3 : 1;
+                setDistPoints(points);
+            }
         }
     }, [phase, myHp, enemyHp]);
 
@@ -289,21 +333,31 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             // Revision: Award 1 skill point if winning against MetaFit Bot
             const isBotWinner = isWin && enemyProfile.id === 'BOT_METAFIT';
             if (isBotWinner) {
-                newAttrs.points = (newAttrs.points || 0) + 1;
+                // Exclude other rewards, only +1 skill point
+                const currentPoints = (myProfile.attributes?.points || 0);
+                await updateUser(myProfile.uid, {
+                    "attributes.points": currentPoints + 1
+                });
+
+                if (onUpdateProfile) {
+                    onUpdateProfile({
+                        attributes: { ...myProfile.attributes, points: currentPoints + 1 }
+                    });
+                }
+            } else {
+                // Normal PvP Reward Path
+                await updateUser(myProfile.uid, {
+                    attributes: newAttrs,
+                    battleStats: newStats
+                });
+
+                if (onUpdateProfile) {
+                    onUpdateProfile({
+                        attributes: newAttrs,
+                        battleStats: newStats
+                    });
+                }
             }
-
-            await updateUser(myProfile.uid, {
-                attributes: newAttrs,
-                battleStats: newStats
-            });
-        }
-
-        // Update Local Profile
-        if (onUpdateProfile) {
-            onUpdateProfile({
-                attributes: newAttrs,
-                battleStats: newStats
-            });
         }
 
         // Show Share Screen
@@ -545,32 +599,56 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                     <div className="animate-slide-up" style={{ textAlign: 'center' }}>
                         {!showShare ? (
                             <>
-                                <h3 style={{ color: '#00f0ff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Evolução de Atributos</h3>
-                                <div style={{ fontSize: '1rem', color: '#ccc', marginBottom: '1.5rem' }}>
-                                    Pontos disponíveis: <span style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '1.2rem' }}>{distPoints}</span>
-                                </div>
-
-                                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '1.5rem' }}>
-                                    {['strength', 'speed', 'defense'].map(attr => (
-                                        <div key={attr} style={{ background: '#222', padding: '10px', borderRadius: '8px', minWidth: '80px' }}>
-                                            <div style={{ fontSize: '1.2rem' }}>{attr === 'strength' ? '💪' : attr === 'speed' ? '⚡' : '🛡️'}</div>
-                                            <div style={{ fontSize: '0.8rem', color: '#888' }}>
-                                                + {allocated[attr]}
+                                {enemyProfile.id === 'BOT_METAFIT' ? (
+                                    <div style={{ marginBottom: '2rem' }}>
+                                        <h3 style={{ color: '#ffd700', fontSize: '1.4rem', marginBottom: '1rem' }}>🤖 Treino MetaFit Concluído</h3>
+                                        {myHp > enemyHp ? (
+                                            <div style={{
+                                                background: 'rgba(255, 215, 0, 0.1)',
+                                                padding: '20px',
+                                                borderRadius: '12px',
+                                                border: '1px solid #ffd700'
+                                            }}>
+                                                <div style={{ fontSize: '2rem', marginBottom: '10px' }}>💎</div>
+                                                <div style={{ color: '#fff', fontWeight: 'bold' }}>Recompensa: +1 Ponto de Habilidade</div>
+                                                <div style={{ fontSize: '0.8rem', color: '#aaa', marginTop: '5px' }}>Use seus pontos para evoluir seus atributos no perfil.</div>
                                             </div>
-                                            <button
-                                                disabled={distPoints <= 0}
-                                                onClick={() => handleDistribute(attr)}
-                                                style={{
-                                                    width: '30px', height: '30px', borderRadius: '50%',
-                                                    border: 'none', background: distPoints > 0 ? 'var(--color-primary)' : '#444',
-                                                    color: '#000', fontWeight: 'bold', marginTop: '5px', cursor: 'pointer'
-                                                }}
-                                            >
-                                                +
-                                            </button>
+                                        ) : (
+                                            <div style={{ color: '#aaa', fontStyle: 'italic' }}>
+                                                Tente novamente para ganhar pontos de habilidade!
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <>
+                                        <h3 style={{ color: '#00f0ff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Evolução de Atributos</h3>
+                                        <div style={{ fontSize: '1rem', color: '#ccc', marginBottom: '1.5rem' }}>
+                                            Pontos disponíveis: <span style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '1.2rem' }}>{distPoints}</span>
                                         </div>
-                                    ))}
-                                </div>
+
+                                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                                            {['strength', 'speed', 'defense'].map(attr => (
+                                                <div key={attr} style={{ background: '#222', padding: '10px', borderRadius: '8px', minWidth: '80px' }}>
+                                                    <div style={{ fontSize: '1.2rem' }}>{attr === 'strength' ? '💪' : attr === 'speed' ? '⚡' : '🛡️'}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#888' }}>
+                                                        + {allocated[attr]}
+                                                    </div>
+                                                    <button
+                                                        disabled={distPoints <= 0}
+                                                        onClick={() => handleDistribute(attr)}
+                                                        style={{
+                                                            width: '30px', height: '30px', borderRadius: '50%',
+                                                            border: 'none', background: distPoints > 0 ? 'var(--color-primary)' : '#444',
+                                                            color: '#000', fontWeight: 'bold', marginTop: '5px', cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
 
                                 <button
                                     onClick={handleClaimRewards}
@@ -580,7 +658,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                                         borderRadius: '12px', color: '#000', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer'
                                     }}
                                 >
-                                    CONFIRMAR EVOLUÇÃO
+                                    {enemyProfile.id === 'BOT_METAFIT' ? 'CONCLUIR TREINO' : 'CONFIRMAR EVOLUÇÃO'}
                                 </button>
                             </>
                         ) : (
