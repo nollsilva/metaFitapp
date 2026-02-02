@@ -101,5 +101,19 @@ export const ChallengeService = {
             console.error(`[ChallengeService] Error submitting turn:`, e);
             return { error: e.message };
         }
+    },
+
+    submitReadyNextTurn: async (battleId, role, turn) => {
+        console.log(`[ChallengeService] Marking ${role} ready for turn ${turn + 1}`);
+        try {
+            const field = `turn${turn}_ready_${role}`;
+            await updateDoc(doc(db, 'battles', battleId), {
+                [field]: true
+            });
+            return { success: true };
+        } catch (e) {
+            console.error(`[ChallengeService] Error submitting ready status:`, e);
+            return { error: e.message };
+        }
     }
 };

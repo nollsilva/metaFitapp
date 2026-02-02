@@ -118,7 +118,18 @@ const calculateTurnLogic = (playerEffort, enemyEffort, pProfile, eProfile, fatig
         }
     };
 
-    return { log, pDamage, eDamage, newFatigue };
+    return {
+        log,
+        pDamage,
+        eDamage,
+        newFatigue,
+        turnSummary: {
+            winner: playerGoesFirst ? 'player' : 'enemy', // Who won initiative
+            playerDamageDealt: eDamage,
+            playerDamageTaken: pDamage,
+            initiativeMsg: playerGoesFirst ? "Você venceu a disputa!" : "Oponente venceu a disputa!"
+        }
+    };
 };
 
 // Sub-component for a Player Card
@@ -131,22 +142,25 @@ const BattleCard = ({ profile, health, maxHealth, isEnemy, activeTurn, resultSta
     const isLoser = resultStatus === 'loser';
 
     const resultStyle = resultStatus ? {
-        transform: isWinner ? 'scale(1.3) translateY(-40px) translateZ(50px)' : 'scale(0.8) translateY(140px) rotate(-12deg) translateZ(-50px)',
+        transform: isWinner
+            ? 'scale(1.2) translateY(-30px) translateZ(50px)'
+            : 'scale(0.85) translateY(120px) rotate(-8deg) translateZ(-20px)',
         zIndex: isWinner ? 100 : 1,
-        opacity: isLoser ? 0.9 : 1,
-        filter: isLoser ? 'grayscale(0.4)' : 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.5))',
+        opacity: isLoser ? 0.95 : 1, // Slightly less transparent
+        filter: isLoser ? 'grayscale(0.3) brightness(0.8)' : 'drop-shadow(0 0 20px rgba(255, 215, 0, 0.5))',
         border: isWinner ? '4px solid #ffd700' : '2px solid #555',
-        boxShadow: isWinner ? '0 0 50px rgba(255, 215, 0, 0.4)' : 'none'
+        boxShadow: isWinner ? '0 0 50px rgba(255, 215, 0, 0.4)' : 'none',
+        transition: 'all 0.8s ease'
     } : {};
 
     return (
         <div className={`battle-card ${isEnemy ? 'enemy' : 'player'} ${activeTurn ? 'active' : ''}`} style={{
-            background: 'rgba(20, 20, 30, 0.8)',
+            background: 'rgba(20, 20, 30, 0.95)', // Increased opacity for "complete" look
             border: `2px solid ${isEnemy ? '#ff0055' : '#00f0ff'}`,
             borderRadius: '16px',
-            padding: '1rem', // Reduced padding
-            width: '48%', // Slightly wider % but smaller min-width
-            minWidth: '130px', // Reduced min-width for mobile
+            padding: '1rem',
+            width: '48%',
+            minWidth: '140px', // Slightly wider
             position: 'relative',
             boxShadow: activeTurn ? `0 0 30px ${isEnemy ? 'rgba(255,0,85,0.4)' : 'rgba(0,240,255,0.4)'}` : 'none',
             transition: 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
@@ -197,8 +211,17 @@ const BattleCard = ({ profile, health, maxHealth, isEnemy, activeTurn, resultSta
                 {Math.floor(health)} / {maxHealth} HP
             </div>
 
-            {/* Base Stats Preview */}
-            <div style={{ display: 'flex', justifyContent: 'space-around', width: '100%', fontSize: '0.8rem', color: '#ccc' }}>
+            {/* Base Stats Preview - Show always for both */}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-around',
+                width: '100%',
+                fontSize: '0.85rem',
+                color: '#fff',
+                background: 'rgba(255,255,255,0.05)',
+                padding: '8px 5px',
+                borderRadius: '8px'
+            }}>
                 <div title="Força">💪 {profile.attributes?.strength || 0}</div>
                 <div title="Velocidade">⚡ {profile.attributes?.speed || 0}</div>
                 <div title="Defesa">🛡️ {profile.attributes?.defense || 0}</div>
@@ -258,6 +281,10 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     const [opponentTurnConfirmed, setOpponentTurnConfirmed] = useState(false);
     const [opponentTactics, setOpponentTactics] = useState(null);
 
+    // Turn Sync (Waiting for both to click "Next Turn")
+    const [myNextTurnReady, setMyNextTurnReady] = useState(false);
+    const [opponentNextTurnReady, setOpponentNextTurnReady] = useState(false);
+
     // Sync Listener
     useEffect(() => {
         if (!battleId) return;
@@ -267,18 +294,28 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             console.log(`[BattleArena] Listener update:`, battle);
 
             const opponentRole = role === 'challenger' ? 'opponent' : 'challenger';
+
+            // 1. Current Turn Tactics Sync
             const oppField = `turn${turn}_${opponentRole}`;
             const myField = `turn${turn}_${role}`;
 
             if (battle[oppField]) {
-                console.log(`[BattleArena] Opponent confirmed turn ${turn}`);
                 setOpponentTactics(battle[oppField]);
                 setOpponentTurnConfirmed(true);
             }
-
             if (battle[myField]) {
-                console.log(`[BattleArena] My turn ${turn} confirmed`);
                 setMyTurnConfirmed(true);
+            }
+
+            // 2. Next Turn Readiness Sync
+            const oppReadyField = `turn${turn}_ready_${opponentRole}`;
+            const myReadyField = `turn${turn}_ready_${role}`;
+
+            if (battle[oppReadyField]) {
+                setOpponentNextTurnReady(true);
+            }
+            if (battle[myReadyField]) {
+                setMyNextTurnReady(true);
             }
         });
 
@@ -324,32 +361,37 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             setPhase('animating');
             setShowDuelAnimation(true);
 
-            // Wait 2.5s for animation, then process results
+            // Wait 3s (as requested) for animation, then process results
             const timer = setTimeout(() => {
-                // Execute Turn Calculation using Helper
                 const result = calculateTurnLogic(effort, opponentTactics, myProfile, enemyProfile, fatigue);
 
-                // Apply State Changes
                 setBattleLog(result.log);
+                setTurnSummary(result.turnSummary);
                 setMyHp(prev => Math.max(0, prev - result.pDamage));
                 setEnemyHp(prev => Math.max(0, prev - result.eDamage));
                 setFatigue(result.newFatigue);
 
                 setShowDuelAnimation(false);
                 setPhase('combat');
-            }, 2500);
+            }, 3000);
 
             return () => clearTimeout(timer);
         }
     }, [myTurnConfirmed, opponentTurnConfirmed, phase, effort, opponentTactics, fatigue, myProfile, enemyProfile]);
 
+    // Handle Turn Advancement Sync (PvP Only)
+    useEffect(() => {
+        if (battleId && myNextTurnReady && opponentNextTurnReady) {
+            console.log(`[BattleArena] Both ready. Advancing from Turn ${turn}`);
+            advanceTurnInternal();
+        }
+    }, [myNextTurnReady, opponentNextTurnReady, battleId]);
+
     const handleConfirmTurn = async () => {
         if (battleId) {
-            // PVP Sync Mode
             setPhase('waiting');
             await ChallengeService.submitTurn(battleId, role, turn, effort);
         } else {
-            // AI Mode (Keep old logic)
             setPhase('combat');
             const options = [50, 75, 100];
             for (let i = options.length - 1; i > 0; i--) {
@@ -362,30 +404,44 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                 defense: options[2]
             };
 
-            // Execute AI Turn
             const result = calculateTurnLogic(effort, enemyEffort, myProfile, enemyProfile, fatigue);
             setBattleLog(result.log);
+            setTurnSummary(result.turnSummary);
             setMyHp(prev => Math.max(0, prev - result.pDamage));
             setEnemyHp(prev => Math.max(0, prev - result.eDamage));
             setFatigue(result.newFatigue);
         }
     };
 
-    const handleNextTurn = () => {
+    const advanceTurnInternal = () => {
+        setTurnSummary(null);
+        setMyNextTurnReady(false);
+        setOpponentNextTurnReady(false);
+
         setTurn(prev => {
             const nextTurn = prev + 1;
-            if (nextTurn > 3) { // End of 3rd turn
+            if (nextTurn > 3) {
                 setPhase('result');
                 return prev;
             }
-
-            // Reset for next turn
             setMyTurnConfirmed(false);
             setOpponentTurnConfirmed(false);
             setOpponentTactics(null);
             setPhase('setup');
             return nextTurn;
         });
+    };
+
+    const handleNextTurn = async () => {
+        if (battleId) {
+            // PvP: Send ready signal
+            setMyNextTurnReady(true);
+            await ChallengeService.submitReadyNextTurn(battleId, role, turn);
+            // Advancement will happen in useEffect when both are true
+        } else {
+            // AI: Instant advancement
+            advanceTurnInternal();
+        }
     };
 
     // Watch for Early Death
@@ -540,9 +596,9 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                     </div>
                 )}
 
-                {/* Duel Animation Overlay */}
+                {/* Duel Animation Overlay - IGNORE IN CAPTURE */}
                 {showDuelAnimation && (
-                    <div style={{ position: 'absolute', zIndex: 2000, top: '0', left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
+                    <div data-html2canvas-ignore="true" style={{ position: 'absolute', zIndex: 2000, top: '0', left: 0, width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
                         <div className="sword-animation" style={{ fontSize: '5rem', display: 'flex', gap: '20px' }}>
                             <span className="sword-left">⚔️</span>
                             <span className="sword-right" style={{ transform: 'scaleX(-1)' }}>⚔️</span>
@@ -593,7 +649,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                 <div style={{
                     width: '100%', maxWidth: '100%',
                     display: 'flex',
-                    justifyContent: 'center', // Center Alignment
+                    justifyContent: 'center',
                     alignItems: 'center',
                     height: 'auto',
                     minHeight: '400px',
@@ -614,7 +670,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                                     profile={myHp > enemyHp ? enemyProfile : myProfile}
                                     health={0}
                                     maxHealth={100}
-                                    isEnemy={myHp > enemyHp} // If I won, loser is enemy
+                                    isEnemy={myHp > enemyHp}
                                     activeTurn={false}
                                     resultStatus="loser"
                                 />
@@ -631,7 +687,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                                     profile={myHp > enemyHp ? myProfile : enemyProfile}
                                     health={1}
                                     maxHealth={1}
-                                    isEnemy={myHp <= enemyHp} // If I won, winner is me (not enemy)
+                                    isEnemy={myHp <= enemyHp}
                                     activeTurn={true}
                                     resultStatus="winner"
                                 />
@@ -683,12 +739,11 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                 left: 0,
                 width: '100%',
                 zIndex: 6000,
-                maxHeight: '45vh', // Slightly taller
+                maxHeight: '45vh',
                 overflowY: 'auto'
             }}>
                 {phase === 'result' ? (
                     <div className="animate-slide-up" style={{ textAlign: 'center' }}>
-
                         {!showShare ? (
                             <>
                                 <h3 style={{ color: '#00f0ff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Evolução de Atributos</h3>
@@ -723,7 +778,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                                     style={{
                                         width: '100%', padding: '15px',
                                         background: 'linear-gradient(90deg, #00ff66, #00cc55)', border: 'none',
-                                        borderRadius: '12px', color: '#000', fontWeight: 'bold', fontSize: '1.1rem'
+                                        borderRadius: '12px', color: '#000', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer'
                                     }}
                                 >
                                     CONFIRMAR EVOLUÇÃO
@@ -738,7 +793,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                                         width: '100%', padding: '15px',
                                         background: 'linear-gradient(90deg, #00f0ff, #0066ff)', border: 'none',
                                         borderRadius: '12px', color: '#fff', fontWeight: 'bold', fontSize: '1.1rem',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', cursor: 'pointer'
                                     }}
                                 >
                                     <span>📤</span> COMPARTILHAR RESULTADO
@@ -748,7 +803,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                                     style={{
                                         marginTop: '10px',
                                         background: 'none', border: '1px solid #444', color: '#aaa',
-                                        padding: '10px', borderRadius: '8px', width: '100%'
+                                        padding: '10px', borderRadius: '8px', width: '100%', cursor: 'pointer'
                                     }}
                                 >
                                     Voltar ao Ranking
@@ -787,41 +842,71 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
                         <button
                             onClick={handleConfirmTurn}
+                            disabled={myTurnConfirmed && battleId}
                             style={{
                                 width: '100%', padding: '15px',
-                                background: 'linear-gradient(90deg, #00f0ff, #0066ff)',
+                                background: (myTurnConfirmed && battleId) ? '#333' : 'linear-gradient(90deg, #00f0ff, #0066ff)',
                                 border: 'none', borderRadius: '12px',
-                                color: '#000', fontWeight: 'bold', fontSize: '1.1rem',
-                                marginTop: '1rem', boxShadow: '0 0 15px rgba(0,240,255,0.5)'
-                            }}
-                        >
-                            CONFIRMAR TÁTICA
-                        </button>
-                    </div>
-                ) : (
-                    <div style={{ maxHeight: '200px', overflowY: 'auto', textAlign: 'center' }}>
-                        {/* Battle Log */}
-                        {battleLog.map((log, i) => (
-                            <div key={i} style={{ marginBottom: '8px', color: '#ccc', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '5px' }}>
-                                {log}
-                            </div>
-                        ))}
-                        <button
-                            onClick={handleNextTurn}
-                            style={{
-                                marginTop: '10px',
-                                width: '100%',
-                                padding: '12px',
-                                background: 'var(--color-primary)',
-                                border: 'none',
-                                borderRadius: '8px',
-                                color: '#000',
-                                fontWeight: 'bold',
+                                color: (myTurnConfirmed && battleId) ? '#888' : '#000', fontWeight: 'bold', fontSize: '1.1rem',
+                                marginTop: '1rem', boxShadow: (myTurnConfirmed && battleId) ? 'none' : '0 0 15px rgba(0,240,255,0.5)',
                                 cursor: 'pointer'
                             }}
                         >
-                            CONTINUAR
+                            {(myTurnConfirmed && battleId) ? 'AGUARDANDO OPONENTE...' : 'CONFIRMAR TÁTICA'}
                         </button>
+                    </div>
+                ) : (
+                    <div style={{ width: '100%', padding: '0 1rem' }}>
+                        {turnSummary ? (
+                            <div className="turn-result-card animate-fade-in" style={{ textAlign: 'center', background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                <h3 style={{
+                                    color: turnSummary.winner === 'player' ? '#00ff66' : '#ff4444',
+                                    fontSize: '1.4rem', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '900'
+                                }}>
+                                    {turnSummary.winner === 'player' ? '🏆 Você Venceu o Turno!' : '💥 Oponente Venceu!'}
+                                </h3>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '1.5rem', background: 'rgba(0,0,0,0.4)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '5px' }}>DANO CAUSADO</div>
+                                        <div style={{ fontSize: '2rem', color: '#00f0ff', fontWeight: 'bold', textShadow: '0 0 10px rgba(0,240,255,0.5)' }}>{turnSummary.playerDamageDealt}</div>
+                                    </div>
+                                    <div style={{ borderLeft: '1px solid #444' }}></div>
+                                    <div>
+                                        <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '5px' }}>DANO RECEBIDO</div>
+                                        <div style={{ fontSize: '2rem', color: '#ff4444', fontWeight: 'bold', textShadow: '0 0 10px rgba(255,68,68,0.5)' }}>{turnSummary.playerDamageTaken}</div>
+                                    </div>
+                                </div>
+
+                                <div style={{ maxHeight: '120px', overflowY: 'auto', marginBottom: '1.5rem', fontSize: '0.9rem', textAlign: 'left', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    {turnSummary.log && turnSummary.log.map((l, i) => (
+                                        <div key={i} style={{ marginBottom: '6px', color: '#ddd', paddingBottom: '6px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                            {l}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={handleNextTurn}
+                                    disabled={myNextTurnReady && battleId}
+                                    style={{
+                                        width: '100%', padding: '15px',
+                                        background: (myNextTurnReady && battleId) ? '#333' : 'var(--color-primary)',
+                                        border: 'none', borderRadius: '12px',
+                                        color: (myNextTurnReady && battleId) ? '#888' : '#000', fontWeight: 'bold', fontSize: '1.1rem',
+                                        boxShadow: (myNextTurnReady && battleId) ? 'none' : '0 0 20px rgba(0,240,255,0.4)',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    {(myNextTurnReady && battleId) ? 'AGUARDANDO OPONENTE...' : 'PRÓXIMO TURNO ➔'}
+                                </button>
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', color: '#666', fontStyle: 'italic', padding: '2rem' }}>
+                                <div className="spinner" style={{ margin: '0 auto 10px' }}></div>
+                                Processando combate...
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

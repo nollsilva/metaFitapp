@@ -33,6 +33,7 @@ import { ChallengeService } from './services/ChallengeService';
 import NotificationSystem from './components/NotificationSystem'; // Imported
 import NotificationPermissionModal from './components/NotificationPermissionModal'; // Imported
 import NotificationsScreen from './components/NotificationsScreen'; // Imported
+import XPNotificationModal from './components/XPNotificationModal'; // Imported
 
 // Lazy load BattleArena to avoid circular dependency/initialization issues in production
 const BattleArena = React.lazy(() => import('./components/BattleArena'));
@@ -93,6 +94,7 @@ function App() {
   const [userProfile, setUserProfile] = useState(defaultProfile);
   const [notification, setNotification] = useState(null);
   const [vipNotification, setVipNotification] = useState(null); // VIP Notification State
+  const [xpModalData, setXpModalData] = useState(null); // { penalty, dates: [], missedCount, currentXp, newHistory }
 
   // Check for missed workouts logic
   const checkMissedWorkouts = (profile) => {
@@ -100,89 +102,127 @@ function App() {
     const history = profile.workoutHistory || {};
     const lastCheck = profile.lastMissedCheck ? new Date(profile.lastMissedCheck) : new Date(profile.createdAt || Date.now());
 
+    // Normalize dates to start of day for comparison
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
 
     let currentDate = new Date(lastCheck);
-    currentDate.setDate(currentDate.getDate() + 1);
+    currentDate.setHours(0, 0, 0, 0);
+
+    // If lastCheck was done EXACTLY on currentDate (today), we don't need to re-verify "today" as it hasn't passed.
+    // However, if lastCheck was yesterday, we render "yesterday" as currentDate.
+    // Logic: Iterate from (LastCheckDate) until (Yesterday).
+    // But if LastCheckDate == Today, loop won't run (Today > Yesterday).
+    // If LastCheckDate == Yesterday, loop Should run for Yesterday?
+    // YES, because if I checked yesterday at 10am, I didn't know if I missed it yet.
+    // BUT if I checked yesterday and successfully marked it as done/missed, I shouldn't duplicate?
+    // Ideally userProfile.lastMissedCheck updates to NOW.
+    // So if I ran it yesterday at 23:00, lastMissedCheck is yesterday.
+    // Today I run it. currentDate = yesterday.
+    // I check yesterday. If it's done, nothing happens. If not done, mark missed.
+    // Wait, if I marked it 'done' yesterday, history has 'done'. logic: if (history[dateStr] !== 'done').
+    // So safe to re-run.
+
+    // FIX: Do NOT add +1 day initially. Start checking FROM the day of last check
+    // (because we might not have finalized that day yet).
+    // currentDate.setDate(currentDate.getDate() + 1); // REMOVED
 
     let penalty = 0;
     let missedCount = 0;
     const dayKeys = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+
+    // Local copy for identifying missed days to mark with X
+    const updatedWorkoutHistory = { ...history };
 
     while (currentDate <= yesterday) {
       const dayKeyStr = dayKeys[currentDate.getDay()];
       const dateStr = currentDate.toISOString().split('T')[0];
 
       if (scheduledDays.includes(dayKeyStr)) {
-        if (history[dateStr] !== 'done') {
-          penalty += 100;
-          missedCount++;
+        // If not done AND not already marked as missed (prevent double penalty if logic fails somewhere)
+        if (updatedWorkoutHistory[dateStr] !== 'done') {
+          if (updatedWorkoutHistory[dateStr] !== 'missed') { // Avoid re-penalizing if already marked
+            penalty += 100;
+            missedCount++;
+            updatedWorkoutHistory[dateStr] = 'missed'; // Mark as missed immediately
+
+            // Store specific date for the modal
+            if (!updatedWorkoutHistory._tempMissedDates) updatedWorkoutHistory._tempMissedDates = [];
+            updatedWorkoutHistory._tempMissedDates.push(dateStr);
+          }
         }
       }
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
+    // Reset tempDate for visual marking loop is no longer needed as we did it in the main loop
+
     if (penalty > 0) {
-      const currentXp = profile.xp || 0;
-      const newXp = Math.max(0, currentXp - penalty);
-      const newLevel = Math.floor(newXp / 1000) + 1;
-
-      // Create history entry
-      const historyEntry = {
-        id: Date.now(),
-        date: new Date().toISOString(),
-        amount: -penalty,
-        reason: 'Penalidade: Dias perdidos',
-        type: 'loss'
-      };
-
-      // Mark missed days in history locally
-      const updatedWorkoutHistory = { ...history };
-      let tempDate = new Date(lastCheck);
-      tempDate.setDate(tempDate.getDate() + 1);
-
-      while (tempDate <= yesterday) {
-        const dKey = tempDate.toISOString().split('T')[0];
-        const dDay = dayKeys[tempDate.getDay()];
-        if (scheduledDays.includes(dDay) && updatedWorkoutHistory[dKey] !== 'done') {
-          updatedWorkoutHistory[dKey] = 'missed';
-        }
-        tempDate.setDate(tempDate.getDate() + 1);
-      }
-
-      setUserProfile(prev => ({
-        ...prev,
-        xp: newXp,
-        level: newLevel,
-        lastMissedCheck: new Date().toISOString(),
-        workoutHistory: updatedWorkoutHistory, // Updates the calendar with red X
-        xpHistory: [historyEntry, ...(prev.xpHistory || [])].slice(0, 100)
-      }));
-
-      const msgText = MESSAGES.XP.LOST_STREAK(penalty, missedCount);
-      setNotification(msgText);
-
-      // Persist Notification to Firestore
-      try {
-        addDoc(collection(db, "users", profile.uid, "notifications"), {
-          title: "Dias Perdidos 😢",
-          message: `Você perdeu ${penalty} XP por não treinar em ${missedCount} dia(s) agendado(s).`,
-          type: "warning",
-          timestamp: new Date().toISOString(),
-          read: false
+      // Trigger Modal instead of immediate deduction
+      if (!xpModalData) {
+        setXpModalData({
+          penalty: penalty,
+          dates: updatedWorkoutHistory._tempMissedDates || [],
+          missedCount: missedCount,
+          currentXp: profile.xp || 0,
+          newHistory: updatedWorkoutHistory
         });
-      } catch (e) {
-        console.error("Error saving notification:", e);
       }
-
-      setTimeout(() => setNotification(null), 8000);
     } else {
       if (missedCount === 0 && new Date() > lastCheck) {
         const todayStr = new Date().toISOString();
-        setUserProfile(prev => ({ ...prev, lastMissedCheck: todayStr }));
+        // Safe update check could go here
+        // setUserProfile(prev => ({ ...prev, lastMissedCheck: todayStr }));
       }
     }
+  };
+
+  const handleConfirmXpPenalty = async () => {
+    if (!xpModalData) return;
+
+    const { penalty, newHistory, missedCount, dates } = xpModalData;
+
+    const currentXp = userProfile.xp || 0;
+    const newXp = Math.max(0, currentXp - penalty);
+    const newLevel = Math.floor(newXp / 1000) + 1;
+
+    const historyEntry = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      amount: -penalty,
+      reason: `Penalidade: ${dates.length} dia(s) não treinado(s)`,
+      type: 'loss'
+    };
+
+    try {
+      await addDoc(collection(db, "users", userProfile.uid, "notifications"), {
+        title: "Dias Perdidos 😢",
+        message: `Você perdeu ${penalty} XP. Datas: ${dates.map(d => d.split('-').reverse().join('/')).join(', ')}`,
+        type: "warning",
+        timestamp: new Date().toISOString(),
+        read: true
+      });
+    } catch (e) {
+      console.error("Error saving notification:", e);
+    }
+
+    const finalHistory = { ...newHistory };
+    delete finalHistory._tempMissedDates;
+    const todayStr = new Date().toISOString();
+
+    const newProfileState = {
+      ...userProfile,
+      xp: newXp,
+      level: newLevel,
+      lastMissedCheck: todayStr,
+      workoutHistory: finalHistory,
+      xpHistory: [historyEntry, ...(userProfile.xpHistory || [])].slice(0, 100)
+    };
+
+    setUserProfile(newProfileState);
+    updateUser(userProfile.uid, newProfileState);
+    setXpModalData(null);
   };
 
   // Load User from Firebase Session with Realtime Listener
@@ -480,6 +520,17 @@ function App() {
             localStorage.setItem('metafit_notif_dismissed', 'true');
           }}
           onPermissionGranted={() => setShowNotificationModal(false)}
+        />
+      )}
+
+      {/* XP Penalty Modal (Priority Overlay) */}
+      {xpModalData && (
+        <XPNotificationModal
+          penalty={xpModalData.penalty}
+          missedDays={xpModalData.missedCount}
+          dates={xpModalData.dates}
+          currentXp={xpModalData.currentXp}
+          onClose={handleConfirmXpPenalty}
         />
       )}
 
