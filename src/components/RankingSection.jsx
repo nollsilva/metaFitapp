@@ -548,8 +548,8 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
             )}
 
             <div className="leaderboard" style={{
-                display: 'flex', flexDirection: 'column', gap: '0.8rem',
-                maxHeight: '750px', // Show ~10 items
+                display: 'flex', flexDirection: 'column', gap: '1.2rem',
+                maxHeight: '880px', // Adjusted for larger gap
                 overflowY: 'auto',
                 paddingRight: '5px' // space for scrollbar
             }}>
