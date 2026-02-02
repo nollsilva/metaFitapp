@@ -386,7 +386,7 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
                 .status-icon { width: 32px; height: 32px; margin: 0 auto; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-weight: 900; }
                 .tracker-day.active .status-icon { border-color: var(--color-primary); color: var(--color-primary); box-shadow: 0 0 10px rgba(0,240,255,0.2); }
                 .status-icon.done { background: var(--color-primary); color: #000; border: none; }
-                .status-icon.missed { border-color: #ff0055; color: #ff0055; }
+                .status-icon.missed { border-color: #ff0055; color: #ff0055; background: rgba(255, 0, 85, 0.15); box-shadow: 0 0 10px rgba(255, 0, 85, 0.2); }
 
                 .mini-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.8rem; }
                 .mini-ex-card { display: flex; flex-direction: column; align-items: flex-start; padding: 0.8rem; background: rgba(255,255,255,0.03); border-radius: 12px; cursor: pointer; transition: 0.2s; gap: 0.5rem; border: 1px solid rgba(255,255,255,0.05); }

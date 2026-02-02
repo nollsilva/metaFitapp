@@ -186,36 +186,41 @@ function App() {
   // Load User from Firebase Session with Realtime Listener
   useEffect(() => {
     let unsubscribeSnapshot = null;
+    let unsubscribeAuth = () => { };
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const userDocRef = doc(db, "users", user.uid);
+    if (auth) {
+      unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          const userDocRef = doc(db, "users", user.uid);
 
-        unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
+          unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
 
-            // Check VIP Expiration
-            checkVipExpiration(data).then(validatedData => {
-              setUserProfile(prev => ({
-                ...prev,
-                ...validatedData,
-                isLoggedIn: true,
-                uid: user.uid
-              }));
-            });
-          } else {
-            console.error("Auth exists but no profile found in Firestore for UID:", user.uid);
-          }
-        }, (error) => {
-          console.error("Snapshot Error:", error);
-        });
+              // Check VIP Expiration
+              checkVipExpiration(data).then(validatedData => {
+                setUserProfile(prev => ({
+                  ...prev,
+                  ...validatedData,
+                  isLoggedIn: true,
+                  uid: user.uid
+                }));
+              });
+            } else {
+              console.error("Auth exists but no profile found in Firestore for UID:", user.uid);
+            }
+          }, (error) => {
+            console.error("Snapshot Error:", error);
+          });
 
-      } else {
-        if (unsubscribeSnapshot) unsubscribeSnapshot();
-        setUserProfile(defaultProfile);
-      }
-    });
+        } else {
+          if (unsubscribeSnapshot) unsubscribeSnapshot();
+          setUserProfile(defaultProfile);
+        }
+      });
+    } else {
+      console.warn("Firebase Auth not initialized correctly.");
+    }
 
     return () => {
       unsubscribeAuth();
