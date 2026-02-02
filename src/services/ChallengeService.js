@@ -12,6 +12,8 @@ export const ChallengeService = {
                 challengerId: challenger.uid,
                 challengerName: challenger.name || 'Desconhecido',
                 challengerAvatar: challenger.avatar || '',
+                challengerLevel: challenger.level || 1, // Snapshot Stats
+                challengerAttributes: challenger.attributes || { strength: 0, speed: 0, defense: 0 },
                 opponentId: opponentId,
                 status: 'pending', // pending, accepted, rejected, timeout, finished
                 createdAt: new Date().toISOString(),

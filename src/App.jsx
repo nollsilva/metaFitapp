@@ -347,12 +347,30 @@ function App() {
     await ChallengeService.rejectChallenge(challengeId);
   };
 
-  const enterBattleFromChallenge = () => {
-    setBattleOpponent({
+  const enterBattleFromChallenge = async () => {
+    let opponentData = {
       uid: activeChallenge.challengerId,
       name: activeChallenge.challengerName,
-      avatar: activeChallenge.challengerAvatar
-    });
+      avatar: activeChallenge.challengerAvatar,
+      level: activeChallenge.challengerLevel || 1,
+      attributes: activeChallenge.challengerAttributes || { strength: 0, speed: 0, defense: 0 }
+    };
+
+    // Fallback: If snapshot is missing (legacy battles), fetch fresh profile
+    if (!activeChallenge.challengerAttributes) {
+      try {
+        const userDoc = await getUserProfile(activeChallenge.challengerId);
+        if (userDoc) {
+          console.log("[App] Fetched fallback profile for challenger:", userDoc);
+          opponentData.level = userDoc.level;
+          opponentData.attributes = userDoc.attributes;
+        }
+      } catch (e) {
+        console.error("[App] Error fetching fallback profile:", e);
+      }
+    }
+
+    setBattleOpponent(opponentData);
     setBattleMetadata({
       battleId: activeChallenge.id,
       role: 'opponent'
@@ -810,14 +828,14 @@ function App() {
             width: '90%', maxWidth: '350px', textAlign: 'center',
             background: '#000', border: '1px solid #333'
           }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: '#fff' }}>📋 Regras do Duelo</h2>
+            <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: '#fff' }}>📋 Regras do Duelo (Pool)</h2>
             <div style={{ textAlign: 'left', fontSize: '0.9rem', color: '#ccc', marginBottom: '1.5rem', lineHeight: '1.6' }}>
-              <p>1. O duelo é baseado em turnos.</p>
-              <p>2. Você escolhe: <strong>Força</strong>, <strong>Agilidade</strong> ou <strong>Defesa</strong>.</p>
-              <p>3. <strong>Força</strong> vence Defesa.</p>
-              <p>4. <strong>Defesa</strong> vence Agilidade.</p>
-              <p>5. <strong>Agilidade</strong> vence Força.</p>
-              <p>6. Quem zerar a vida do oponente vence!</p>
+              <p>1. Você tem um <strong>Banco de Recursos</strong> (Seus Atributos x10).</p>
+              <p>2. A cada turno, você aposta quanto quer usar.</p>
+              <p>3. <strong>Velocidade</strong> ⚡ decide quem ataca.</p>
+              <p>4. <strong>Força</strong> 💪 causa dano se superar a <strong>Defesa</strong> 🛡️.</p>
+              <p>5. Se a Defesa for maior, o Atacante leva o troco! (Contra-Ataque).</p>
+              <p>6. Gerencie bem! Seus recursos não regeneram na luta.</p>
             </div>
             <button
               onClick={enterBattleFromChallenge}
