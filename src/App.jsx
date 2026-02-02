@@ -35,8 +35,35 @@ import NotificationPermissionModal from './components/NotificationPermissionModa
 import NotificationsScreen from './components/NotificationsScreen'; // Imported
 import XPNotificationModal from './components/XPNotificationModal'; // Imported
 
-// Lazy load BattleArena to avoid circular dependency/initialization issues in production
-const BattleArena = React.lazy(() => import('./components/BattleArena'));
+// Helper to auto-reload page if a lazy-loaded chunk fails (e.g., after deployment)
+const lazyWithRetry = (componentImport) =>
+  React.lazy(async () => {
+    try {
+      return await componentImport();
+    } catch (error) {
+      console.error("Lazy load error:", error);
+      // Check for chunk load error (common after deployments)
+      const isChunkError = error.message?.includes('Failed to fetch dynamically imported module') ||
+        error.message?.includes('Importing a module script failed');
+
+      if (isChunkError) {
+        // Checking if we already tried to reload to avoid infinite loop
+        const storageKey = 'metafit_reload_attempt';
+        const now = Date.now();
+        const lastReload = parseInt(localStorage.getItem(storageKey) || '0');
+
+        if (now - lastReload > 10000) { // If last reload was > 10s ago, try again
+          localStorage.setItem(storageKey, now.toString());
+          window.location.reload(true); // Hard reload
+          return { default: () => <div>Recarregando versão nova...</div> };
+        }
+      }
+      throw error;
+    }
+  });
+
+// Lazy load BattleArena with retry logic
+const BattleArena = lazyWithRetry(() => import('./components/BattleArena'));
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
