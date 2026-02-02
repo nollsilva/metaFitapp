@@ -5,6 +5,7 @@ export const ChallengeService = {
     // Create a new challenge
     sendChallenge: async (challenger, opponentId) => {
         try {
+            if (!db) throw new Error("Database não inicializado.");
             if (!opponentId) throw new Error("ID do oponente inválido.");
 
             const challengeRef = await addDoc(collection(db, 'battles'), {

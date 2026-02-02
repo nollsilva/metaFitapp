@@ -49,5 +49,11 @@ try {
     // Mas se app não for criado, exports abaixo falharão se usados antes da verificação.
 }
 
-export { auth, db, storage, messaging };
+// Defensive exports
+const exportAuth = auth;
+const exportDb = db;
+const exportStorage = storage;
+const exportMessaging = messaging;
+
+export { exportAuth as auth, exportDb as db, exportStorage as storage, exportMessaging as messaging };
 export default app;

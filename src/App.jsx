@@ -21,7 +21,7 @@ import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { MESSAGES } from './utils/messages';
 
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, addDoc, collection } from 'firebase/firestore';
 import { db } from './lib/firebase';
 import './index.css';
 
@@ -135,15 +135,45 @@ function App() {
         type: 'loss'
       };
 
+      // Mark missed days in history locally
+      const updatedWorkoutHistory = { ...history };
+      let tempDate = new Date(lastCheck);
+      tempDate.setDate(tempDate.getDate() + 1);
+
+      while (tempDate <= yesterday) {
+        const dKey = tempDate.toISOString().split('T')[0];
+        const dDay = dayKeys[tempDate.getDay()];
+        if (scheduledDays.includes(dDay) && updatedWorkoutHistory[dKey] !== 'done') {
+          updatedWorkoutHistory[dKey] = 'missed';
+        }
+        tempDate.setDate(tempDate.getDate() + 1);
+      }
+
       setUserProfile(prev => ({
         ...prev,
         xp: newXp,
         level: newLevel,
         lastMissedCheck: new Date().toISOString(),
+        workoutHistory: updatedWorkoutHistory, // Updates the calendar with red X
         xpHistory: [historyEntry, ...(prev.xpHistory || [])].slice(0, 100)
       }));
 
-      setNotification(MESSAGES.XP.LOST_STREAK(penalty, missedCount));
+      const msgText = MESSAGES.XP.LOST_STREAK(penalty, missedCount);
+      setNotification(msgText);
+
+      // Persist Notification to Firestore
+      try {
+        addDoc(collection(db, "users", profile.uid, "notifications"), {
+          title: "Dias Perdidos 😢",
+          message: `Você perdeu ${penalty} XP por não treinar em ${missedCount} dia(s) agendado(s).`,
+          type: "warning",
+          timestamp: new Date().toISOString(),
+          read: false
+        });
+      } catch (e) {
+        console.error("Error saving notification:", e);
+      }
+
       setTimeout(() => setNotification(null), 8000);
     } else {
       if (missedCount === 0 && new Date() > lastCheck) {

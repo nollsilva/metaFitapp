@@ -67,9 +67,11 @@ const ShareStoryCard = ({ id, type, data, isVip }) => {
                     color: isVip ? '#FFD700' : 'rgba(255,255,255,0.7)',
                     marginBottom: '0.4rem',
                     ...textShadow,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    borderBottom: isVip ? '1px solid rgba(255, 215, 0, 0.3)' : 'none',
+                    paddingBottom: isVip ? '5px' : '0'
                 }}>
-                    {isVip && <span>👑</span>} MetaFit App {isVip && <span>👑</span>}
+                    {isVip && <span style={{ fontSize: '1.2rem' }}>👑</span>} MetaFit App {isVip && <span style={{ fontSize: '1.2rem' }}>👑</span>}
                 </div>
                 {!isWorkout && (
                     <h1 style={{ fontSize: '2rem', fontWeight: '800', margin: 0, color: '#fff', ...textShadow }}>
@@ -139,8 +141,8 @@ const ShareStoryCard = ({ id, type, data, isVip }) => {
 
                         {/* Posição */}
                         <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '1.2rem', marginBottom: '0.2rem', color: '#ccc', textTransform: 'uppercase', letterSpacing: '1px', ...textShadow }}>Posição Global</div>
-                            <div style={{ fontSize: '5rem', lineHeight: 0.9, fontWeight: '900', ...gradientText, ...textShadow }}>
+                            <div style={{ fontSize: '1.2rem', marginBottom: '0.2rem', color: isVip ? '#FFD700' : '#ccc', textTransform: 'uppercase', letterSpacing: '1px', ...textShadow }}>Posição Global</div>
+                            <div style={{ fontSize: '5rem', lineHeight: 0.9, fontWeight: '900', ...gradientText, ...textShadow, filter: isVip ? 'drop-shadow(0 0 10px rgba(255,215,0,0.5))' : 'none' }}>
                                 #{data.rank || '-'}
                             </div>
                         </div>
@@ -161,8 +163,18 @@ const ShareStoryCard = ({ id, type, data, isVip }) => {
 
             {/* Footer */}
             <div style={{ zIndex: 1, textAlign: 'center', marginBottom: '1.5rem', opacity: 1, width: '100%' }}>
-                <p style={{ margin: '0 0 5px 0', fontSize: '0.8rem', color: '#ccc', ...textShadow }}>Use já o MetaFit</p>
-                <div style={{ fontWeight: 'bold', color: isVip ? '#FFD700' : '#00f0ff', fontSize: '0.9rem', ...textShadow }}>metafitapp.onrender.com</div>
+                <p style={{ margin: '0 0 5px 0', fontSize: '0.8rem', color: isVip ? '#fff' : '#ccc', ...textShadow }}>Use já o MetaFit</p>
+                <div style={{
+                    fontWeight: 'bold',
+                    color: isVip ? '#FFD700' : '#00f0ff',
+                    fontSize: '0.9rem',
+                    ...textShadow,
+                    background: isVip ? 'rgba(0,0,0,0.5)' : 'transparent',
+                    padding: isVip ? '4px 12px' : '0',
+                    borderRadius: '12px',
+                    display: 'inline-block',
+                    border: isVip ? '1px solid rgba(255,215,0,0.3)' : 'none'
+                }}>metafitapp.onrender.com</div>
             </div>
 
         </div>
