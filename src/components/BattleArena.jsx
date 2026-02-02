@@ -97,9 +97,14 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         if (myTurnConfirmed && opponentTurnConfirmed && phase === 'waiting') {
             setPhase('animating');
             setShowDuelAnimation(true);
+        }
+    }, [myTurnConfirmed, opponentTurnConfirmed, phase]);
 
-            // Wait 3s (as requested) for animation, then process results
+    // Handle Animation End & Result Calc
+    useEffect(() => {
+        if (phase === 'animating') {
             const timer = setTimeout(() => {
+                // Perform calculation ONLY when animation finishes
                 const result = calculateTurnLogic(effort, opponentTactics, myProfile, enemyProfile, fatigue);
 
                 setBattleLog(result.log);
@@ -114,7 +119,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
             return () => clearTimeout(timer);
         }
-    }, [myTurnConfirmed, opponentTurnConfirmed, phase, effort, opponentTactics, fatigue, myProfile, enemyProfile]);
+    }, [phase]); // Only depend on phase to avoid infinite loop when updating stats
 
     // Handle Turn Advancement Sync (PvP Only)
     useEffect(() => {
