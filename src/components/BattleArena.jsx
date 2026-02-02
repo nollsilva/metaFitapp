@@ -131,6 +131,7 @@ const StatisticSelector = ({ label, icon, value, onSelect, color, allEfforts }) 
 };
 
 const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleId, role }) => {
+    console.log(`[BattleArena] Init. ID: ${battleId}, Role: ${role}`);
     const [turn, setTurn] = useState(1);
     const [phase, setPhase] = useState('setup'); // setup, waiting, animating, combat, result
     const [showDuelAnimation, setShowDuelAnimation] = useState(false);
@@ -146,17 +147,20 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
         const unsub = ChallengeService.listenToChallenge(battleId, (battle) => {
             if (!battle) return;
+            console.log(`[BattleArena] Listener update:`, battle);
 
             const opponentRole = role === 'challenger' ? 'opponent' : 'challenger';
             const oppField = `turn${turn}_${opponentRole}`;
             const myField = `turn${turn}_${role}`;
 
             if (battle[oppField]) {
+                console.log(`[BattleArena] Opponent confirmed turn ${turn}`);
                 setOpponentTactics(battle[oppField]);
                 setOpponentTurnConfirmed(true);
             }
 
             if (battle[myField]) {
+                console.log(`[BattleArena] My turn ${turn} confirmed`);
                 setMyTurnConfirmed(true);
             }
         });

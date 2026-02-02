@@ -27,11 +27,15 @@ export const ChallengeService = {
     // Listen for challenge status updates (for Challenger)
     // Callback receives the challenge data or null if deleted
     listenToChallenge: (challengeId, callback) => {
+        console.log(`[ChallengeService] Listening to challenge: ${challengeId}`);
         const unsub = onSnapshot(doc(db, 'battles', challengeId), (docSnap) => {
             if (docSnap.exists()) {
-                callback(docSnap.data());
+                const data = docSnap.data();
+                console.log(`[ChallengeService] Challenge update for ${challengeId}:`, data.status);
+                callback(data);
             } else {
-                callback(null); // Deleted or not found
+                console.log(`[ChallengeService] Challenge ${challengeId} deleted/not found.`);
+                callback(null);
             }
         });
         return unsub;
@@ -86,12 +90,16 @@ export const ChallengeService = {
 
     // --- TURN SYNC METHODS ---
     submitTurn: async (battleId, role, turn, tactics) => {
+        console.log(`[ChallengeService] Submitting Turn ${turn} for ${role} in ${battleId}`, tactics);
         try {
-            const field = `turn${turn}_${role}`; // e.g. turn1_challenger
+            const field = `turn${turn}_${role}`;
             await updateDoc(doc(db, 'battles', battleId), {
                 [field]: tactics
             });
             return { success: true };
-        } catch (e) { return { error: e.message }; }
+        } catch (e) {
+            console.error(`[ChallengeService] Error submitting turn:`, e);
+            return { error: e.message };
+        }
     }
 };

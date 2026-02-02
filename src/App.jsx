@@ -263,10 +263,15 @@ function App() {
   }, [userProfile.uid]);
 
   const handleAcceptChallenge = async (challenge) => {
-    await ChallengeService.acceptChallenge(challenge.id);
-    setActiveChallenge(challenge); // Show rules modal
-    // Remove from incoming list locally to close invite modal immediately
-    setIncomingChallenges(prev => prev.filter(c => c.id !== challenge.id));
+    console.log("[App] Accepting challenge:", challenge);
+    try {
+      await ChallengeService.acceptChallenge(challenge.id);
+      console.log("[App] Challenge accepted in DB. Setting active challenge.");
+      setActiveChallenge(challenge); // Show rules modal
+      setIncomingChallenges(prev => prev.filter(c => c.id !== challenge.id));
+    } catch (e) {
+      console.error("[App] Error accepting challenge:", e);
+    }
   };
 
   const handleRejectChallenge = async (challengeId) => {
