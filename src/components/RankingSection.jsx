@@ -565,16 +565,17 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
 
                         return (
                             <div key={user.id} style={{ position: 'relative', overflow: 'hidden', borderRadius: '16px' }}>
-                                {/* Challenge Trigger Background */}
-                                <div style={{
-                                    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                                    background: 'linear-gradient(90deg, #ff0055, transparent)',
-                                    display: 'flex', alignItems: 'center', paddingLeft: '20px',
-                                    color: '#fff', fontWeight: 'bold', fontSize: '1.2rem',
-                                    zIndex: 1, opacity: 0.8
-                                }}>
-                                    ⚔️ DUELAR!
-                                </div>
+                                {rankingTab === 'duel' && (
+                                    <div style={{
+                                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                                        background: 'linear-gradient(90deg, #ff0055, transparent)',
+                                        display: 'flex', alignItems: 'center', paddingLeft: '20px',
+                                        color: '#fff', fontWeight: 'bold', fontSize: '1.2rem',
+                                        zIndex: 1, opacity: 0.8
+                                    }}>
+                                        ⚔️ DUELAR!
+                                    </div>
+                                )}
 
                                 <motion.div
                                     drag={rankingTab === 'duel' ? "x" : false}
@@ -597,7 +598,7 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                                         padding: '0.8rem 1rem',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '0.8rem',
+                                        gap: rankingTab === 'duel' ? '0.6rem' : '0.8rem', // Slightly reduced gap in duel tab
                                         cursor: 'pointer',
                                         transition: 'background 0.2s',
                                         border: isMe ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.05)',
@@ -605,17 +606,11 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                                         minHeight: '80px',
                                         position: 'relative',
                                         zIndex: 5,
-                                        x: 0 // Reset x on render
+                                        x: 0,
+                                        overflow: 'visible' // Allow elements to overflow if necessary
                                     }}>
 
-                                    {rankingTab === 'duel' && (
-                                        <div className="pulse" style={{
-                                            position: 'absolute', left: '2px', top: '50%', transform: 'translateY(-50%)',
-                                            color: '#ff0055', fontSize: '1.2rem', fontWeight: 'bold', zIndex: 10
-                                        }}>
-                                            →
-                                        </div>
-                                    )}
+
 
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginRight: '5px' }}>
                                         <div style={{
@@ -676,28 +671,32 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                                         )}
                                     </div>
 
-                                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                                    <div style={{ flex: 1, overflow: 'hidden', minWidth: 0 }}>
                                         <div style={{ fontWeight: 'bold', fontSize: '1rem', color: isMe ? 'var(--color-primary)' : '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                             {user.vip && <span style={{ marginRight: '2px', fontSize: '1rem' }}>👑</span>}
                                             {user.name}
                                             {isMe && <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>(Você)</span>}
                                         </div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                            {getRankTitle(user.xp)}
-                                        </div>
+                                        {rankingTab === 'duel' ? (
+                                            <div className="pulse" style={{ color: '#ff0055', fontSize: '1.5rem', marginTop: '-5px', fontWeight: '900' }}>→</div>
+                                        ) : (
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                                                {getRankTitle(user.xp)}
+                                            </div>
+                                        )}
                                     </div>
 
-                                    <div style={{ textAlign: 'right' }}>
+                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                         {rankingTab === 'duel' ? (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                <div style={{ fontWeight: '800', fontSize: '0.85rem', color: '#ff4444' }}>💪 {user.attributes?.strength || 0}</div>
-                                                <div style={{ fontWeight: '800', fontSize: '0.85rem', color: '#00f0ff' }}>⚡ {user.attributes?.speed || 0}</div>
-                                                <div style={{ fontWeight: '800', fontSize: '0.85rem', color: '#00ff66' }}>🛡️ {user.attributes?.defense || 0}</div>
+                                                <div style={{ fontWeight: '800', fontSize: '0.85rem', color: '#ff4444', whiteSpace: 'nowrap' }}>💪 {user.attributes?.strength || 0}</div>
+                                                <div style={{ fontWeight: '800', fontSize: '0.85rem', color: '#00f0ff', whiteSpace: 'nowrap' }}>⚡ {user.attributes?.speed || 0}</div>
+                                                <div style={{ fontWeight: '800', fontSize: '0.85rem', color: '#00ff66', whiteSpace: 'nowrap' }}>🛡️ {user.attributes?.defense || 0}</div>
                                             </div>
                                         ) : (
                                             <>
-                                                <div style={{ fontWeight: '800', fontSize: '1rem' }}>{user.xp} XP</div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Lvl {user.level}</div>
+                                                <div style={{ fontWeight: '800', fontSize: '1rem', whiteSpace: 'nowrap' }}>{user.xp} XP</div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>Lvl {user.level}</div>
                                             </>
                                         )}
                                     </div>
