@@ -47,9 +47,9 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             const oppReadyField = `turn${turn}_ready_${opponentRole}`;
             const myReadyField = `turn${turn}_ready_${role}`;
 
-            if (battle[oppReadyField]) {
-                setOpponentNextTurnReady(true);
-            }
+            // Strict Sync: Force state to match DB (fixes stale 'true' from previous turn)
+            setOpponentNextTurnReady(!!battle[oppReadyField]);
+
             if (battle[myReadyField]) {
                 setMyNextTurnReady(true);
             }
