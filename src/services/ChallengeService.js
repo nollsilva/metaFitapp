@@ -5,6 +5,8 @@ export const ChallengeService = {
     // Create a new challenge
     sendChallenge: async (challenger, opponentId) => {
         try {
+            if (!opponentId) throw new Error("ID do oponente inválido.");
+
             const challengeRef = await addDoc(collection(db, 'battles'), {
                 challengerId: challenger.uid,
                 challengerName: challenger.name || 'Desconhecido',

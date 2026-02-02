@@ -198,6 +198,7 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
             <ShareStoryCard
                 id="share-workout-card"
                 type="workout"
+                isVip={profile.vip}
                 data={{
                     name: profile.name || profile.userName,
                     avatar: profile.avatar,

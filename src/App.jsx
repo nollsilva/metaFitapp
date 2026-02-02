@@ -205,6 +205,7 @@ function App() {
     if (!userProfile.uid) return;
     // Initial call
     updateHeartbeat(userProfile.uid);
+    checkMissedWorkouts(userProfile); // Enable Missed Workout Check
     const interval = setInterval(() => {
       updateHeartbeat(userProfile.uid);
     }, 60 * 1000); // 1 minute

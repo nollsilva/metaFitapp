@@ -3,7 +3,7 @@ import React from 'react';
 import { BadgeIcon, getBadgeConfig } from './BadgeIcons';
 import { getRankTitle } from '../utils/rankingSystem';
 
-const ShareStoryCard = ({ id, type, data }) => {
+const ShareStoryCard = ({ id, type, data, isVip }) => {
 
     // Configurações
     const isWorkout = type === 'workout';
@@ -14,7 +14,10 @@ const ShareStoryCard = ({ id, type, data }) => {
     const containerStyle = {
         width: '400px',
         height: '711px',
-        background: 'linear-gradient(135deg, #0a0a0c 0%, #151515 100%)',
+        background: isVip
+            ? 'linear-gradient(135deg, #1a1200 0%, #000 100%)'
+            : 'linear-gradient(135deg, #0a0a0c 0%, #151515 100%)',
+        border: isVip ? '2px solid #FFD700' : 'none',
         position: 'fixed',
         top: '0',
         left: '-9999px',
@@ -29,7 +32,11 @@ const ShareStoryCard = ({ id, type, data }) => {
         boxSizing: 'border-box'
     };
 
-    const gradientText = {
+    const gradientText = isVip ? {
+        background: 'linear-gradient(90deg, #FFD700, #FFA500)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+    } : {
         background: 'linear-gradient(90deg, #00f0ff, #00ff66)',
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent',
@@ -45,7 +52,9 @@ const ShareStoryCard = ({ id, type, data }) => {
             {/* Background Effects */}
             <div style={{
                 position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.1) 0%, transparent 60%)',
+                backgroundImage: isVip
+                    ? 'radial-gradient(circle at 50% 0%, rgba(255, 215, 0, 0.15) 0%, transparent 60%)'
+                    : 'radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.1) 0%, transparent 60%)',
                 zIndex: 0
             }}></div>
 
@@ -55,10 +64,13 @@ const ShareStoryCard = ({ id, type, data }) => {
                     fontSize: '0.9rem',
                     letterSpacing: '3px',
                     textTransform: 'uppercase',
-                    color: 'rgba(255,255,255,0.7)',
+                    color: isVip ? '#FFD700' : 'rgba(255,255,255,0.7)',
                     marginBottom: '0.4rem',
-                    ...textShadow
-                }}>MetaFit App</div>
+                    ...textShadow,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                }}>
+                    {isVip && <span>👑</span>} MetaFit App {isVip && <span>👑</span>}
+                </div>
                 {!isWorkout && (
                     <h1 style={{ fontSize: '2rem', fontWeight: '800', margin: 0, color: '#fff', ...textShadow }}>
                         RANKING ATUAL
@@ -150,7 +162,7 @@ const ShareStoryCard = ({ id, type, data }) => {
             {/* Footer */}
             <div style={{ zIndex: 1, textAlign: 'center', marginBottom: '1.5rem', opacity: 1, width: '100%' }}>
                 <p style={{ margin: '0 0 5px 0', fontSize: '0.8rem', color: '#ccc', ...textShadow }}>Use já o MetaFit</p>
-                <div style={{ fontWeight: 'bold', color: '#00f0ff', fontSize: '0.9rem', ...textShadow }}>metafitapp.onrender.com</div>
+                <div style={{ fontWeight: 'bold', color: isVip ? '#FFD700' : '#00f0ff', fontSize: '0.9rem', ...textShadow }}>metafitapp.onrender.com</div>
             </div>
 
         </div>

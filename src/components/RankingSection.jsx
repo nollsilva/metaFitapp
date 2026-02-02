@@ -81,11 +81,15 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
 
     const handleSendChallenge = async () => {
         if (!selectedUser) return;
+
+        // Validation Fix: Ensure opponent has a valid UID
+        if (!selectedUser.uid) {
+            console.error("Selected user missing UID:", selectedUser);
+            alert("Erro: Usuário inválido para desafio (UID ausente).");
+            return;
+        }
+
         const result = await ChallengeService.sendChallenge(profile, selectedUser.uid);
-        // Wait, selectedUser from leaderboard has .uid
-        // Let's verify data structure. Ranking returns full profile usually.
-        // check lines 541 renderRow(user). user has .uid?
-        // db.js registerUser sets uid: user.uid.
 
         if (result.error) {
             alert("Erro ao enviar desafio: " + result.error);
@@ -393,6 +397,7 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                 <ShareStoryCard
                     id="share-ranking-card"
                     type="ranking"
+                    isVip={profile.vip}
                     data={{
                         xp: profile.xp,
                         rank: myRank || '?',
