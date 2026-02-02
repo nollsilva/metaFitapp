@@ -542,9 +542,10 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                                     width: '40px', height: '40px', borderRadius: '50%', background: '#333',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     fontWeight: 'bold', color: '#fff', fontSize: '0.8rem',
-                                    border: `2px solid ${rank <= 3 ? 'var(--color-primary)' : '#444'} `,
+                                    border: `2px solid ${user.vip ? '#ffd700' : (rank <= 3 ? 'var(--color-primary)' : '#444')} `,
                                     position: 'relative',
-                                    overflow: 'visible' // Allow frame to overflow
+                                    overflow: 'visible', // Allow frame to overflow
+                                    boxShadow: user.vip ? '0 0 15px 2px rgba(255, 215, 0, 0.6)' : 'none'
                                 }}>
                                     {user.avatar ? (
                                         <img src={`/avatars/${user.avatar}.png`} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', overflow: 'hidden', position: 'relative', zIndex: 10 }} />
@@ -689,7 +690,8 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                         <div style={{
                             width: '80px', height: '80px', borderRadius: '50%',
                             background: '#222', margin: '-40px auto 1rem', position: 'relative',
-                            border: '4px solid #121215', overflow: 'visible'
+                            border: `4px solid ${selectedUser.vip ? '#ffd700' : '#121215'}`, overflow: 'visible',
+                            boxShadow: selectedUser.vip ? '0 0 20px 4px rgba(255, 215, 0, 0.5)' : 'none'
                         }}>
                             {selectedUser.avatar ? (
                                 <img src={`/avatars/${selectedUser.avatar}.png`} alt="av" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%', position: 'relative', zIndex: 10 }} />
