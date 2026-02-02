@@ -168,59 +168,10 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         return () => unsub();
     }, [battleId, turn, role]);
 
-    // Transition to Animating when both confirmed
-    useEffect(() => {
-        if (myTurnConfirmed && opponentTurnConfirmed && phase === 'waiting') {
-            setPhase('animating');
-            setShowDuelAnimation(true);
-
-            // Wait 2.5s for animation, then process results
-            const timer = setTimeout(() => {
-                const logs = calculateTurn(effort, opponentTactics);
-                setBattleLog(logs);
-                setShowDuelAnimation(false);
-                setPhase('combat');
-            }, 2500);
-
-            return () => clearTimeout(timer);
-        }
-    }, [myTurnConfirmed, opponentTurnConfirmed, phase, effort, opponentTactics]);
-
-    // Battle Stats Formula: 150 + (Level * 15)
-    const getMaxHp = (p) => 150 + ((p.level || 1) * 15);
-
+    // Battle Stats State
     const [myHp, setMyHp] = useState(getMaxHp(myProfile));
     const [enemyHp, setEnemyHp] = useState(getMaxHp(enemyProfile));
-
-    // Effort Allocation State
     const [effort, setEffort] = useState({ strength: 75, speed: 100, defense: 50 });
-
-    const handleEffortChange = (attr, newValue) => {
-        setEffort(prev => {
-            const currentVal = prev[attr];
-            if (currentVal === newValue) return prev; // No change
-
-            // Find who has the new value
-            const otherAttr = Object.keys(prev).find(key => prev[key] === newValue); // 'speed', 'strength', or 'defense'
-
-            // Swap
-            return {
-                ...prev,
-                [attr]: newValue,
-                [otherAttr]: currentVal
-            };
-        });
-    };
-
-    // Ensure integrity (Unique values)
-    useEffect(() => {
-        const values = Object.values(effort);
-        const unique = new Set(values);
-        if (unique.size !== 3) {
-            // Reset if corrupted
-            setEffort({ strength: 75, speed: 100, defense: 50 });
-        }
-    }, [effort]);
 
     // Fatigue Tracking
     const [fatigue, setFatigue] = useState({
@@ -228,11 +179,58 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         enemy: { speed: 100, strength: 100, defense: 100 }
     });
 
+    // ...
+
+    const handleEffortChange = (attr, newValue) => {
+        setEffort(prev => {
+            const currentVal = prev[attr];
+            if (currentVal === newValue) return prev;
+            const otherAttr = Object.keys(prev).find(key => prev[key] === newValue);
+            return { ...prev, [attr]: newValue, [otherAttr]: currentVal };
+        });
+    };
+
+    // Ensure integrity
+    useEffect(() => {
+        const values = Object.values(effort);
+        const unique = new Set(values);
+        if (unique.size !== 3) {
+            setEffort({ strength: 75, speed: 100, defense: 50 });
+        }
+    }, [effort]);
+
     const [battleLog, setBattleLog] = useState(["🔥 Batalha Iniciada! Escolha sua estratégia."]);
 
-    const calculateTurn = (playerEffort, enemyEffort) => {
+    // Transition to Animating
+    useEffect(() => {
+        if (myTurnConfirmed && opponentTurnConfirmed && phase === 'waiting') {
+            setPhase('animating');
+            setShowDuelAnimation(true);
+
+            // Wait 2.5s for animation, then process results
+            const timer = setTimeout(() => {
+                // Execute Turn Calculation using Helper
+                const result = calculateTurnLogic(effort, opponentTactics, myProfile, enemyProfile, fatigue);
+
+                // Apply State Changes
+                setBattleLog(result.log);
+                setMyHp(prev => Math.max(0, prev - result.pDamage));
+                setEnemyHp(prev => Math.max(0, prev - result.eDamage));
+                setFatigue(result.newFatigue);
+
+                setShowDuelAnimation(false);
+                setPhase('combat');
+            }, 2500);
+
+            return () => clearTimeout(timer);
+        }
+    }, [myTurnConfirmed, opponentTurnConfirmed, phase, effort, opponentTactics, fatigue, myProfile, enemyProfile]);
+
+    // Helper Functions (Moved outside to prevent ReferenceError/TDZ issues)
+    const getMaxHp = (p) => 150 + ((p.level || 1) * 15);
+
+    const calculateTurnLogic = (playerEffort, enemyEffort, pProfile, eProfile, fatigue) => {
         // Helper: Get Effective Stat (Base * Fatigue * Effort)
-        // MULTIPLIER x3 applied as requested to increase damage pace
         const getStat = (p, attr, eff, fatigueVal) => {
             const base = 10 + ((p.level || 1) * 2) + ((p.attributes && p.attributes[attr]) || 0);
             const fatigueMultiplier = fatigueVal / 100;
@@ -242,18 +240,20 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
         // Current Stats (incorporating Fatigue)
         const pStats = {
-            speed: getStat(myProfile, 'speed', playerEffort.speed, fatigue.player.speed),
-            strength: getStat(myProfile, 'strength', playerEffort.strength, fatigue.player.strength),
-            defense: getStat(myProfile, 'defense', playerEffort.defense, fatigue.player.defense)
+            speed: getStat(pProfile, 'speed', playerEffort.speed, fatigue.player.speed),
+            strength: getStat(pProfile, 'strength', playerEffort.strength, fatigue.player.strength),
+            defense: getStat(pProfile, 'defense', playerEffort.defense, fatigue.player.defense)
         };
 
         const eStats = {
-            speed: getStat(enemyProfile, 'speed', enemyEffort.speed, fatigue.enemy.speed),
-            strength: getStat(enemyProfile, 'strength', enemyEffort.strength, fatigue.enemy.strength),
-            defense: getStat(enemyProfile, 'defense', enemyEffort.defense, fatigue.enemy.defense)
+            speed: getStat(eProfile, 'speed', enemyEffort.speed, fatigue.enemy.speed),
+            strength: getStat(eProfile, 'strength', enemyEffort.strength, fatigue.enemy.strength),
+            defense: getStat(eProfile, 'defense', enemyEffort.defense, fatigue.enemy.defense)
         };
 
         let log = [];
+        let pDamage = 0;
+        let eDamage = 0;
 
         // --- Phase 1: Initiative ---
         const playerSpeed = pStats.speed;
@@ -283,51 +283,38 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             return Math.max(0, damage);
         };
 
-        const executePhase = (attackerName, atkStat, defStat, setDefenderHp, isPlayer, currentDefHp, defMaxHp, isBonus, isCounter) => {
+        const resolvePhase = (attackerName, atkStat, defStat, isPlayer, isBonus, isCounter) => {
             const dmg = calculateDamage(atkStat, defStat, isBonus, isCounter);
-            setDefenderHp(prev => Math.max(0, prev - dmg));
-
             const typeText = isCounter ? " (Contra-Ataque)" : "";
             const icon = isPlayer ? "⚔️" : "🛡️";
             log.push(`${icon} ${attackerName} causou ${dmg} dano!${typeText}`);
-
-            return { dmg, remainingHp: Math.max(0, currentDefHp - dmg) };
+            return dmg;
         };
 
         // --- Turn Execution ---
-        let currEnemyHp = enemyHp;
-        let currMyHp = myHp;
-        const myMaxHp = getMaxHp(myProfile);
-        const enemyMaxHp = getMaxHp(enemyProfile);
+        // We only calculate DAMAGE here, not state updates directly to keep function pure-ish
+        // But we need to simulate the state flow for Counter Attack check
+        // We will return the total damage to apply at the end
 
         if (playerGoesFirst) {
             // 1. Player Attacks
-            const pResult = executePhase("Você", pStats.strength, eStats.defense, setEnemyHp, true, currEnemyHp, enemyMaxHp, true, false);
-            currEnemyHp = pResult.remainingHp;
+            eDamage += resolvePhase("Você", pStats.strength, eStats.defense, true, true, false);
 
-            // 2. Counter-Attack Check
-            // Condition: Defender Defense > Attacker Strength
+            // 2. Counter-Attack Check (using logic based on stats, not remaining HP yet)
             if (eStats.defense > pStats.strength) {
-                if (currEnemyHp > 0) {
-                    log.push("🛡️ Inimigo bloqueou e contra-atacou!");
-                    const eResult = executePhase("Inimigo", eStats.strength, pStats.defense, setMyHp, false, currMyHp, myMaxHp, false, true);
-                    currMyHp = eResult.remainingHp;
-                }
+                log.push("🛡️ Inimigo bloqueou e contra-atacou!");
+                pDamage += resolvePhase("Inimigo", eStats.strength, pStats.defense, false, false, true);
             } else {
                 log.push("💫 Inimigo não conseguiu contra-atacar (Defesa baixa).");
             }
         } else {
             // 1. Enemy Attacks
-            const eResult = executePhase("Inimigo", eStats.strength, pStats.defense, setMyHp, false, currMyHp, myMaxHp, true, false);
-            currMyHp = eResult.remainingHp;
+            pDamage += resolvePhase("Inimigo", eStats.strength, pStats.defense, false, true, false);
 
             // 2. Counter-Attack Check
             if (pStats.defense > eStats.strength) {
-                if (currMyHp > 0) {
-                    log.push("🛡️ Você bloqueou e contra-atacou!");
-                    const pResult = executePhase("Você", pStats.strength, eStats.defense, setEnemyHp, true, currEnemyHp, enemyMaxHp, false, true);
-                    currEnemyHp = pResult.remainingHp;
-                }
+                log.push("🛡️ Você bloqueou e contra-atacou!");
+                eDamage += resolvePhase("Você", pStats.strength, eStats.defense, true, false, true);
             } else {
                 log.push("💫 Você não conseguiu contra-atacar (Defesa baixa).");
             }
@@ -353,9 +340,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             }
         };
 
-        setFatigue(newFatigue);
-
-        return log;
+        return { log, pDamage, eDamage, newFatigue };
     };
 
     const handleConfirmTurn = async () => {
@@ -376,8 +361,13 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                 strength: options[1],
                 defense: options[2]
             };
-            const logs = calculateTurn(effort, enemyEffort);
-            setBattleLog(logs);
+
+            // Execute AI Turn
+            const result = calculateTurnLogic(effort, enemyEffort, myProfile, enemyProfile, fatigue);
+            setBattleLog(result.log);
+            setMyHp(prev => Math.max(0, prev - result.pDamage));
+            setEnemyHp(prev => Math.max(0, prev - result.eDamage));
+            setFatigue(result.newFatigue);
         }
     };
 
