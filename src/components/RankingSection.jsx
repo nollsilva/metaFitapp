@@ -435,7 +435,7 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                 </div>
             )}
 
-            {/* Leaderboard Tabs with VIP Button */}
+            {/* Leaderboard Tabs */}
             <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem' }}>
                 <button
                     onClick={() => setRankingTab('global')}
@@ -453,30 +453,6 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                 >
                     GLOBAL
                 </button>
-
-                {/* VIP Button (Only if VIP) - Moved to middle */}
-                {profile.vip && (
-                    <div style={{ display: 'flex', gap: '5px' }}>
-                        <button
-                            style={{
-                                padding: '12px',
-                                background: 'linear-gradient(45deg, #ffd700, #ffa500)',
-                                color: '#000',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '5px'
-                            }}
-                        >
-                            👑 VIP
-                        </button>
-
-                    </div>
-                )}
 
                 <button
                     onClick={() => setRankingTab('friends')}
@@ -496,10 +472,64 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                 >
                     AMIGOS
                 </button>
+
+                <button
+                    onClick={() => setRankingTab('duel')}
+                    style={{
+                        flex: 1,
+                        padding: '12px',
+                        background: rankingTab === 'duel' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
+                        color: rankingTab === 'duel' ? '#111' : '#fff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        transition: '0.3s'
+                    }}
+                >
+                    DUELO
+                </button>
             </div>
 
             {/* Leaderboard List - Fixed Height & Scroll */}
-            <h2 className="section-title">Ranking <span className="title-gradient">{rankingTab === 'global' ? 'Global' : 'Amigos'}</span></h2>
+            <h2 className="section-title">
+                Ranking <span className="title-gradient">
+                    {rankingTab === 'global' ? 'Global' : rankingTab === 'friends' ? 'Amigos' : 'Duelo'}
+                </span>
+            </h2>
+
+            {rankingTab === 'duel' && (
+                <div style={{ textAlign: 'center', marginBottom: '1.5rem', background: 'rgba(255,0,85,0.05)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,0,85,0.2)' }}>
+                    <p style={{ color: '#aaa', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                        🛡️ Só pode jogar com quem está online no app.
+                    </p>
+                    <button
+                        onClick={() => onBattle({
+                            id: 'BOT_METAFIT',
+                            uid: 'BOT_METAFIT',
+                            name: 'MetaFit Bot',
+                            level: Math.max(1, profile.level - 2),
+                            attributes: {
+                                strength: Math.max(0, (profile.attributes?.strength || 1) - 1),
+                                speed: Math.max(0, (profile.attributes?.speed || 1) - 1),
+                                defense: Math.max(0, (profile.attributes?.defense || 1) - 1)
+                            }
+                        }, null, 'challenger')}
+                        style={{
+                            width: '100%', padding: '12px',
+                            background: 'linear-gradient(90deg, #ff0055, #ff4444)',
+                            border: 'none', borderRadius: '8px',
+                            color: '#fff', fontWeight: 'bold',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                            boxShadow: '0 4px 12px rgba(255, 0, 85, 0.3)'
+                        }}
+                    >
+                        🤖 TREINAR CONTRA BOT METAFIT
+                    </button>
+                    <p style={{ marginTop: '5px', fontSize: '0.7rem', color: '#666' }}>Vencer o bot concede +1 Ponto de Habilidade</p>
+                </div>
+            )}
+
             <div className="leaderboard" style={{
                 display: 'flex', flexDirection: 'column', gap: '0.8rem',
                 maxHeight: '600px', // approx 8-9 items
@@ -511,6 +541,10 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                         const rank = typeof idxOrRealRank === 'number' ? idxOrRealRank + 1 : idxOrRealRank;
                         const isMe = user.id === profile.id;
                         const config = getBadgeConfig(user.xp);
+                        const isOnline = user.lastActive && (Date.now() - user.lastActive < 2 * 60 * 1000);
+
+                        // If Duel Tab, only show online users (excluding self)
+                        if (rankingTab === 'duel' && (!isOnline || isMe)) return null;
 
                         return (
                             <div key={user.id} className="card"
@@ -570,7 +604,7 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                                         />
                                     )}
                                     {/* Online Indicator */}
-                                    {user.lastActive && (Date.now() - user.lastActive < 2 * 60 * 1000) && (
+                                    {isOnline && (
                                         <div style={{
                                             position: 'absolute',
                                             bottom: '-2px',
@@ -611,7 +645,9 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                             <div style={{ textAlign: 'center', padding: '2rem', color: '#666', fontStyle: 'italic' }}>
                                 {rankingTab === 'friends'
                                     ? "Você ainda não tem amigos no ranking."
-                                    : "Ninguém no ranking ainda..."}
+                                    : rankingTab === 'duel'
+                                        ? "Ninguém online para duelar no momento."
+                                        : "Ninguém no ranking ainda..."}
                             </div>
                         );
                     }
@@ -823,22 +859,7 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                                 }}>
                                     ✓ Vocês são amigos
                                 </div>
-                                <button
-                                    onClick={() => {
-                                        // if (onBattle) onBattle(selectedUser);
-                                        handleSendChallenge();
-                                    }}
-                                    style={{
-                                        width: '100%', padding: '12px',
-                                        background: 'linear-gradient(90deg, #ff0055, #ff4444)',
-                                        border: 'none', borderRadius: '8px',
-                                        color: '#fff', fontWeight: 'bold',
-                                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                        boxShadow: '0 4px 12px rgba(255, 0, 85, 0.3)'
-                                    }}
-                                >
-                                    {waitingForOpponent ? '⏳ AGUARDANDO...' : '⚔️ DUELAR'}
-                                </button>
+
                                 <button
                                     onClick={() => setShowUnfriendConfirm(true)}
                                     style={{
@@ -851,22 +872,6 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                             </div>
                         ) : (
                             <div>
-                                <button
-                                    onClick={() => {
-                                        if (onBattle) onBattle(selectedUser);
-                                    }}
-                                    style={{
-                                        width: '100%', padding: '12px',
-                                        background: 'linear-gradient(90deg, #ff0055, #ff4444)',
-                                        border: 'none', borderRadius: '8px',
-                                        color: '#fff', fontWeight: 'bold',
-                                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                        boxShadow: '0 4px 12px rgba(255, 0, 85, 0.3)',
-                                        marginBottom: '10px'
-                                    }}
-                                >
-                                    ⚔️ DUELAR (Amistoso)
-                                </button>
                                 {requestStatus === 'sent' ? (
                                     <button disabled className="btn-secondary" style={{ width: '100%', color: '#00ff66', borderColor: '#00ff66' }}>
                                         ✓ Solicitação Enviada

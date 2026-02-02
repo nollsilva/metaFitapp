@@ -16,6 +16,12 @@ export const calculateTurnLogic = (playerBid, enemyBid, pProfile, eProfile) => {
     // Helper: Logic for standard output (Ataque vs Defesa)
     // Returns { dmgDealt: number, counterTaken: number }
     const resolveClash = (attackerName, defenderName, atkVal, defVal, isPlayerAttacker) => {
+        // Revision: If attacker uses only shield (atkVal === 0), no damage or counter
+        if (atkVal === 0) {
+            log.push(`🛡️ ${attackerName} focou totalmente na Defesa! Nenhum dano sofrido ou causado.`);
+            return { dmgDealt: 0, counterTaken: 0 };
+        }
+
         const diff = atkVal - defVal;
 
         if (diff > 0) {
@@ -61,7 +67,7 @@ export const calculateTurnLogic = (playerBid, enemyBid, pProfile, eProfile) => {
         eDamage += resP.dmgDealt;
         pDamage += resP.counterTaken;
 
-        const resE = resolveClash("Oponente", "Você", enemyBid.strength, enemyBid.defense, false); // Fixed: should be playerBid.defense for player's defense
+        const resE = resolveClash("Oponente", "Você", enemyBid.strength, playerBid.defense, false);
         pDamage += resE.dmgDealt;
         eDamage += resE.counterTaken;
     }

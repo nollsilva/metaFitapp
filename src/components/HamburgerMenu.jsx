@@ -10,7 +10,7 @@ const HamburgerMenu = ({ isOpen, onClose, activeTab, setActiveTab, onLogout, pro
 
     const menuItems = [
         { id: 'tracker', label: 'Perfil', icon: '👤', hasNotification: notificationRequests, notificationColor: '#00ff66' },
-        { id: 'notifications', label: 'Notificações', icon: '🔔' }, // Added
+        { id: 'notifications', label: 'Notificações', icon: '🔔' },
         { id: 'diet', label: 'Dieta', icon: '🥗' },
         // Bonus and Help might trigger modals instead of tabs, we'll handle that passed in props or just tabs
         { id: 'bonus', label: 'Bônus Diário', icon: '🎁', action: 'bonus', hasNotification: notificationBonus, notificationColor: '#ff0055' },

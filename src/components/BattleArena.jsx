@@ -286,6 +286,12 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
         // Update DB
         if (myProfile.uid) {
+            // Revision: Award 1 skill point if winning against MetaFit Bot
+            const isBotWinner = isWin && enemyProfile.id === 'BOT_METAFIT';
+            if (isBotWinner) {
+                newAttrs.points = (newAttrs.points || 0) + 1;
+            }
+
             await updateUser(myProfile.uid, {
                 attributes: newAttrs,
                 battleStats: newStats
