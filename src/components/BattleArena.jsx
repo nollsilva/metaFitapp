@@ -41,24 +41,24 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             if (battle[oppField]) {
                 setOpponentTactics(battle[oppField]);
                 setOpponentTurnConfirmed(true);
+            } else {
+                setOpponentTactics(null);
+                setOpponentTurnConfirmed(false);
             }
+
             if (battle[myField]) {
                 setMyTurnConfirmed(true);
+            } else {
+                setMyTurnConfirmed(false);
             }
 
             // 2. Next Turn Readiness Sync
             const oppReadyField = `turn${turn}_ready_${opponentRole}`;
             const myReadyField = `turn${turn}_ready_${role}`;
 
-            // Strict Sync: Force state to match DB (fixes stale 'true' from previous turn)
+            // Strict Sync: Force state to match DB
             setOpponentNextTurnReady(!!battle[oppReadyField]);
-
-            if (battle[myReadyField]) {
-                setMyNextTurnReady(true);
-            } else {
-                // Strict Reset if DB says not ready (prevents stale local state)
-                setMyNextTurnReady(false);
-            }
+            setMyNextTurnReady(!!battle[myReadyField]);
         });
 
         return () => unsub();
@@ -147,12 +147,12 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
             console.log(`[BattleArena] Both ready. Advancing from Turn ${turn}`);
             processingTurn.current = true;
-            advanceTurnInternal();
+            advanceTurnInternal(turn);
 
             // Allow processing again after a short delay to ensure state settles
             setTimeout(() => { processingTurn.current = false; }, 1000);
         }
-    }, [myNextTurnReady, opponentNextTurnReady, battleId]);
+    }, [myNextTurnReady, opponentNextTurnReady, battleId, turn]);
 
     const handleConfirmTurn = async () => {
         // Deduct Player Pool immediately upon confirmation logic
@@ -201,27 +201,28 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         }
     };
 
-    const advanceTurnInternal = () => {
+    const advanceTurnInternal = (currentTurn) => {
+        console.log(`[BattleArena] Advancing Turn. Current: ${currentTurn}`);
+
+        // 1. Reset Round State
         setTurnSummary(null);
         setMyNextTurnReady(false);
         setOpponentNextTurnReady(false);
+        setMyTurnConfirmed(false);
+        setOpponentTurnConfirmed(false);
+        setOpponentTactics(null);
+        setTurnBid({ strength: 0, speed: 0, defense: 0 });
 
-        setTurn(prev => {
-            const nextTurn = prev + 1;
-            if (nextTurn > 3) {
-                setPhase('result');
-                return prev;
-            }
-            setMyTurnConfirmed(false);
-            setOpponentTurnConfirmed(false);
-            setOpponentTactics(null);
-
-            // Reset Bid for new turn (or keep 0)
-            setTurnBid({ strength: 0, speed: 0, defense: 0 });
-
+        // 2. Advance Logic
+        if (currentTurn >= 3) {
+            console.log("-> Max turns reached. Going to Result.");
+            setPhase('result');
+            // Do not increment turn beyond 3 to keep headers consistent
+        } else {
+            console.log(`-> Going to Turn ${currentTurn + 1}`);
+            setTurn(currentTurn + 1);
             setPhase('setup');
-            return nextTurn;
-        });
+        }
     };
 
     const handleNextTurn = async () => {
@@ -232,7 +233,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             // Advancement will happen in useEffect when both are true
         } else {
             // AI: Instant advancement
-            advanceTurnInternal();
+            advanceTurnInternal(turn);
         }
     };
 
