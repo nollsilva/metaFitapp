@@ -61,36 +61,29 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     // Battle Stats State
     const [myHp, setMyHp] = useState(getMaxHp(myProfile));
     const [enemyHp, setEnemyHp] = useState(getMaxHp(enemyProfile));
-    const [effort, setEffort] = useState({ strength: 75, speed: 100, defense: 50 });
 
-    // Fatigue Tracking
-    const [fatigue, setFatigue] = useState({
-        player: { speed: 100, strength: 100, defense: 100 },
-        enemy: { speed: 100, strength: 100, defense: 100 }
-    });
-
-    // New: Detailed Turn Result for Feedback
-    const [turnSummary, setTurnSummary] = useState(null);
-
-    const handleEffortChange = (attr, newValue) => {
-        setEffort(prev => {
-            const currentVal = prev[attr];
-            if (currentVal === newValue) return prev;
-            const otherAttr = Object.keys(prev).find(key => prev[key] === newValue);
-            return { ...prev, [attr]: newValue, [otherAttr]: currentVal };
-        });
+    // Resource Pools (Starts with Base * 10)
+    // Formula: (10 base + Attribute) * 10
+    const getInitialPool = (p) => {
+        return {
+            strength: (10 + ((p.attributes && p.attributes.strength) || 0)) * 10,
+            speed: (10 + ((p.attributes && p.attributes.speed) || 0)) * 10,
+            defense: (10 + ((p.attributes && p.attributes.defense) || 0)) * 10
+        };
     };
 
-    // Ensure integrity
-    useEffect(() => {
-        const values = Object.values(effort);
-        const unique = new Set(values);
-        if (unique.size !== 3) {
-            setEffort({ strength: 75, speed: 100, defense: 50 });
-        }
-    }, [effort]);
+    const [myPool, setMyPool] = useState(getInitialPool(myProfile));
+    const [enemyPool, setEnemyPool] = useState(getInitialPool(enemyProfile));
+
+    // Current Turn Bid (What user is betting this turn)
+    const [turnBid, setTurnBid] = useState({ strength: 0, speed: 0, defense: 0 });
+
+    const handleBidChange = (attr, newValue) => {
+        setTurnBid(prev => ({ ...prev, [attr]: newValue }));
+    };
 
     const [battleLog, setBattleLog] = useState(["🔥 Batalha Iniciada! Escolha sua estratégia."]);
+    const [turnSummary, setTurnSummary] = useState(null);
 
     // Transition to Animating
     useEffect(() => {
@@ -105,13 +98,21 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         if (phase === 'animating') {
             const timer = setTimeout(() => {
                 // Perform calculation ONLY when animation finishes
-                const result = calculateTurnLogic(effort, opponentTactics, myProfile, enemyProfile, fatigue);
+                // opponentTactics here is the Enemy's BID
+                const result = calculateTurnLogic(turnBid, opponentTactics, myProfile, enemyProfile);
 
                 setBattleLog(result.log);
                 setTurnSummary(result.turnSummary);
                 setMyHp(prev => Math.max(0, prev - result.pDamage));
                 setEnemyHp(prev => Math.max(0, prev - result.eDamage));
-                setFatigue(result.newFatigue);
+
+                if (opponentTactics) {
+                    setEnemyPool(prev => ({
+                        strength: Math.max(0, prev.strength - opponentTactics.strength),
+                        speed: Math.max(0, prev.speed - opponentTactics.speed),
+                        defense: Math.max(0, prev.defense - opponentTactics.defense),
+                    }));
+                }
 
                 setShowDuelAnimation(false);
                 setPhase('combat');
@@ -119,7 +120,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
             return () => clearTimeout(timer);
         }
-    }, [phase]); // Only depend on phase to avoid infinite loop when updating stats
+    }, [phase]); // Only depend on phase
 
     // Handle Turn Advancement Sync (PvP Only)
     useEffect(() => {
@@ -130,28 +131,49 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     }, [myNextTurnReady, opponentNextTurnReady, battleId]);
 
     const handleConfirmTurn = async () => {
+        // Deduct Player Pool immediately upon confirmation logic
+        // But for UI "Commit", we keep it in state until animation?
+        // Let's deduct from the DISPLAY pool when confirming to show "Spent".
+
+        // Validation: Can't spend more than you have
+        // (Input prevents this, but double check)
+
+        setMyPool(prev => ({
+            strength: prev.strength - turnBid.strength,
+            speed: prev.speed - turnBid.speed,
+            defense: prev.defense - turnBid.defense
+        }));
+
         if (battleId) {
             setPhase('waiting');
-            await ChallengeService.submitTurn(battleId, role, turn, effort);
+            await ChallengeService.submitTurn(battleId, role, turn, turnBid);
         } else {
             setPhase('combat');
-            const options = [50, 75, 100];
-            for (let i = options.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [options[i], options[j]] = [options[j], options[i]];
-            }
-            const enemyEffort = {
-                speed: options[0],
-                strength: options[1],
-                defense: options[2]
-            };
 
-            const result = calculateTurnLogic(effort, enemyEffort, myProfile, enemyProfile, fatigue);
-            setBattleLog(result.log);
-            setTurnSummary(result.turnSummary);
-            setMyHp(prev => Math.max(0, prev - result.pDamage));
-            setEnemyHp(prev => Math.max(0, prev - result.eDamage));
-            setFatigue(result.newFatigue);
+            // Simple AI: Spend ~33% of remaining pool + random variance
+            // If Last turn, dump everything!
+            const aiBid = {};
+            ['strength', 'speed', 'defense'].forEach(attr => {
+                const available = enemyPool[attr];
+                if (turn === 3) {
+                    aiBid[attr] = available; // Dump all on last turn
+                } else {
+                    // Random between 20% and 40% of remaining
+                    const percent = 0.2 + (Math.random() * 0.3);
+                    aiBid[attr] = Math.floor(available * percent);
+                }
+            });
+
+            // AI commits, update Enemy Tactics state so animation can use it
+            setOpponentTactics(aiBid); // Emulate network response
+            setOpponentTurnConfirmed(true);
+            setMyTurnConfirmed(true); // Self ready
+
+            // Trigger animation effect manually since we set both confirmed
+            // (The useEffect will pick this up if we are in 'waiting' phase...
+            // but we are in 'setup' -> 'combat' directly in local mode?
+            // Let's force 'waiting' state briefly to trigger animation hook
+            setPhase('waiting');
         }
     };
 
@@ -169,6 +191,10 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             setMyTurnConfirmed(false);
             setOpponentTurnConfirmed(false);
             setOpponentTactics(null);
+
+            // Reset Bid for new turn (or keep 0)
+            setTurnBid({ strength: 0, speed: 0, defense: 0 });
+
             setPhase('setup');
             return nextTurn;
         });
@@ -561,25 +587,25 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                             label="Velocidade (Iniciativa)"
                             icon="⚡"
                             color="#ffd700"
-                            value={effort.speed}
-                            allEfforts={effort}
-                            onSelect={(v) => handleEffortChange('speed', v)}
+                            value={turnBid.speed}
+                            maxAvailable={myPool.speed}
+                            onSelect={(v) => handleBidChange('speed', v)}
                         />
                         <StatisticSelector
                             label="Força (Dano)"
                             icon="💪"
                             color="#ff4444"
-                            value={effort.strength}
-                            allEfforts={effort}
-                            onSelect={(v) => handleEffortChange('strength', v)}
+                            value={turnBid.strength}
+                            maxAvailable={myPool.strength}
+                            onSelect={(v) => handleBidChange('strength', v)}
                         />
                         <StatisticSelector
                             label="Defesa (Resistência)"
                             icon="🛡️"
                             color="#00f0ff"
-                            value={effort.defense}
-                            allEfforts={effort}
-                            onSelect={(v) => handleEffortChange('defense', v)}
+                            value={turnBid.defense}
+                            maxAvailable={myPool.defense}
+                            onSelect={(v) => handleBidChange('defense', v)}
                         />
 
                         <button

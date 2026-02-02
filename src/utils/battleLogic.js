@@ -1,129 +1,78 @@
 
 // Helper Functions
-
 export const getMaxHp = (p) => 150 + ((p.level || 1) * 15);
 
-export const calculateTurnLogic = (playerEffort, enemyEffort, pProfile, eProfile, fatigue) => {
-    // Helper: Get Effective Stat (Base * Fatigue * Effort)
-    const getStat = (p, attr, eff, fatigueVal) => {
-        const base = 10 + ((p.level || 1) * 2) + ((p.attributes && p.attributes[attr]) || 0);
-        const fatigueMultiplier = fatigueVal / 100;
-        const effortMultiplier = eff / 100;
-        return Math.floor(base * fatigueMultiplier * effortMultiplier * 3);
-    };
-
-    // Current Stats (incorporating Fatigue)
-    const pStats = {
-        speed: getStat(pProfile, 'speed', playerEffort.speed, fatigue.player.speed),
-        strength: getStat(pProfile, 'strength', playerEffort.strength, fatigue.player.strength),
-        defense: getStat(pProfile, 'defense', playerEffort.defense, fatigue.player.defense)
-    };
-
-    const eStats = {
-        speed: getStat(eProfile, 'speed', enemyEffort.speed, fatigue.enemy.speed),
-        strength: getStat(eProfile, 'strength', enemyEffort.strength, fatigue.enemy.strength),
-        defense: getStat(eProfile, 'defense', enemyEffort.defense, fatigue.enemy.defense)
-    };
+export const calculateTurnLogic = (playerBid, enemyBid, pProfile, eProfile) => {
+    // Inputs are now the BID amounts (absolute values), not percentages.
 
     let log = [];
     let pDamage = 0;
     let eDamage = 0;
 
-    // --- Phase 1: Initiative ---
-    const playerSpeed = pStats.speed;
-    const enemySpeed = eStats.speed;
-    const playerGoesFirst = playerSpeed >= enemySpeed;
+    // --- Phase 1: Initiative Check (Speed Bid) ---
+    // User Requirement: "se eu tenho 120... selecionar 40... e o oponente 50. ele ataca e eu defendo."
+    const pSpeed = playerBid.speed;
+    const eSpeed = enemyBid.speed;
 
-    // Bonus Calculation (+10% for winner)
-    const atkBonus = 1.1;
+    let winner = 'draw'; // player, enemy, draw
 
-    log.push(playerGoesFirst
-        ? `⚡ Você foi mais rápido! (+10% de Dano)`
-        : `⚡ Inimigo foi mais rápido! (+10% de Dano)`);
+    if (pSpeed > eSpeed) winner = 'player';
+    else if (eSpeed > pSpeed) winner = 'enemy';
+    else winner = 'draw';
 
-    // --- Damage Formula ---
-    const calculateDamage = (atkVal, defVal, isBonus, isCounter) => {
-        // Apply bonus if Initiative Winner
-        let finalAtk = atkVal * (isBonus ? atkBonus : 1.0);
+    // --- Phase 2: Combat Resolution ---
+    const resolveAttack = (attackerName, atkStr, defDef, isPlayerAttacker) => {
+        // Simple subtraction logic: Damage = Strength - Defense
+        const rawDmg = atkStr - defDef;
+        const finalDmg = Math.max(0, rawDmg); // No negative damage
 
-        // Counter-attack is weaker (50% power)
-        if (isCounter) finalAtk = finalAtk * 0.5;
-
-        // New Formula: Dmg = Atk * (1 - (Def / (Def + Atk)))
-        const denominator = defVal + finalAtk;
-        const reduction = denominator === 0 ? 0 : defVal / denominator;
-        const damage = Math.floor(finalAtk * (1 - reduction));
-
-        return Math.max(0, damage);
+        const icon = isPlayerAttacker ? "⚔️" : "🛡️";
+        // log.push(`${icon} ${attackerName} Ataca: ${atkStr} Força vs ${defDef} Defesa => ${finalDmg} Dano`);
+        return finalDmg;
     };
 
-    const resolvePhase = (attackerName, atkStat, defStat, isPlayer, isBonus, isCounter) => {
-        const dmg = calculateDamage(atkStat, defStat, isBonus, isCounter);
-        const typeText = isCounter ? " (Contra-Ataque)" : "";
-        const icon = isPlayer ? "⚔️" : "🛡️";
-        log.push(`${icon} ${attackerName} causou ${dmg} dano!${typeText}`);
-        return dmg;
-    };
+    if (winner === 'player') {
+        log.push(`⚡ Você foi mais rápido! (+${pSpeed} vs +${eSpeed})`);
+        log.push(`⚔️ Você ATACA e o oponente DEFENDE.`);
 
-    // --- Turn Execution ---
-    // We only calculate DAMAGE here, not state updates directly to keep function pure-ish
-    // But we need to simulate the state flow for Counter Attack check
-    // We will return the total damage to apply at the end
+        // Player Attacks (Str), Enemy Defends (Def)
+        // Enemy's Strength is wasted? Or unused? "Ele ataca e eu defendo" implies active roles.
+        // We use P_Str vs E_Def. 
+        eDamage = resolveAttack("Você", playerBid.strength, enemyBid.defense, true);
 
-    if (playerGoesFirst) {
-        // 1. Player Attacks
-        eDamage += resolvePhase("Você", pStats.strength, eStats.defense, true, true, false);
+        if (eDamage === 0) log.push("🛡️ Oponente bloqueou todo o dano!");
+        else log.push(`💥 Você casou ${eDamage} de dano!`);
 
-        // 2. Counter-Attack Check (using logic based on stats, not remaining HP yet)
-        if (eStats.defense > pStats.strength) {
-            log.push("🛡️ Inimigo bloqueou e contra-atacou!");
-            pDamage += resolvePhase("Inimigo", eStats.strength, pStats.defense, false, false, true);
-        } else {
-            log.push("💫 Inimigo não conseguiu contra-atacar (Defesa baixa).");
-        }
+    } else if (winner === 'enemy') {
+        log.push(`⚡ Oponente foi mais rápido! (+${pSpeed} vs +${eSpeed})`);
+        log.push(`🛡️ Oponente ATACA e você DEFENDE.`);
+
+        // Enemy Attacks (Str), Player Defends (Def)
+        pDamage = resolveAttack("Oponente", enemyBid.strength, playerBid.defense, false);
+
+        if (pDamage === 0) log.push("🛡️ Você bloqueou todo o dano!");
+        else log.push(`💥 Oponente causou ${pDamage} de dano!`);
+
     } else {
-        // 1. Enemy Attacks
-        pDamage += resolvePhase("Inimigo", eStats.strength, pStats.defense, false, true, false);
+        // Draw Scenario: Simultaneous Clash? Or No one attacks?
+        // Let's make it a Simultaneous Clash for excitement.
+        log.push(`⚡ Empate na velocidade! (+${pSpeed})`);
+        log.push(`⚔️ CHOQUE! Ambos atacam simultaneamente.`);
 
-        // 2. Counter-Attack Check
-        if (pStats.defense > eStats.strength) {
-            log.push("🛡️ Você bloqueou e contra-atacou!");
-            eDamage += resolvePhase("Você", pStats.strength, eStats.defense, true, false, true);
-        } else {
-            log.push("💫 Você não conseguiu contra-atacar (Defesa baixa).");
-        }
+        eDamage = resolveAttack("Você", playerBid.strength, enemyBid.defense, true);
+        pDamage = resolveAttack("Oponente", enemyBid.strength, playerBid.defense, false);
     }
 
-    // --- 4. Fatigue System ---
-    const calcNextFatigue = (effVal) => {
-        if (effVal === 100) return 80; // -20%
-        if (effVal === 75) return 90; // -10%
-        return 100; // Reset
-    };
-
-    const newFatigue = {
-        player: {
-            speed: calcNextFatigue(playerEffort.speed),
-            strength: calcNextFatigue(playerEffort.strength),
-            defense: calcNextFatigue(playerEffort.defense)
-        },
-        enemy: {
-            speed: calcNextFatigue(enemyEffort.speed),
-            strength: calcNextFatigue(enemyEffort.strength),
-            defense: calcNextFatigue(enemyEffort.defense)
-        }
-    };
-
+    // --- Summary for UI ---
     return {
         log,
         pDamage,
         eDamage,
-        newFatigue,
         turnSummary: {
-            winner: playerGoesFirst ? 'player' : 'enemy', // Who won initiative
+            winner: winner === 'draw' ? 'draw' : winner,
             playerDamageDealt: eDamage,
             playerDamageTaken: pDamage,
-            initiativeMsg: playerGoesFirst ? "Você venceu a disputa!" : "Oponente venceu a disputa!"
+            initiativeMsg: winner === 'player' ? "Iniciativa: VOCÊ" : winner === 'enemy' ? "Iniciativa: OPONENTE" : "Iniciativa: EMPATE"
         }
     };
 };
