@@ -12,6 +12,9 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     const [phase, setPhase] = useState('setup'); // setup, waiting, animating, combat, result
     const [showDuelAnimation, setShowDuelAnimation] = useState(false);
 
+    // Prevent double-processing of turn advancement
+    const processingTurn = React.useRef(false);
+
     // Network Sync State
     const [myTurnConfirmed, setMyTurnConfirmed] = useState(false);
     const [opponentTurnConfirmed, setOpponentTurnConfirmed] = useState(false);
@@ -52,6 +55,9 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
             if (battle[myReadyField]) {
                 setMyNextTurnReady(true);
+            } else {
+                // Strict Reset if DB says not ready (prevents stale local state)
+                setMyNextTurnReady(false);
             }
         });
 
@@ -99,7 +105,19 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             const timer = setTimeout(() => {
                 // Perform calculation ONLY when animation finishes
                 // opponentTactics here is the Enemy's BID
-                const result = calculateTurnLogic(turnBid, opponentTactics, myProfile, enemyProfile);
+                // FORCE NUMBER CASTING to avoid "98" > "120" string errors
+                const pBid = {
+                    strength: Number(turnBid.strength),
+                    speed: Number(turnBid.speed),
+                    defense: Number(turnBid.defense)
+                };
+                const eBid = {
+                    strength: Number(opponentTactics?.strength || 0),
+                    speed: Number(opponentTactics?.speed || 0),
+                    defense: Number(opponentTactics?.defense || 0)
+                };
+
+                const result = calculateTurnLogic(pBid, eBid, myProfile, enemyProfile);
 
                 setBattleLog(result.log);
                 setTurnSummary(result.turnSummary);
@@ -125,8 +143,14 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     // Handle Turn Advancement Sync (PvP Only)
     useEffect(() => {
         if (battleId && myNextTurnReady && opponentNextTurnReady) {
+            if (processingTurn.current) return;
+
             console.log(`[BattleArena] Both ready. Advancing from Turn ${turn}`);
+            processingTurn.current = true;
             advanceTurnInternal();
+
+            // Allow processing again after a short delay to ensure state settles
+            setTimeout(() => { processingTurn.current = false; }, 1000);
         }
     }, [myNextTurnReady, opponentNextTurnReady, battleId]);
 
@@ -636,12 +660,12 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
                                 <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '1.5rem', background: 'rgba(0,0,0,0.4)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                                     <div>
-                                        <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '5px' }}>DANO CAUSADO</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '5px' }}>VOCÊ CAUSOU</div>
                                         <div style={{ fontSize: '2rem', color: '#00f0ff', fontWeight: 'bold', textShadow: '0 0 10px rgba(0,240,255,0.5)' }}>{turnSummary.playerDamageDealt}</div>
                                     </div>
                                     <div style={{ borderLeft: '1px solid #444' }}></div>
                                     <div>
-                                        <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '5px' }}>DANO RECEBIDO</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '5px' }}>VOCÊ RECEBEU</div>
                                         <div style={{ fontSize: '2rem', color: '#ff4444', fontWeight: 'bold', textShadow: '0 0 10px rgba(255,68,68,0.5)' }}>{turnSummary.playerDamageTaken}</div>
                                     </div>
                                 </div>
