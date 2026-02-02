@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import html2canvas from 'html2canvas';
-import { BadgeIcon, getBadgeConfig } from './BadgeIcons';
+import { getBadgeConfig } from './BadgeIcons';
 import { updateUser } from '../utils/db'; // Import DB update
 import { ChallengeService } from '../services/ChallengeService';
 

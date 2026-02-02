@@ -33,7 +33,9 @@ import { ChallengeService } from './services/ChallengeService';
 import NotificationSystem from './components/NotificationSystem'; // Imported
 import NotificationPermissionModal from './components/NotificationPermissionModal'; // Imported
 import NotificationsScreen from './components/NotificationsScreen'; // Imported
-import BattleArena from './components/BattleArena'; // PvP System
+
+// Lazy load BattleArena to avoid circular dependency/initialization issues in production
+const BattleArena = React.lazy(() => import('./components/BattleArena'));
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -620,18 +622,27 @@ function App() {
 
         {/* Battle Arena Overlay */}
         {activeTab === 'battle' && battleOpponent && (
-          <BattleArena
-            myProfile={userProfile}
-            enemyProfile={battleOpponent}
-            battleId={battleMetadata?.battleId}
-            role={battleMetadata?.role}
-            onUpdateProfile={updateProfile}
-            onExit={() => {
-              setActiveTab('home');
-              setBattleOpponent(null);
-              setBattleMetadata(null);
-            }}
-          />
+          <React.Suspense fallback={
+            <div style={{
+              position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+              background: '#000', color: '#00f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
+            }}>
+              Initializing Arena...
+            </div>
+          }>
+            <BattleArena
+              myProfile={userProfile}
+              enemyProfile={battleOpponent}
+              battleId={battleMetadata?.battleId}
+              role={battleMetadata?.role}
+              onUpdateProfile={updateProfile}
+              onExit={() => {
+                setActiveTab('home');
+                setBattleOpponent(null);
+                setBattleMetadata(null);
+              }}
+            />
+          </React.Suspense>
         )}
 
         {/* Notification Screen */}
