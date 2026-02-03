@@ -100,6 +100,9 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
     // Current Turn Bid (What user is betting this turn)
     const [turnBid, setTurnBid] = useState({ strength: 0, speed: 0, defense: 0 });
+    // History for Fatigue Logic
+    const [myLastBid, setMyLastBid] = useState(null);
+    const [enemyLastBid, setEnemyLastBid] = useState(null);
 
     const handleBidChange = (attr, newValue) => {
         setTurnBid(prev => ({ ...prev, [attr]: newValue }));
@@ -134,7 +137,22 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                     defense: Number(opponentTactics?.defense || 0)
                 };
 
-                const result = calculateTurnLogic(pBid, eBid, myProfile, enemyProfile);
+                const result = calculateTurnLogic(
+                    pBid,
+                    eBid,
+                    {
+                        profile: myProfile,
+                        hp: myHp,
+                        maxHp: getMaxHp(myProfile),
+                        history: myLastBid
+                    },
+                    {
+                        profile: enemyProfile,
+                        hp: enemyHp,
+                        maxHp: effectiveEnemyProfile.id === 'BOT_METAFIT' ? Math.floor(getMaxHp(enemyProfile) * 1.25) : getMaxHp(enemyProfile),
+                        history: enemyLastBid
+                    }
+                );
 
                 setBattleLog(result.log);
                 setTurnSummary(result.turnSummary);
@@ -148,6 +166,10 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                         defense: Math.max(0, prev.defense - opponentTactics.defense),
                     }));
                 }
+
+                // Update History for next turn fatigue
+                setMyLastBid(pBid);
+                setEnemyLastBid(eBid);
 
                 setShowDuelAnimation(false);
                 setPhase('combat');
