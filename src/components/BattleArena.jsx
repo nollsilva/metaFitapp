@@ -16,14 +16,17 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
     // Check Tutorial on Mount
     useEffect(() => {
-        const hasSeen = localStorage.getItem('metafit_duel_tutorial_seen');
-        if (!hasSeen) {
+        // Use a more specific key for the "Dismissed" state
+        const isDismissed = localStorage.getItem('metafit_duel_tutorial_dismissed');
+        if (!isDismissed) {
             setShowDuelTutorial(true);
         }
     }, []);
 
-    const handleDuelTutorialComplete = () => {
-        localStorage.setItem('metafit_duel_tutorial_seen', 'true');
+    const handleDuelTutorialComplete = (dontShowAgain) => {
+        if (dontShowAgain) {
+            localStorage.setItem('metafit_duel_tutorial_dismissed', 'true');
+        }
         setShowDuelTutorial(false);
     };
 

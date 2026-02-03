@@ -27,12 +27,13 @@ const pages = [
 
 const DuelTutorialOverlay = ({ onComplete }) => {
     const [index, setIndex] = useState(0);
+    const [dontShowAgain, setDontShowAgain] = useState(false);
 
     const handleNext = () => {
         if (index < pages.length - 1) {
             setIndex(index + 1);
         } else {
-            onComplete();
+            onComplete(dontShowAgain);
         }
     };
 
@@ -79,14 +80,31 @@ const DuelTutorialOverlay = ({ onComplete }) => {
                 <button
                     onClick={handleNext}
                     style={{
-                        background: 'var(--color-primary)', border: 'none',
+                        background: index === pages.length - 1 ? 'linear-gradient(90deg, #ff0055, #ff5500)' : 'var(--color-primary)',
+                        border: 'none',
                         padding: '15px 40px', borderRadius: '30px',
-                        color: '#000', fontWeight: 'bold', fontSize: '1.1rem',
-                        cursor: 'pointer', width: '100%'
+                        color: index === pages.length - 1 ? '#fff' : '#000',
+                        fontWeight: 'bold', fontSize: '1.1rem',
+                        cursor: 'pointer', width: '100%',
+                        boxShadow: index === pages.length - 1 ? '0 0 20px rgba(255, 0, 85, 0.5)' : 'none',
+                        transition: 'all 0.3s ease'
                     }}
                 >
-                    {index === pages.length - 1 ? "ENTENDI, VAMOS LUTAR!" : "PRÓXIMO ➔"}
+                    {index === pages.length - 1 ? "ENTRAR NO DUELO ⚔️" : "PRÓXIMO ➔"}
                 </button>
+
+                <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: '#888', fontSize: '0.9rem' }}>
+                    <input
+                        type="checkbox"
+                        id="dontShowDuelTutorial"
+                        checked={dontShowAgain}
+                        onChange={(e) => setDontShowAgain(e.target.checked)}
+                        style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#00f0ff' }}
+                    />
+                    <label htmlFor="dontShowDuelTutorial" style={{ cursor: 'pointer', userSelect: 'none' }}>
+                        Não mostrar este tutorial novamente
+                    </label>
+                </div>
             </div>
         </div>
     );
