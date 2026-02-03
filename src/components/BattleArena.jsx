@@ -66,22 +66,37 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
     // Battle Stats State
     const [myHp, setMyHp] = useState(getMaxHp(myProfile));
-    const [enemyHp, setEnemyHp] = useState(getMaxHp(enemyProfile));
+    const [enemyHp, setEnemyHp] = useState(() => {
+        const base = getMaxHp(enemyProfile);
+        return enemyProfile.id === 'BOT_METAFIT' ? Math.floor(base * 1.25) : base;
+    });
+
+    // Buffed Bot Profile for Display/Logic (25% stronger attributes)
+    const [effectiveEnemyProfile, setEffectiveEnemyProfile] = useState(() => {
+        if (enemyProfile.id !== 'BOT_METAFIT') return enemyProfile;
+        return {
+            ...enemyProfile,
+            attributes: {
+                strength: Math.ceil((enemyProfile.attributes?.strength || 0) * 1.25),
+                speed: Math.ceil((enemyProfile.attributes?.speed || 0) * 1.25),
+                defense: Math.ceil((enemyProfile.attributes?.defense || 0) * 1.25)
+            }
+        };
+    });
 
     // Resource Pools (Starts with Base * 10)
     // Formula: (10 base + Attribute) * 10
-    const getInitialPool = (p) => {
-        const isBot = p.id === 'BOT_METAFIT';
-        const multiplier = isBot ? 12.5 : 10; // 25% stronger (12.5 instead of 10)
+    const getInitialPool = (p, isBotProfile = false) => {
+        const multiplier = isBotProfile ? 12.5 : 10;
         return {
-            strength: (10 + ((p.attributes && p.attributes.strength) || 0)) * multiplier,
-            speed: (10 + ((p.attributes && p.attributes.speed) || 0)) * multiplier,
-            defense: (10 + ((p.attributes && p.attributes.defense) || 0)) * multiplier
+            strength: (10 + (p.attributes?.strength || 0)) * multiplier,
+            speed: (10 + (p.attributes?.speed || 0)) * multiplier,
+            defense: (10 + (p.attributes?.defense || 0)) * multiplier
         };
     };
 
     const [myPool, setMyPool] = useState(getInitialPool(myProfile));
-    const [enemyPool, setEnemyPool] = useState(getInitialPool(enemyProfile));
+    const [enemyPool, setEnemyPool] = useState(getInitialPool(enemyProfile, enemyProfile.id === 'BOT_METAFIT'));
 
     // Current Turn Bid (What user is betting this turn)
     const [turnBid, setTurnBid] = useState({ strength: 0, speed: 0, defense: 0 });
@@ -503,9 +518,9 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                                 justifyContent: 'center'
                             }}>
                                 <BattleCard
-                                    profile={myHp > enemyHp ? enemyProfile : myProfile}
+                                    profile={myHp > enemyHp ? effectiveEnemyProfile : myProfile}
                                     health={0}
-                                    maxHealth={100}
+                                    maxHealth={myHp > enemyHp ? (effectiveEnemyProfile.id === 'BOT_METAFIT' ? Math.floor(getMaxHp(enemyProfile) * 1.25) : getMaxHp(enemyProfile)) : getMaxHp(myProfile)}
                                     isEnemy={myHp > enemyHp}
                                     activeTurn={false}
                                     resultStatus="loser"
@@ -520,7 +535,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                                 justifyContent: 'center'
                             }}>
                                 <BattleCard
-                                    profile={myHp > enemyHp ? myProfile : enemyProfile}
+                                    profile={myHp > enemyHp ? myProfile : effectiveEnemyProfile}
                                     health={1}
                                     maxHealth={1}
                                     isEnemy={myHp <= enemyHp}
@@ -550,9 +565,9 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
                             <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
                                 <BattleCard
-                                    profile={enemyProfile}
+                                    profile={effectiveEnemyProfile}
                                     health={enemyHp}
-                                    maxHealth={getMaxHp(enemyProfile)}
+                                    maxHealth={effectiveEnemyProfile.id === 'BOT_METAFIT' ? Math.floor(getMaxHp(enemyProfile) * 1.25) : getMaxHp(enemyProfile)}
                                     isEnemy={true}
                                     activeTurn={phase === 'combat'}
                                 />
