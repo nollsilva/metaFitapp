@@ -264,18 +264,51 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                         </div>
                     )}
                     {profile.isLoggedIn && (
-                        <div style={{ marginTop: '10px', fontSize: '0.8rem', color: '#888', background: 'rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '5px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-                            <span>Código Convite: <strong style={{ color: '#fff' }}>{profile.id}</strong></span>
-                            <button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(profile.id);
-                                    alert('Código copiado!');
-                                }}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}
-                                title="Copiar"
-                            >
-                                📋
-                            </button>
+                        <div style={{ marginTop: '15px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                            <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '5px' }}>Seu Link de Convite (+100 XP)</div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <code style={{
+                                    flex: 1,
+                                    background: 'rgba(0,0,0,0.3)',
+                                    padding: '8px',
+                                    borderRadius: '4px',
+                                    fontSize: '0.75rem',
+                                    color: 'var(--color-primary)',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                }}>
+                                    metafitapp.com/?ref={profile.id}
+                                </code>
+                                <button
+                                    onClick={() => {
+                                        const link = `https://metafitapp.com/?ref=${profile.id}`;
+                                        navigator.clipboard.writeText(link);
+                                        alert('Link copiado!');
+                                    }}
+                                    style={{ background: 'var(--color-primary)', border: 'none', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', color: '#000', fontWeight: 'bold', fontSize: '0.8rem' }}
+                                >
+                                    Copiar
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const link = `https://metafitapp.com/?ref=${profile.id}`;
+                                        if (navigator.share) {
+                                            navigator.share({
+                                                title: 'MetaFit - Treino & Batalha',
+                                                text: 'Venha treinar e batalhar comigo no MetaFit! Use meu link para ganhar 100 XP:',
+                                                url: link
+                                            }).catch(console.error);
+                                        } else {
+                                            navigator.clipboard.writeText(link);
+                                            alert('Link copiado!');
+                                        }
+                                    }}
+                                    style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', color: '#fff', fontSize: '0.8rem' }}
+                                >
+                                    📤
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>

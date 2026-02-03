@@ -51,11 +51,17 @@ export const registerUser = async (email, password, name, inviteCode = "") => {
                 const referrerData = referrerDoc.data();
 
                 // Award 100 XP to Referrer
+                const referrerCurrentXp = referrerData.xp || 0;
                 await updateDoc(referrerDoc.ref, {
-                    xp: (referrerData.xp || 0) + 100
+                    xp: referrerCurrentXp + 100,
+                    xpHistory: arrayUnion({
+                        id: Date.now(),
+                        date: new Date().toISOString(),
+                        amount: 100,
+                        reason: `Indicação: ${name}`,
+                        type: 'gain'
+                    })
                 });
-
-                // Optional: Notify referrer (not implemented without cloud functions easily, but we update the doc)
             }
         }
 
@@ -64,7 +70,17 @@ export const registerUser = async (email, password, name, inviteCode = "") => {
             id: friendCode, // Public Friend Code
             email,
             name,
-            xp: 0, // Requirement: New users start with 0 XP
+            xp: inviteCode ? 100 : 0, // Bonus 100 XP if invited
+            level: 1,
+            friends: [],
+            createdAt: new Date().toISOString(),
+            xpHistory: inviteCode ? [{
+                id: Date.now(),
+                date: new Date().toISOString(),
+                amount: 100,
+                reason: 'Bônus de Convite',
+                type: 'gain'
+            }] : [],
             level: 1,
             friends: [],
             createdAt: new Date().toISOString(),

@@ -7,7 +7,7 @@ const AuthModal = ({ onClose, onSuccess }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
-    const [inviteCode, setInviteCode] = useState(''); // Added
+    const [inviteCode, setInviteCode] = useState(localStorage.getItem('metafit_ref_code') || ''); // Auto-fill
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 

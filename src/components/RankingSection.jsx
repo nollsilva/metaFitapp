@@ -502,7 +502,21 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                 </button>
             </div>
 
-            {/* Leaderboard List - Fixed Height & Scroll */}
+            {/* Referral Promo Message */}
+            <div style={{
+                background: 'linear-gradient(90deg, rgba(0, 240, 255, 0.1), rgba(112, 0, 255, 0.1))',
+                border: '1px solid rgba(0, 240, 255, 0.2)',
+                borderRadius: '12px',
+                padding: '12px',
+                marginBottom: '1.5rem',
+                textAlign: 'center',
+                fontSize: '0.9rem',
+                color: '#fff'
+            }}>
+                ✨ Ganhe <strong style={{ color: '#00ff66' }}>100 XP</strong> convidando amigos!
+                Pegue seu link no <span style={{ textDecoration: 'underline', color: 'var(--color-primary)', cursor: 'pointer' }} onClick={() => { }}>Perfil</span>.
+            </div>
+
             <h2 className="section-title">
                 Ranking <span className="title-gradient">
                     {rankingTab === 'global' ? 'Global' : rankingTab === 'friends' ? 'Amigos' : 'Duelo'}
@@ -687,8 +701,8 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                                         {rankingTab === 'duel' ? (
                                             <div className="pulse" style={{ color: '#ff0055', fontSize: '1.5rem', marginTop: '-5px', fontWeight: '900' }}>→</div>
                                         ) : (
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                                                {getRankTitle(user.xp)}
+                                            <div style={{ fontSize: '0.8rem', color: isMe ? '#444' : '#888', marginTop: '2px' }}>
+                                                {getRankTitle(user.xp)} • Lvl {user.level}
                                             </div>
                                         )}
                                     </div>
@@ -702,8 +716,7 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                                             </div>
                                         ) : (
                                             <>
-                                                <div style={{ fontWeight: '800', fontSize: '1rem', whiteSpace: 'nowrap' }}>{user.xp} XP</div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>Lvl {user.level}</div>
+                                                <div style={{ fontWeight: '800', fontSize: '0.9rem', whiteSpace: 'nowrap', color: 'var(--color-primary)' }}>{user.xp} XP</div>
                                             </>
                                         )}
                                     </div>

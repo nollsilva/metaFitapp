@@ -78,6 +78,18 @@ function App() {
     if (!hasSeenTutorial) {
       setShowTutorial(true);
     }
+
+    // Check for Referral Code in URL
+    const params = new URLSearchParams(window.location.search);
+    const refCode = params.get('ref');
+    if (refCode) {
+      localStorage.setItem('metafit_ref_code', refCode);
+      // Optional: Open Auth Modal immediately?
+      // setIsAuthModalOpen(true);
+
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   const handleTutorialComplete = () => {
