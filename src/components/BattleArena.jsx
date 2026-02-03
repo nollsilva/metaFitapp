@@ -113,6 +113,10 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         };
     };
 
+    // Store Max Capacity for % calculations
+    const [pMaxPool] = useState(getInitialPool(myProfile));
+    const [eMaxPool] = useState(getInitialPool(enemyProfile, enemyProfile.id === 'BOT_METAFIT'));
+
     const [myPool, setMyPool] = useState(getInitialPool(myProfile));
     const [enemyPool, setEnemyPool] = useState(getInitialPool(enemyProfile, enemyProfile.id === 'BOT_METAFIT'));
 
@@ -162,13 +166,15 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                         profile: myProfile,
                         hp: myHp,
                         maxHp: getMaxHp(myProfile),
-                        history: myLastBid
+                        history: myLastBid,
+                        maxPool: pMaxPool // Pass Max Pool for % Logic
                     },
                     {
                         profile: enemyProfile,
                         hp: enemyHp,
                         maxHp: effectiveEnemyProfile.id === 'BOT_METAFIT' ? Math.floor(getMaxHp(enemyProfile) * 1.25) : getMaxHp(enemyProfile),
-                        history: enemyLastBid
+                        history: enemyLastBid,
+                        maxPool: eMaxPool // Pass Max Pool for % Logic
                     }
                 );
 
@@ -310,11 +316,16 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         setOpponentTactics(null);
         setTurnBid({ strength: 0, speed: 0, defense: 0 });
 
-        // 2. Advance Logic
-        if (currentTurn >= 3) {
-            console.log("-> Max turns reached. Going to Result.");
+        // 2. Advance Logic - Dynamic End Condition
+        // End if: Someone is Dead OR Both are out of points (in all attributes)
+        const myTotalPoints = myPool.strength + myPool.speed + myPool.defense;
+        const enemyTotalPoints = enemyPool.strength + enemyPool.speed + enemyPool.defense;
+
+        const isGameOver = (myHp <= 0 || enemyHp <= 0) || (myTotalPoints <= 0 && enemyTotalPoints <= 0);
+
+        if (isGameOver) {
+            console.log("-> Game Over Condition Met. Going to Result.");
             setPhase('result');
-            // Do not increment turn beyond 3 to keep headers consistent
         } else {
             console.log(`-> Going to Turn ${currentTurn + 1}`);
             setTurn(currentTurn + 1);
@@ -349,9 +360,10 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
     useEffect(() => {
         if (phase === 'result') {
-            // New Reward Policy: Winner: 1pt, Loser: 0pts
+            // New Reward Policy: Winner: 2pts, Loser: 1pt
+            // Tiebreaker for "Out of Points": Highest HP Wins.
             const isWinner = myHp > enemyHp;
-            setDistPoints(isWinner ? 1 : 0);
+            setDistPoints(isWinner ? 2 : 1);
         }
     }, [phase, myHp, enemyHp]);
 
@@ -466,7 +478,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             {/* Header */}
             <div style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.5)' }}>
                 <h2 style={{ color: '#fff', fontSize: '1.2rem', textTransform: 'uppercase', letterSpacing: '2px' }}>
-                    Turno <span style={{ color: '#00f0ff', fontSize: '1.5rem' }}>{Math.min(turn, 3)}</span> / 3
+                    Turno <span style={{ color: '#00f0ff', fontSize: '1.5rem' }}>{turn}</span>
                 </h2>
                 <button onClick={onExit} style={{ background: 'none', border: '1px solid #444', color: '#aaa', padding: '5px 12px', borderRadius: '20px', fontSize: '0.8rem' }}>
                     Sair
@@ -734,7 +746,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                             </div>
                         )}
                     </div>
-                ) : phase === 'setup' && turn <= 3 ? (
+                ) : phase === 'setup' ? (
                     <div className="animate-slide-up">
                         <h3 style={{ color: '#fff', marginBottom: '1rem', textAlign: 'center', fontSize: '1rem' }}>Estratégia do Turno {turn}</h3>
 

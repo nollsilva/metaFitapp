@@ -6,22 +6,22 @@ const pages = [
     {
         emoji: "🧠",
         title: "Estratégia é Tudo",
-        text: "O Duelo dura 3 turnos. Você distribui seus pontos de Atributos a cada turno. Não existe sorte pura, existe mente fria."
+        text: "O duelo vai até alguém zerar a Vida ou ambos ficarem sem pontos.\nVencedor ganha 2 pts de atributo, Perdedor leva 1 pt.\nQuem tiver mais Vida no final vence!"
     },
     {
         emoji: "📉",
-        title: "Eficiência Decrescente",
-        text: "Apostar tudo em um atributo é ruim! \n• 1-3 pts: 100% força \n• 4-6 pts: 85% força \n• 7+ pts: 65% força. \nDistribua com sabedoria."
+        title: "Eficiência (%)",
+        text: "Gerencie seus pontos (Baseado no total do atributo):\n• Até 40% usado: 100% Eficiência\n• 50% a 70%: 80% Eficiência\n• 80% a 100%: 50% Eficiência (Não gaste tudo!)"
     },
     {
         emoji: "😫",
         title: "Cuidado com a Fadiga",
-        text: "Se você usar muitos pontos (4+) no mesmo atributo, ele ficará 'Cansado' no próximo turno (-30% de força). Varie seus ataques!"
+        text: "Se usar mais de 50% do total de um atributo, ele fica 'Cansado'.\nNo próximo turno, ele terá -15% de eficiência.\nVarie seus ataques para evitar isso!"
     },
     {
         emoji: "🛡️",
-        title: "Defesa e Iniciativa",
-        text: "Velocidade define quem ataca primeiro.\nDefesa reduz dano, mas o contra-ataque é fraco. Use defesa para sobreviver, não para matar."
+        title: "Defesa e Velocidade",
+        text: "Velocidade alta garante o primeiro ataque.\nDefesa bloqueia dano, mas o contra-ataque é limitado.\nLembre-se: Vida baixa (<40%) reduz o dano recebido!"
     }
 ];
 

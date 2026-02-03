@@ -1,25 +1,26 @@
 // Helper Functions
 export const getMaxHp = (p) => 150 + ((p.level || 1) * 15);
 
-// 1. Efficiency (Diminishing Returns)
-const getEfficiencyMultiplier = (points) => {
-    if (points <= 3) return 1.0;
-    if (points <= 6) return 0.85;
-    return 0.65;
+// 1. Efficiency (Diminishing Returns - % of Total Pool)
+// Rules: 0-40% -> 100%, 40-75% -> 80%, >75% -> 50%
+const getEfficiencyMultiplier = (points, maxPool) => {
+    if (maxPool === 0) return 1.0;
+    const usage = (points / maxPool) * 100;
+    if (usage <= 40) return 1.0; // Efficient
+    if (usage <= 75) return 0.8; // Moderate Strain
+    return 0.5; // Inefficient (All-in penalty)
 };
 
 // 2. Fatigue (Repetition Penalty)
-const getFatigueMultiplier = (currentPoints, historyPoints) => {
-    if (!historyPoints || historyPoints < 4) return 1.0;
-    // If we are here, previous turn had >= 4 points.
-    // We need to know if it's 2nd or 3rd time. 
-    // Simplified User Rule: "If attr received 4+ pts in prev turn, it enters fatigue next turn."
-    // "2nd consecutive: -30%, 3rd consecutive: -50%"
-    // NOTE: Implementing "2nd consecutive" as -30% immediately if prev >= 4.
-    // Tracking 3rd consecutive requires more history, for now let's stick to -30% if prev was high.
-    // TO DO FULLY: We need a 'consecutiveCount' in history.
-    // For this iteration, let's assume standard fatigue -30% if prev >= 4.
-    return 0.7;
+// Rule: If >50% of attribute used in prev turn, -15% efficiency next turn.
+const getFatigueMultiplier = (prevPoints, maxPool) => {
+    if (!prevPoints || maxPool === 0) return 1.0;
+    const prevUsage = (prevPoints / maxPool) * 100;
+
+    // User: "se usar mais de 50% no memso atributo ele fica cansado"
+    // "no proximo turno ele fica 15% menos eficiente" -> 0.85
+    if (prevUsage > 50) return 0.85;
+    return 1.0;
 };
 
 // 3. HP Scaling
@@ -36,31 +37,22 @@ export const calculateTurnLogic = (playerBid, enemyBid, pContext, eContext) => {
     let pDamage = 0;
     let eDamage = 0;
 
-    // Unpack Context
-    // Expected Context: { profile, hp, maxHp, history: { strength: 0, speed: 0, defense: 0, consecutive: {...} } }
+    // Context: { profile, hp, maxHp, history: { ... }, pool: { strength, speed, defense } (Available), maxPool: { strength, speed, defense } (Total Capacity) }
+    // We need Max Pool capacity to calculate percentages.
+    // Assuming context has `maxPool` object (Total Capacity of the attribute).
 
-    const pSpeedBase = playerBid.speed;
-    const eSpeedBase = enemyBid.speed;
+    const calcEffective = (val, type, context) => {
+        const maxCapacity = context.maxPool ? context.maxPool[type] : 100; // Fallback 100
+        const prevVal = context.history ? context.history[type] : 0;
 
-    // Apply Modifiers to Speed first to determine initiative
-    const pSpeedEff = pSpeedBase * getEfficiencyMultiplier(pSpeedBase);
-    const eSpeedEff = eSpeedBase * getEfficiencyMultiplier(eSpeedBase);
+        const eff = getEfficiencyMultiplier(val, maxCapacity);
+        const fatigue = getFatigueMultiplier(prevVal, maxCapacity);
 
-    // Fatigue check would go here if we tracked strictly per attribute, 
-    // assuming simpler model for speed initiative or full model? 
-    // User said: "Separately for Attack, Defense, Speed".
-    // Let's implement full effective value calculation.
-
-    const calcEffective = (val, type, history) => {
-        const eff = getEfficiencyMultiplier(val);
-        const fatigue = (history && history[type] >= 4) ? 0.7 : 1.0; // Simple 2-step fatigue (-30%)
-        // Advanced Fatigue: If we had deep history, we'd do 0.5. 
-        // For now, -30% is a strong enough deterrent.
         return Math.floor(val * eff * fatigue);
     };
 
-    const pSpeed = calcEffective(playerBid.speed, 'speed', pContext.history);
-    const eSpeed = calcEffective(enemyBid.speed, 'speed', eContext.history);
+    const pSpeed = calcEffective(playerBid.speed, 'speed', pContext);
+    const eSpeed = calcEffective(enemyBid.speed, 'speed', eContext);
 
     // Speed Variance for Initiative (User: "Velocidade define quem resolve primeiro")
     let initiative = 'draw';
@@ -72,8 +64,8 @@ export const calculateTurnLogic = (playerBid, enemyBid, pContext, eContext) => {
 
     const resolveClash = (attackerName, defenderName, atkBid, defBid, atkContext, defContext, isPlayerAttacker) => {
         // Calculate Effective Values
-        const atkVal = calcEffective(atkBid, 'strength', atkContext.history);
-        const defVal = calcEffective(defBid, 'defense', defContext.history);
+        const atkVal = calcEffective(atkBid, 'strength', atkContext);
+        const defVal = calcEffective(defBid, 'defense', defContext);
 
         if (atkVal <= 0) {
             log.push(`🛡️ ${attackerName} não atacou! (Força 0)`);
