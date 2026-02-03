@@ -174,10 +174,12 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: '2rem', fontWeight: 'bold', color: '#333',
                         cursor: profile.isLoggedIn ? 'pointer' : 'default',
-                        overflow: 'visible', // Changed to visible for frame
+                        cursor: profile.isLoggedIn ? 'pointer' : 'default',
+                        overflow: 'hidden', // Ensure image stays in circle
                         position: 'relative',
                         border: '3px solid var(--color-primary)',
-                        transition: 'transform 0.2s'
+                        transition: 'transform 0.2s',
+                        flexShrink: 0 // Prevent squashing
                     }}
                     className={profile.isLoggedIn ? "hover-scale" : ""}
                 >
@@ -260,54 +262,6 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                                     Ver Histórico
                                 </button>
                                 <span>{(profile.xp || 0) % 1000} / 1000 XP</span>
-                            </div>
-                        </div>
-                    )}
-                    {profile.isLoggedIn && (
-                        <div style={{ marginTop: '15px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                            <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '5px' }}>Seu Link de Convite (+100 XP)</div>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                <code style={{
-                                    flex: 1,
-                                    background: 'rgba(0,0,0,0.3)',
-                                    padding: '8px',
-                                    borderRadius: '4px',
-                                    fontSize: '0.75rem',
-                                    color: 'var(--color-primary)',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap'
-                                }}>
-                                    metafitapp.com/?ref={profile.id}
-                                </code>
-                                <button
-                                    onClick={() => {
-                                        const link = `https://metafitapp.com/?ref=${profile.id}`;
-                                        navigator.clipboard.writeText(link);
-                                        alert('Link copiado!');
-                                    }}
-                                    style={{ background: 'var(--color-primary)', border: 'none', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', color: '#000', fontWeight: 'bold', fontSize: '0.8rem' }}
-                                >
-                                    Copiar
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        const link = `https://metafitapp.com/?ref=${profile.id}`;
-                                        if (navigator.share) {
-                                            navigator.share({
-                                                title: 'MetaFit - Treino & Batalha',
-                                                text: 'Venha treinar e batalhar comigo no MetaFit! Use meu link para ganhar 100 XP:',
-                                                url: link
-                                            }).catch(console.error);
-                                        } else {
-                                            navigator.clipboard.writeText(link);
-                                            alert('Link copiado!');
-                                        }
-                                    }}
-                                    style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', color: '#fff', fontSize: '0.8rem' }}
-                                >
-                                    📤
-                                </button>
                             </div>
                         </div>
                     )}
