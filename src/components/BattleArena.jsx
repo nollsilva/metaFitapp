@@ -316,7 +316,8 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             strength: (currentAttrs.strength || 0) + allocated.strength,
             speed: (currentAttrs.speed || 0) + allocated.speed,
             defense: (currentAttrs.defense || 0) + allocated.defense,
-            points: (currentAttrs.points || 0)
+            // If they didn't spend all distPoints, save them to the points bank
+            points: (currentAttrs.points || 0) + distPoints
         };
 
         // Calc Battle Stats
@@ -581,50 +582,48 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                     <div className="animate-slide-up" style={{ textAlign: 'center' }}>
                         {!showShare ? (
                             <>
-                                {enemyProfile.id === 'BOT_METAFIT' ? (
-                                    <div style={{ marginBottom: '2rem' }}>
-                                        <h3 style={{ color: '#ffd700', fontSize: '1.4rem', marginBottom: '1rem' }}>🤖 Treino MetaFit Concluído</h3>
-                                        {myHp > enemyHp ? (
-                                            <div style={{
-                                                background: 'rgba(255, 215, 0, 0.1)',
-                                                padding: '20px',
-                                                borderRadius: '12px',
-                                                border: '1px solid #ffd700'
-                                            }}>
-                                                <div style={{ fontSize: '2rem', marginBottom: '10px' }}>💎</div>
-                                                <div style={{ color: '#fff', fontWeight: 'bold' }}>Recompensa: +1 Ponto de Habilidade</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#aaa', marginTop: '5px' }}>Use seus pontos para evoluir seus atributos no perfil.</div>
-                                            </div>
-                                        ) : (
+                                {enemyProfile.id === 'BOT_METAFIT' && (
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <h3 style={{ color: '#ffd700', fontSize: '1.4rem', marginBottom: '0.5rem' }}>🤖 Treino MetaFit Concluído</h3>
+                                        {myHp <= enemyHp && (
                                             <div style={{ color: '#aaa', fontStyle: 'italic' }}>
                                                 Tente novamente para ganhar pontos de habilidade!
                                             </div>
                                         )}
                                     </div>
-                                ) : (
+                                )}
+
+                                {distPoints >= 0 && (myHp > enemyHp || distPoints > 0) && (
                                     <>
-                                        <h3 style={{ color: '#00f0ff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Evolução de Atributos</h3>
+                                        <h3 style={{ color: '#00f0ff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>
+                                            {enemyProfile.id === 'BOT_METAFIT' ? '💎 Recompensa de Treino' : 'Evolução de Atributos'}
+                                        </h3>
                                         <div style={{ fontSize: '1rem', color: '#ccc', marginBottom: '1.5rem' }}>
-                                            Pontos disponíveis: <span style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '1.2rem' }}>{distPoints}</span>
+                                            Pontos para distribuir: <span style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '1.5rem' }}>{distPoints}</span>
                                         </div>
 
                                         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '1.5rem' }}>
                                             {['strength', 'speed', 'defense'].map(attr => (
-                                                <div key={attr} style={{ background: '#222', padding: '10px', borderRadius: '8px', minWidth: '80px' }}>
-                                                    <div style={{ fontSize: '1.2rem' }}>{attr === 'strength' ? '💪' : attr === 'speed' ? '⚡' : '🛡️'}</div>
-                                                    <div style={{ fontSize: '0.8rem', color: '#888' }}>
-                                                        + {allocated[attr]}
+                                                <div key={attr} style={{ background: '#222', padding: '10px', borderRadius: '12px', minWidth: '94px', border: '1px solid #333' }}>
+                                                    <div style={{ fontSize: '1.4rem', marginBottom: '4px' }}>{attr === 'strength' ? '💪' : attr === 'speed' ? '⚡' : '🛡️'}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: '#888', textTransform: 'uppercase' }}>{attr === 'strength' ? 'Força' : attr === 'speed' ? 'Veloc.' : 'Defesa'}</div>
+                                                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#fff' }}>
+                                                        {(myProfile.attributes?.[attr] || 0) + allocated[attr]}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 'bold', height: '1.2rem' }}>
+                                                        {allocated[attr] > 0 ? `+${allocated[attr]}` : ''}
                                                     </div>
                                                     <button
                                                         disabled={distPoints <= 0}
                                                         onClick={() => handleDistribute(attr)}
                                                         style={{
-                                                            width: '30px', height: '30px', borderRadius: '50%',
-                                                            border: 'none', background: distPoints > 0 ? 'var(--color-primary)' : '#444',
-                                                            color: '#000', fontWeight: 'bold', marginTop: '5px', cursor: 'pointer'
+                                                            width: '100%', padding: '8px', borderRadius: '8px',
+                                                            border: 'none', background: distPoints > 0 ? 'var(--color-primary)' : '#333',
+                                                            color: '#000', fontWeight: 'bold', marginTop: '8px', cursor: 'pointer',
+                                                            transition: '0.2s', transform: distPoints > 0 ? 'scale(1.05)' : 'none'
                                                         }}
                                                     >
-                                                        +
+                                                        DISTRIBUIR
                                                     </button>
                                                 </div>
                                             ))}
