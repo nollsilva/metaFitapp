@@ -549,9 +549,10 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
 
             <div className="leaderboard" style={{
                 display: 'flex', flexDirection: 'column', gap: '1.2rem',
-                maxHeight: '880px', // Adjusted for larger gap
+                maxHeight: '70vh', // Use viewport height for responsiveness
                 overflowY: 'auto',
-                paddingRight: '5px' // space for scrollbar
+                paddingRight: '5px', // space for scrollbar
+                width: '100%'
             }}>
                 {(() => {
                     const renderRow = (user, idxOrRealRank) => {
@@ -564,7 +565,13 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                         if (rankingTab === 'duel' && (!isOnline || isMe)) return null;
 
                         return (
-                            <div key={user.id} style={{ position: 'relative', overflow: 'hidden', borderRadius: '16px' }}>
+                            <div key={user.id} style={{
+                                position: 'relative',
+                                overflow: 'hidden',
+                                borderRadius: '16px',
+                                flexShrink: 0, // Prevent overlapping/shrinking
+                                minHeight: '80px' // Ensure visibility
+                            }}>
                                 {rankingTab === 'duel' && (
                                     <div style={{
                                         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',

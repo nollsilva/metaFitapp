@@ -71,10 +71,12 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     // Resource Pools (Starts with Base * 10)
     // Formula: (10 base + Attribute) * 10
     const getInitialPool = (p) => {
+        const isBot = p.id === 'BOT_METAFIT';
+        const multiplier = isBot ? 12.5 : 10; // 25% stronger (12.5 instead of 10)
         return {
-            strength: (10 + ((p.attributes && p.attributes.strength) || 0)) * 10,
-            speed: (10 + ((p.attributes && p.attributes.speed) || 0)) * 10,
-            defense: (10 + ((p.attributes && p.attributes.defense) || 0)) * 10
+            strength: (10 + ((p.attributes && p.attributes.strength) || 0)) * multiplier,
+            speed: (10 + ((p.attributes && p.attributes.speed) || 0)) * multiplier,
+            defense: (10 + ((p.attributes && p.attributes.defense) || 0)) * multiplier
         };
     };
 
@@ -181,41 +183,38 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             const isBot = enemyProfile.id === 'BOT_METAFIT';
 
             if (isBot) {
-                // Extreme Bot Intelligence (Aggressive & Unpredictable)
+                // Extreme Bot Intelligence (Aggressive & Tactical)
                 if (turn === 3) {
+                    // Final turn: Dump everything
                     aiBid.strength = enemyPool.strength;
                     aiBid.speed = enemyPool.speed;
                     aiBid.defense = enemyPool.defense;
                 } else if (turn === 1) {
-                    // Start strong and fast (Agility/Strength focus)
-                    const aggressiveness = 0.35 + (Math.random() * 0.15); // 35-50% spend
-                    aiBid.speed = Math.floor(enemyPool.speed * (0.4 + Math.random() * 0.2)); // Prioritize initiative
-                    aiBid.strength = Math.floor(enemyPool.strength * aggressiveness);
-                    aiBid.defense = Math.floor(enemyPool.defense * (0.1 + Math.random() * 0.2));
+                    // Turn 1: Focus on winning initiative and dealing early damage
+                    // Bots have 25% more resources, they can afford to spend more early
+                    aiBid.speed = Math.floor(enemyPool.speed * 0.45); // Heavy initiative focus
+                    aiBid.strength = Math.floor(enemyPool.strength * 0.4); // Solid damage
+                    aiBid.defense = Math.floor(enemyPool.defense * 0.15); // Light defense
                 } else {
+                    // Turn 2: Reactive strategy
                     const myHpPercent = (myHp / getMaxHp(myProfile)) * 100;
                     const botHpPercent = (enemyHp / getMaxHp(enemyProfile)) * 100;
 
-                    if (botHpPercent < 60 && myHpPercent > botHpPercent) {
-                        // Bot is losing: High damage gamble or heavy defense
-                        if (Math.random() > 0.4) {
-                            aiBid.strength = Math.floor(enemyPool.strength * 0.7);
-                            aiBid.speed = Math.floor(enemyPool.speed * 0.5);
-                            aiBid.defense = Math.floor(enemyPool.defense * 0.3);
-                        } else {
-                            aiBid.defense = Math.floor(enemyPool.defense * 0.8);
-                            aiBid.strength = Math.floor(enemyPool.strength * 0.3);
-                        }
-                    } else if (myHpPercent < 60) {
-                        // Opponent is weak: Go for the finish
-                        aiBid.strength = Math.floor(enemyPool.strength * 0.6);
-                        aiBid.speed = Math.floor(enemyPool.speed * 0.6);
-                        aiBid.defense = Math.floor(enemyPool.defense * 0.2);
-                    } else {
-                        // Standard aggressive turn
-                        aiBid.strength = Math.floor(enemyPool.strength * 0.5);
+                    if (botHpPercent < myHpPercent) {
+                        // Bot is losing: High damage gamble (All-in on offense)
+                        aiBid.strength = Math.floor(enemyPool.strength * 0.8);
                         aiBid.speed = Math.floor(enemyPool.speed * 0.5);
-                        aiBid.defense = Math.floor(enemyPool.defense * 0.3);
+                        aiBid.defense = Math.floor(enemyPool.defense * 0.2);
+                    } else if (myHpPercent < 50) {
+                        // Opponent is low: Go for the finish with speed and damage
+                        aiBid.speed = Math.floor(enemyPool.speed * 0.7);
+                        aiBid.strength = Math.floor(enemyPool.strength * 0.7);
+                        aiBid.defense = Math.floor(enemyPool.defense * 0.1);
+                    } else {
+                        // Balanced aggressive mid-game
+                        aiBid.strength = Math.floor(enemyPool.strength * 0.6);
+                        aiBid.speed = Math.floor(enemyPool.speed * 0.4);
+                        aiBid.defense = Math.floor(enemyPool.defense * 0.4);
                     }
                 }
             } else {
@@ -295,14 +294,9 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
     useEffect(() => {
         if (phase === 'result') {
-            // Revision: Bot battles don't grant attribute points
-            if (enemyProfile.id === 'BOT_METAFIT') {
-                const points = myHp > enemyHp ? 0.0001 : 0; // Small hack to trigger results UI correctly
-                setDistPoints(myHp > enemyHp ? 1 : 0);
-            } else {
-                const points = myHp > enemyHp ? 3 : 1;
-                setDistPoints(points);
-            }
+            // New Reward Policy: Winner: 1pt, Loser: 0pts
+            const isWinner = myHp > enemyHp;
+            setDistPoints(isWinner ? 1 : 0);
         }
     }, [phase, myHp, enemyHp]);
 
@@ -316,13 +310,13 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     const handleClaimRewards = async () => {
         if (distPoints > 0 && !window.confirm("Ainda há pontos não distribuídos. Deseja continuar?")) return;
 
-        // Calc New Attributes
-        const currentAttrs = myProfile.attributes || { strength: 0, speed: 0, defense: 0 };
+        // Calc New Attributes (Summing allocated points to existing ones)
+        const currentAttrs = myProfile.attributes || { strength: 0, speed: 0, defense: 0, points: 0 };
         const newAttrs = {
             strength: (currentAttrs.strength || 0) + allocated.strength,
             speed: (currentAttrs.speed || 0) + allocated.speed,
             defense: (currentAttrs.defense || 0) + allocated.defense,
-            points: (currentAttrs.points || 0) // existing points unused for now
+            points: (currentAttrs.points || 0)
         };
 
         // Calc Battle Stats
@@ -334,16 +328,19 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         };
 
         // Update DB
-        <button
-            onClick={handleClaimRewards}
-            style={{
-                width: '100%', padding: '15px',
-                background: 'linear-gradient(90deg, #00ff66, #00cc55)', border: 'none',
-                borderRadius: '12px', color: '#000', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer'
-            }}
-        >
-            {enemyProfile.id === 'BOT_METAFIT' ? 'CONCLUIR TREINO' : 'CONFIRMAR EVOLUÇÃO'}
-        </button>
+        if (myProfile.uid) {
+            await updateUser(myProfile.uid, {
+                attributes: newAttrs,
+                battleStats: newStats
+            });
+
+            if (onUpdateProfile) {
+                onUpdateProfile({
+                    attributes: newAttrs,
+                    battleStats: newStats
+                });
+            }
+        }
 
         // Show Share Screen
         setShowShare(true);

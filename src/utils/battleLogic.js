@@ -9,9 +9,9 @@ export const calculateTurnLogic = (playerBid, enemyBid, pProfile, eProfile) => {
     const pSpeed = playerBid.speed;
     const eSpeed = enemyBid.speed;
 
-    let winner = 'draw';
-    if (pSpeed > eSpeed) winner = 'player';
-    else if (eSpeed > pSpeed) winner = 'enemy';
+    let initiative = 'draw';
+    if (pSpeed > eSpeed) initiative = 'player';
+    else if (eSpeed > pSpeed) initiative = 'enemy';
 
     // Helper: Logic for standard output (Ataque vs Defesa)
     // Returns { dmgDealt: number, counterTaken: number }
@@ -43,7 +43,7 @@ export const calculateTurnLogic = (playerBid, enemyBid, pProfile, eProfile) => {
         }
     };
 
-    if (winner === 'player') {
+    if (initiative === 'player') {
         log.push(`⚡ Você venceu a iniciativa! (+${pSpeed} vol)`);
 
         // Player Attacks
@@ -51,7 +51,7 @@ export const calculateTurnLogic = (playerBid, enemyBid, pProfile, eProfile) => {
         eDamage += res.dmgDealt;
         pDamage += res.counterTaken;
 
-    } else if (winner === 'enemy') {
+    } else if (initiative === 'enemy') {
         log.push(`⚡ Oponente venceu a iniciativa! (+${eSpeed} vol)`);
 
         // Enemy Attacks
@@ -72,6 +72,11 @@ export const calculateTurnLogic = (playerBid, enemyBid, pProfile, eProfile) => {
         eDamage += resE.counterTaken;
     }
 
+    // Determine Turn Winner based on Damage (User request: Winner is who caused damage)
+    let winner = 'draw';
+    if (eDamage > pDamage) winner = 'player';
+    else if (pDamage > eDamage) winner = 'enemy';
+
     return {
         log,
         pDamage,
@@ -80,7 +85,7 @@ export const calculateTurnLogic = (playerBid, enemyBid, pProfile, eProfile) => {
             winner: winner,
             playerDamageDealt: eDamage,
             playerDamageTaken: pDamage,
-            initiativeMsg: winner === 'player' ? "Iniciativa: VOCÊ" : winner === 'enemy' ? "Iniciativa: OPONENTE" : "Iniciativa: EMPATE"
+            initiativeMsg: initiative === 'player' ? "Iniciativa: VOCÊ" : initiative === 'enemy' ? "Iniciativa: OPONENTE" : "Iniciativa: EMPATE"
         }
     };
 };
