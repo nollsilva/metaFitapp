@@ -509,13 +509,17 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                     {/* Explicit Result Layout */}
                     {phase === 'result' ? (
                         <>
-                            {/* Loser (Background) */}
+                            {/* Loser (Background / "On the ground") */}
                             <div style={{
                                 position: 'absolute',
                                 zIndex: 1,
                                 width: '100%',
                                 display: 'flex',
-                                justifyContent: 'center'
+                                justifyContent: 'center',
+                                filter: 'grayscale(100%) brightness(0.7)',
+                                opacity: 0.6,
+                                transform: 'translateY(60px) scale(0.85) rotate(-5deg)',
+                                transition: 'all 1s ease'
                             }}>
                                 <BattleCard
                                     profile={myHp > enemyHp ? effectiveEnemyProfile : myProfile}
@@ -527,12 +531,15 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                                 />
                             </div>
 
-                            {/* Winner (Foreground) */}
+                            {/* Winner (Foreground / Focal Point) */}
                             <div style={{
                                 zIndex: 10,
                                 width: '100%',
                                 display: 'flex',
-                                justifyContent: 'center'
+                                justifyContent: 'center',
+                                transform: 'translateY(-30px)',
+                                filter: 'drop-shadow(0 0 30px rgba(0, 240, 255, 0.4))',
+                                transition: 'all 1s ease 0.3s'
                             }}>
                                 <BattleCard
                                     profile={myHp > enemyHp ? myProfile : effectiveEnemyProfile}
