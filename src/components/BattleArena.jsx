@@ -361,11 +361,17 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     useEffect(() => {
         if (phase === 'result') {
             // New Reward Policy: Winner: 2pts, Loser: 1pt
-            // Tiebreaker for "Out of Points": Highest HP Wins.
+            // EXCEPTION: Losing to BOT yields 0 pts.
             const isWinner = myHp > enemyHp;
-            setDistPoints(isWinner ? 2 : 1);
+            const isBotBattle = enemyProfile.id === 'BOT_METAFIT';
+
+            if (isBotBattle && !isWinner) {
+                setDistPoints(0);
+            } else {
+                setDistPoints(isWinner ? 2 : 1);
+            }
         }
-    }, [phase, myHp, enemyHp]);
+    }, [phase, myHp, enemyHp, enemyProfile.id]);
 
     const handleDistribute = (attr) => {
         if (distPoints > 0) {
