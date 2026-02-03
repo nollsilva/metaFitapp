@@ -6,47 +6,28 @@ import TutorialCard from './TutorialCard';
 const cardsContent = [
     {
         step: 1,
-        title: "Instruções",
-        text: "Bem-vindo ao tutorial! Este é um baralho interativo. Para avançar, arraste esta carta para fora da tela em qualquer direção."
+        title: "Perfil & Metas 🎯",
+        text: "Passo mais importante: Cadastre seu Peso, Altura e Objetivo na aba Perfil! Sem isso, nossa IA não consegue montar sua dieta e treino ideal."
     },
     {
         step: 2,
-        title: "Bem-vindo",
-        text: "O MetaFit é sua central completa para atingir o corpo dos sonhos. Vamos de mostrar rapidamente como tudo funciona!"
+        title: "Ganhe XP 🚀",
+        text: "Treine diariamente e convide amigos (+100 XP cada!) para subir de nível no Rank Global. Acesse seu Link de Convite no Perfil."
     },
     {
         step: 3,
-        title: "Dieta: O Início",
-        text: "Na aba 'Dieta', nossa IA calcula exatamente o que você precisa comer com base no seu objetivo (perder peso, ganhar massa ou manter)."
+        title: "Dieta & Treino 🥗",
+        text: "Sua rotina é gerada automaticamente. Siga o Timer nos treinos e os macros na dieta para evoluir seus atributos (Força, Velocidade)."
     },
     {
         step: 4,
-        title: "Dieta: Refeições",
-        text: "Você receberá um plano de refeições personalizado. Siga os macros e calorias sugeridos para maximizar seus resultados."
+        title: "Batalhas PvP ⚔️",
+        text: "Use seus atributos para desafiar amigos ou o Bot no modo Duelo! Estratégia conta tanto quanto força bruta."
     },
     {
         step: 5,
-        title: "Treino: Ação",
-        text: "Na aba 'Treino', selecione exercícios interativos. Use nosso Timer inteligente que controla suas séries e descansos automaticamente."
-    },
-    {
-        step: 6,
-        title: "Treino: XP",
-        text: "Cada treino completado gera XP. Treine consistentemente para subir de nível e desbloquear novas conquistas!"
-    },
-    {
-        step: 7,
-        text: "Compare seu nível com amigos e outros usuários no Ranking. Mantenha a consistência para chegar ao topo da liga!"
-    },
-    {
-        step: 8,
-        title: "Instalar App",
-        text: "Para melhor experiência: iOS (Share > Tela Início), Android (Menu > Instalar). Assim você acessa offline!"
-    },
-    {
-        step: 9,
-        title: "Editar Perfil",
-        text: "Para mudar seu Avatar, Nome ou Email, basta clicar na sua foto de perfil na aba 'Perfil'. Personalize sua experiência!"
+        title: "Dica Pro 📲",
+        text: "Instale o App (Adicionar à Tela de Início) para acessar offline e receber lembretes de água e refeições!"
     }
 ];
 

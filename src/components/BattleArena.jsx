@@ -4,6 +4,7 @@ import { updateUser } from '../utils/db'; // Import DB update
 import { ChallengeService } from '../services/ChallengeService';
 import BattleCard from './BattleCard';
 import StatisticSelector from './StatisticSelector';
+import DuelTutorialOverlay from './DuelTutorialOverlay';
 import { getMaxHp, calculateTurnLogic } from '../utils/battleLogic';
 
 const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleId, role }) => {
@@ -11,6 +12,20 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     const [turn, setTurn] = useState(1);
     const [phase, setPhase] = useState('setup'); // setup, waiting, animating, combat, result
     const [showDuelAnimation, setShowDuelAnimation] = useState(false);
+    const [showDuelTutorial, setShowDuelTutorial] = useState(false);
+
+    // Check Tutorial on Mount
+    useEffect(() => {
+        const hasSeen = localStorage.getItem('metafit_duel_tutorial_seen');
+        if (!hasSeen) {
+            setShowDuelTutorial(true);
+        }
+    }, []);
+
+    const handleDuelTutorialComplete = () => {
+        localStorage.setItem('metafit_duel_tutorial_seen', 'true');
+        setShowDuelTutorial(false);
+    };
 
     // Prevent double-processing of turn advancement
     const processingTurn = React.useRef(false);
@@ -454,6 +469,9 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                     Sair
                 </button>
             </div>
+
+            {/* Duel Tutorial Overlay */}
+            {showDuelTutorial && <DuelTutorialOverlay onComplete={handleDuelTutorialComplete} />}
 
             {/* Arena Visuals */}
             <div id="battle-result-area" style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', perspective: '1000px', padding: '1rem', paddingBottom: '250px' }}>
