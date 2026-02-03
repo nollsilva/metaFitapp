@@ -337,7 +337,6 @@ const RankingSection = ({ profile, onUpdateProfile, onBattle }) => {
                         {profile.vip && <span style={{ marginRight: '10px' }}>👑</span>}
                         {profile.name || profile.userName || 'Atleta'}
                     </h1>
-                    <div style={{ fontSize: '1rem', fontWeight: '600', opacity: 0.8, marginBottom: '1rem' }}>ID: {profile.id}</div>
 
 
 
