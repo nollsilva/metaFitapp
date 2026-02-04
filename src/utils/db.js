@@ -62,6 +62,19 @@ export const registerUser = async (email, password, name, inviteCode = "") => {
                         type: 'gain'
                     })
                 });
+
+                // NOTIFY REFERRER
+                try {
+                    await addDoc(collection(db, "users", referrerDoc.id, "notifications"), {
+                        title: "Bônus de Convite! 🎟️",
+                        message: `${name} criou uma conta com seu link. Você ganhou +100 XP!`,
+                        type: "success",
+                        timestamp: new Date().toISOString(),
+                        read: false
+                    });
+                } catch (err) {
+                    console.error("Error notifying referrer:", err);
+                }
             }
         }
 
