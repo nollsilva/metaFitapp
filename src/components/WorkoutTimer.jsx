@@ -9,23 +9,43 @@ const WorkoutTimer = ({ exercise, onExit, onFinish, profile, onAddXp }) => {
     const totalSets = 3;
 
     const [isActive, setIsActive] = useState(true);
+    const endTimeRef = useRef(null); // Stores the target timestamp
     const timerRef = useRef(null);
 
     // Ad State
     const [xpReward, setXpReward] = useState(15); // Base estimation
 
+    // Initialize Timer on Phase Change or Active Toggle
     useEffect(() => {
         if (isActive && timeLeft > 0) {
-            timerRef.current = setInterval(() => {
-                setTimeLeft(prev => prev - 1);
-            }, 1000);
-        } else if (timeLeft === 0) {
-            handleTransition();
-        }
-        return () => clearInterval(timerRef.current);
-    }, [isActive, timeLeft]);
+            // If starting/resuming, set the target time based on CURRENT timeLeft
+            // This prevents "jumping" if we just resumed.
+            endTimeRef.current = Date.now() + (timeLeft * 1000);
 
+            timerRef.current = setInterval(() => {
+                const now = Date.now();
+                const remaining = Math.ceil((endTimeRef.current - now) / 1000);
+
+                if (remaining <= 0) {
+                    setTimeLeft(0);
+                    clearInterval(timerRef.current);
+                    handleTransition();
+                } else {
+                    setTimeLeft(remaining);
+                }
+            }, 500); // Check twice a second for smoothness
+        } else {
+            clearInterval(timerRef.current);
+        }
+
+        return () => clearInterval(timerRef.current);
+    }, [isActive, phase]); // Re-run when active changes or phase changes (which resets timeLeft)
+
+    // Handle Transitions
     const handleTransition = () => {
+        // Clear interval immediately to prevent race conditions
+        clearInterval(timerRef.current);
+
         if (phase === 'prep') {
             setPhase('work');
             setTimeLeft(40);
@@ -41,6 +61,7 @@ const WorkoutTimer = ({ exercise, onExit, onFinish, profile, onAddXp }) => {
             setPhase('work');
             setTimeLeft(40);
         }
+        // endTimeRef will be updated by the useEffect when timeLeft changes
     };
 
     const getPhaseTitle = () => {
