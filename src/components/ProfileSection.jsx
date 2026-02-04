@@ -262,7 +262,7 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                 </div>
             </div>
 
-            {/* XP History Modal */}
+            {/* XP History Modal MOVED TO BOTTOM */}
             {
                 showXpHistory && (
                     <div className="modal-overlay" onClick={() => setShowXpHistory(false)} style={{ zIndex: 10000 }}>
@@ -461,6 +461,8 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                     </div>
                 )
             }
+
+
 
             {/* Friend Requests Modal - Only if Logged In */}
             {
