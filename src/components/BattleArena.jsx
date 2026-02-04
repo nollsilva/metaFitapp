@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { updateUser } from '../utils/db'; // Import DB update
 import { ChallengeService } from '../services/ChallengeService';
+import { playSfx } from '../utils/audio';
 import BattleCard from './BattleCard';
 import StatisticSelector from './StatisticSelector';
 import DuelTutorialOverlay from './DuelTutorialOverlay';
@@ -138,6 +139,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         if (myTurnConfirmed && opponentTurnConfirmed && phase === 'waiting') {
             setPhase('animating');
             setShowDuelAnimation(true);
+            playSfx('clash'); // SWORD CLASH SOUND ⚔️
         }
     }, [myTurnConfirmed, opponentTurnConfirmed, phase]);
 

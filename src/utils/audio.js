@@ -77,6 +77,13 @@ export const playSfx = (type) => {
             playTone(1200, 'square', 0.4, 0.1, 0);
             break;
 
+        case 'clash': // Metallic Clang (Swords)
+            // Three discordant tones to simulate noise/impact
+            playTone(100, 'sawtooth', 0.3, 0.3, 0);   // Low punch
+            playTone(1200, 'square', 0.2, 0.1, 0);    // High metallic ping
+            playTone(1250, 'square', 0.2, 0.1, 0.05); // Dissonance
+            break;
+
         default:
             console.warn("Unknown SFX type:", type);
     }
