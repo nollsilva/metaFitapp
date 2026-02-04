@@ -523,7 +523,9 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                             style={{
                                 flex: 1,
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                fontWeight: 'bold', border: '1px solid #333'
+                                fontWeight: 'bold', border: '1px solid #333',
+                                padding: '12px 32px', borderRadius: '50px', minHeight: '48px', // Match btn-primary
+                                background: 'rgba(255,255,255,0.05)'
                             }}
                         >
                             📜 Histórico
