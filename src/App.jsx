@@ -708,6 +708,7 @@ function App() {
                 baseXp = Math.ceil(baseXp * 1.05); // +5%
               }
 
+              playSfx('coin'); // SFX here
               addXp(baseXp, activeExercise ? `Treino: ${activeExercise.name}` : 'Treino Avulso');
               setNotification(MESSAGES.XP.GAIN_DEFAULT(baseXp));
               setTimeout(() => setNotification(null), 3000);
