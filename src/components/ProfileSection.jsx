@@ -430,6 +430,52 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                 </div>
             )}
 
+            {/* INVITE LINK SECTION */}
+            {profile.isLoggedIn && (profile.name || profile.userName) && (
+                <div className="card" style={{ marginBottom: '2rem', background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(0,0,0,0))', borderColor: '#ffd700' }}>
+                    <h3 style={{ marginBottom: '10px', color: '#ffd700', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🎟️</span> Link de Convite (+100 XP)
+                    </h3>
+                    <p style={{ fontSize: '0.85rem', color: '#ccc', marginBottom: '1rem' }}>
+                        Envie para amigos. Quando eles criarem conta, ambos ganham bônus!
+                    </p>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <div style={{
+                            flex: 1, background: 'rgba(0,0,0,0.5)', padding: '10px',
+                            borderRadius: '8px', fontSize: '0.8rem', color: '#888',
+                            overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                            fontFamily: 'monospace'
+                        }}>
+                            {(() => {
+                                // SECURE LINK LOGIC: Force HTTPS unless strictly localhost
+                                const origin = window.location.origin;
+                                const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('192.168');
+                                const protocol = isLocal ? origin.split('//')[0] : 'https:';
+                                const host = origin.split('//')[1];
+                                return `${protocol}//${host}/?ref=${profile.uid}`;
+                            })()}
+                        </div>
+                        <button
+                            onClick={() => {
+                                const origin = window.location.origin;
+                                const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('192.168');
+                                const protocol = isLocal ? origin.split('//')[0] : 'https:';
+                                const host = origin.split('//')[1]; // Remove existing protocol to replace cleanly
+                                const link = `${protocol}//${host}/?ref=${profile.uid}`;
+
+                                navigator.clipboard.writeText(link);
+                                alert("Link copiado! Envie para seus amigos via WhatsApp ou Telegram.");
+                            }}
+                            className="btn-primary"
+                            style={{ width: 'auto', padding: '0 20px', background: '#333' }}
+                        >
+                            Copiar
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Edit Profile Modal */}
             {isEditModalOpen && (
                 <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)} style={{ zIndex: 10000 }}>
