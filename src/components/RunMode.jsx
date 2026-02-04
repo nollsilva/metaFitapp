@@ -56,6 +56,12 @@ const RunMode = ({ profile, onAddXp }) => {
     // Watch ID for geolocation
     const watchIdRef = useRef(null);
     const timerRef = useRef(null);
+
+    // Timer Refs for Background Accuracy
+    const startTimeRef = useRef(null);
+    const pausedStartTimeRef = useRef(null); // When did we pause?
+    const totalPausedTimeRef = useRef(0); // How long have we been paused total?
+
     const [bonusApplied, setBonusApplied] = useState(false); // Track if ad bonus was used
 
     // Initial Location
@@ -180,9 +186,19 @@ const RunMode = ({ profile, onAddXp }) => {
             );
         }
 
+        // Initialize Timer Refs
+        if (!startTimeRef.current) {
+            startTimeRef.current = Date.now();
+            totalPausedTimeRef.current = 0;
+        }
+
         if (!timerRef.current) {
             timerRef.current = setInterval(() => {
-                setElapsedTime(t => t + 1);
+                // Calculate elapsed time based on System Clock
+                // Elastic = (Now - Start) - TotalPaused
+                const now = Date.now();
+                const totalElapsed = now - startTimeRef.current - totalPausedTimeRef.current;
+                setElapsedTime(Math.floor(totalElapsed / 1000));
             }, 1000);
         }
     };
@@ -190,6 +206,10 @@ const RunMode = ({ profile, onAddXp }) => {
     const pauseRun = () => {
         setIsPaused(true);
         if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
+
+        // Mark pause start time to calculate duration later
+        pausedStartTimeRef.current = Date.now();
+
         if (timerRef.current) {
             clearInterval(timerRef.current);
             timerRef.current = null;
@@ -198,6 +218,14 @@ const RunMode = ({ profile, onAddXp }) => {
 
     const resumeRun = () => {
         setIsPaused(false);
+
+        // Add current pause duration to total
+        if (pausedStartTimeRef.current) {
+            const pauseDuration = Date.now() - pausedStartTimeRef.current;
+            totalPausedTimeRef.current += pauseDuration;
+            pausedStartTimeRef.current = null;
+        }
+
         startRun(); // Restart watchers
     };
 
