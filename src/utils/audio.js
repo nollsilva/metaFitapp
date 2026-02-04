@@ -78,10 +78,11 @@ export const playSfx = (type) => {
             break;
 
         case 'clash': // Metallic Clang (Swords)
+            console.log("🔊 Playing CLASH SFX");
             // Three discordant tones to simulate noise/impact
-            playTone(100, 'sawtooth', 0.3, 0.3, 0);   // Low punch
-            playTone(1200, 'square', 0.2, 0.1, 0);    // High metallic ping
-            playTone(1250, 'square', 0.2, 0.1, 0.05); // Dissonance
+            playTone(100, 'sawtooth', 0.5, 0.3, 0);   // Low punch louder
+            playTone(1200, 'square', 0.4, 0.1, 0);    // High metallic ping louder
+            playTone(1250, 'square', 0.4, 0.1, 0.05); // Dissonance louder
             break;
 
         default:
