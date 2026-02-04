@@ -254,332 +254,439 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                                     background: 'var(--color-primary)', transition: 'width 0.5s ease'
                                 }}></div>
                             </div>
-                            <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '4px', textAlign: 'right', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>{(profile.xp || 0) % 1000} / 1000 XP</span>
+                        </div>
+                        </div>
+                    )}
+            </div>
+                    )}
+        </div>
+            </div >
+
+    {/* XP History Modal */ }
+{
+    showXpHistory && (
+        <div className="modal-overlay" onClick={() => setShowXpHistory(false)} style={{ zIndex: 10000 }}>
+            <div className="wide-modal auth-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', padding: '1.5rem', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ margin: 0 }}>Histórico de XP</h3>
+                    <button onClick={() => setShowXpHistory(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+                </div>
+
+                <div style={{ flex: 1, overflowY: 'auto', paddingRight: '5px' }}>
+                    {(!profile.xpHistory || profile.xpHistory.length === 0) ? (
+                        <p style={{ color: '#888', textAlign: 'center', marginTop: '2rem' }}>Nenhum registro de XP ainda.</p>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            {/* GROUPED HISTORY Logic */}
+                            {(() => {
+                                const grouped = {};
+                                profile.xpHistory.forEach(item => {
+                                    const dateKey = item.date.split('T')[0]; // YYYY-MM-DD
+                                    if (!grouped[dateKey]) grouped[dateKey] = [];
+                                    grouped[dateKey].push(item);
+                                });
+
+                                const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+
+                                return sortedDates.map(dateStr => {
+                                    const items = grouped[dateStr];
+                                    const today = new Date().toISOString().split('T')[0];
+                                    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+                                    let displayDate = dateStr.split('-').reverse().join('/');
+                                    if (dateStr === today) displayDate = "HOJE";
+                                    else if (dateStr === yesterday) displayDate = "ONTEM";
+
+                                    // CALCULATE DAILY SUMMARY
+                                    const summary = {
+                                        total: 0,
+                                        sources: {}
+                                    };
+
+                                    items.forEach(i => {
+                                        if (i.amount > 0) {
+                                            summary.total += i.amount;
+
+                                            // Categorize
+                                            let category = 'Outros 📊'; // Default
+                                            const r = (i.reason || '').toLowerCase();
+
+                                            if (r.includes('treino')) category = 'Treinos 💪';
+                                            else if (r.includes('corrida') || r.includes('run')) category = 'Corridas 🏃';
+                                            else if (r.includes('bônus diário') || r.includes('login')) category = 'Bônus Diário 🏅';
+                                            else if (r.includes('convite') || r.includes('indicação')) category = 'Convites 🎟️';
+                                            else if (r.includes('vip')) category = 'VIP Extra ⭐';
+                                            else if (r.includes('duelo') || r.includes('batalha')) category = 'Duelos ⚔️';
+                                            else if (r.includes('meta') || r.includes('hidratação') || r.includes('dieta')) category = 'Refeição/Água 🥗';
+
+                                            if (!summary.sources[category]) summary.sources[category] = 0;
+                                            summary.sources[category] += i.amount;
+                                        }
+                                    });
+
+                                    return (
+                                        <div key={dateStr}>
+                                            <div style={{
+                                                fontSize: '0.8rem', fontWeight: 'bold', color: '#666',
+                                                marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px'
+                                            }}>
+                                                📅 {displayDate}
+                                            </div>
+
+                                            {/* DAILY SUMMARY CARD */}
+                                            {summary.total > 0 && (
+                                                <div style={{
+                                                    background: 'linear-gradient(145deg, #151515, #080808)',
+                                                    border: '1px solid #333', borderRadius: '12px', padding: '15px',
+                                                    marginBottom: '15px', position: 'relative', overflow: 'hidden'
+                                                }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '1px solid #222', paddingBottom: '8px' }}>
+                                                        <span style={{ fontSize: '0.9rem', color: '#aaa', fontWeight: 'bold' }}>📊 RESUMO DO DIA</span>
+                                                        <span style={{ fontSize: '1.2rem', color: '#00ff66', fontWeight: '900' }}>+{summary.total} XP</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                                        {Object.entries(summary.sources).map(([key, val]) => (
+                                                            <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ccc' }}>
+                                                                <span>{key}</span>
+                                                                <span style={{ fontWeight: 'bold' }}>+{val}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* DETAILED LIST */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {items.map((item, idx) => (
+                                                    <div key={item.id || idx} style={{
+                                                        background: 'rgba(255,255,255,0.03)',
+                                                        padding: '10px',
+                                                        borderRadius: '8px',
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        borderLeft: item.amount >= 0 ? '3px solid #00ff66' : '3px solid #ff0055'
+                                                    }}>
+                                                        <div>
+                                                            <div style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '2px' }}>{item.reason || 'Geral'}</div>
+                                                            <div style={{ fontSize: '0.7rem', color: '#888' }}>
+                                                                {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </div>
+                                                        </div>
+                                                        <div style={{
+                                                            fontWeight: 'bold',
+                                                            color: item.amount >= 0 ? '#00ff66' : '#ff0055',
+                                                            fontSize: '0.9rem'
+                                                        }}>
+                                                            {item.amount >= 0 ? '+' : ''}{item.amount}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                });
+                            })()}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}
+
+{/* Avatar Selection Modal */ }
+{
+    isAvatarModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsAvatarModalOpen(false)} style={{ zIndex: 10000 }}>
+            <div className="wide-modal auth-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', padding: '2rem' }}>
+                <h3 style={{ marginBottom: '1rem', textAlign: 'center' }}>Escolha seu Avatar</h3>
+
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem' }}>
+                    <button
+                        onClick={() => setAvatarTab('male')}
+                        className={avatarTab === 'male' ? 'btn-primary' : 'btn-secondary'}
+                        style={{ flex: 1, padding: '8px', fontSize: '0.9rem' }}
+                    >
+                        Masculino
+                    </button>
+                    <button
+                        onClick={() => setAvatarTab('female')}
+                        className={avatarTab === 'female' ? 'btn-primary' : 'btn-secondary'}
+                        style={{ flex: 1, padding: '8px', fontSize: '0.9rem' }}
+                    >
+                        Feminino
+                    </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '2rem', maxHeight: '300px', overflowY: 'auto' }}>
+                    {avatars[avatarTab].map(av => (
+                        <div
+                            key={av}
+                            onClick={() => setTempAvatar(av)}
+                            style={{
+                                cursor: 'pointer',
+                                borderRadius: '50%',
+                                border: tempAvatar === av ? '3px solid var(--color-primary)' : '3px solid transparent',
+                                opacity: tempAvatar === av ? 1 : 0.7,
+                                overflow: 'hidden',
+                                transition: 'all 0.2s',
+                                aspectRatio: '1/1',
+                                transform: tempAvatar === av ? 'scale(1.1)' : 'scale(1)'
+                            }}
+                        >
+                            <img src={`/avatars/${av}.png`} alt={av} style={{ width: '100%', height: '100%' }} />
+                        </div>
+                    ))}
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button onClick={() => setIsAvatarModalOpen(false)} className="btn-secondary" style={{ flex: 1 }}>Cancelar</button>
+                    <button onClick={confirmAvatarSelection} className="btn-primary" style={{ flex: 1 }}>Salvar Avatar</button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+{/* Bonus Modal - Only if Logged In */ }
+{
+    isBonusModalOpen && profile.isLoggedIn && (
+        <div className="modal-overlay" onClick={() => setIsBonusModalOpen(false)} style={{ zIndex: 10000 }}>
+            <div className="wide-modal auth-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', padding: '2rem', background: '#111', border: '1px solid #333' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button onClick={() => setIsBonusModalOpen(false)} style={{ background: 'none', border: 'none', color: '#666', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+                </div>
+                <DailyBonus profile={profile} onUpdateProfile={onUpdateProfile} />
+            </div>
+        </div>
+    )
+}
+
+{/* Friend Requests Modal - Only if Logged In */ }
+{
+    isRequestsModalOpen && profile.isLoggedIn && (
+        <div className="modal-overlay" onClick={() => setIsRequestsModalOpen(false)} style={{ zIndex: 10000 }}>
+            <div className="wide-modal auth-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', padding: '2rem', background: '#111', border: '1px solid #333' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button onClick={() => setIsRequestsModalOpen(false)} style={{ background: 'none', border: 'none', color: '#666', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+                </div>
+                <FriendRequests
+                    profile={profile}
+                    onUpdateProfile={onUpdateProfile}
+                    onClose={() => setIsRequestsModalOpen(false)}
+                />
+            </div>
+        </div>
+    )
+}
+
+{/* Main Action Buttons Area */ }
+{
+    profile.isLoggedIn && (
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+
+            {/* Bonus button removed as requested */}
+
+            <button
+                className="btn-primary"
+                onClick={() => setIsRequestsModalOpen(true)}
+                style={{
+                    flex: 1, position: 'relative',
+                    background: 'linear-gradient(135deg, #FFD700, #ffaa00)', border: 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    color: '#000', fontWeight: 'bold',
+                    overflow: 'visible' // Allow dot to be seen
+                }}
+            >
+                👥 Solicitações
+                {hasPendingRequests && (
+                    <div style={{
+                        position: 'absolute', top: '-5px', right: '-5px',
+                        width: '12px', height: '12px', background: '#ff0055',
+                        borderRadius: '50%', border: '2px solid #000'
+                    }}></div>
+                )}
+                {hasAcceptedRequests && !hasPendingRequests && (
+                    <div style={{
+                        position: 'absolute', top: '-5px', right: '-5px',
+                        width: '12px', height: '12px', background: '#00ff66',
+                        borderRadius: '50%', border: '2px solid #000'
+                    }}></div>
+                )}
+            </button>
+
+            <button
+                className="btn-secondary"
+                onClick={() => setShowXpHistory(true)}
+                style={{
+                    flex: 1,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    fontWeight: 'bold', border: '1px solid #333'
+                }}
+            >
+                📜 Histórico
+            </button>
+        </div>
+    )
+}
+
+{/* INVITE LINK SECTION */ }
+{
+    profile.isLoggedIn && (profile.name || profile.userName) && (
+        <div className="card" style={{ marginBottom: '2rem', background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(0,0,0,0))', borderColor: '#ffd700' }}>
+            <h3 style={{ marginBottom: '10px', color: '#ffd700', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>🎟️</span> Link de Convite (+100 XP)
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: '#ccc', marginBottom: '1rem' }}>
+                Envie para amigos. Quando eles criarem conta, ambos ganham bônus!
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{
+                    flex: 1, background: 'rgba(0,0,0,0.5)', padding: '10px',
+                    borderRadius: '8px', fontSize: '0.8rem', color: '#888',
+                    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                    fontFamily: 'monospace'
+                }}>
+                    {(() => {
+                        // SECURE LINK LOGIC: Force HTTPS unless strictly localhost
+                        const origin = window.location.origin;
+                        const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('192.168');
+                        const protocol = isLocal ? origin.split('//')[0] : 'https:';
+                        const host = origin.split('//')[1];
+                        return `${protocol}//${host}/?ref=${profile.uid}`;
+                    })()}
+                </div>
+                <button
+                    onClick={() => {
+                        const origin = window.location.origin;
+                        const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('192.168');
+                        const protocol = isLocal ? origin.split('//')[0] : 'https:';
+                        const host = origin.split('//')[1]; // Remove existing protocol to replace cleanly
+                        const link = `${protocol}//${host}/?ref=${profile.uid}`;
+
+                        navigator.clipboard.writeText(link);
+                        alert("Link copiado! Envie para seus amigos via WhatsApp ou Telegram.");
+                    }}
+                    className="btn-primary"
+                    style={{ width: 'auto', padding: '0 20px', background: '#333' }}
+                >
+                    Copiar
+                </button>
+            </div>
+        </div>
+    )
+}
+
+{/* Edit Profile Modal */ }
+{
+    isEditModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)} style={{ zIndex: 10000 }}>
+            <div className="wide-modal auth-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', padding: '2rem' }}>
+                <h3 style={{ marginBottom: '1.5rem' }}>Editar Perfil</h3>
+                <form onSubmit={handleSaveProfile}>
+                    <div className="input-group" style={{ marginBottom: '1rem' }}>
+                        <label>Nome</label>
+                        <input
+                            type="text"
+                            value={editName}
+                            onChange={e => setEditName(e.target.value)}
+                            style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #444', background: '#222', color: '#fff' }}
+                        />
+                    </div>
+                    <div className="input-group" style={{ marginBottom: '1rem' }}>
+                        <label>Email</label>
+                        <input
+                            type="email"
+                            value={editEmail}
+                            onChange={e => setEditEmail(e.target.value)}
+                            style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #444', background: '#222', color: '#fff' }}
+                        />
+                    </div>
+
+                    <hr style={{ borderColor: '#333', margin: '1.5rem 0' }} />
+                    <h4 style={{ fontSize: '0.9rem', marginBottom: '1rem', color: '#aaa' }}>Alterar Senha (Opcional)</h4>
+
+                    <div className="input-group" style={{ marginBottom: '1rem' }}>
+                        <label>Nova Senha</label>
+                        <input
+                            type="password"
+                            placeholder="Deixe em branco para manter"
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                            style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #444', background: '#222', color: '#fff' }}
+                        />
+                    </div>
+                    <div className="input-group" style={{ marginBottom: '1rem' }}>
+                        <label>Confirmar Senha</label>
+                        <input
+                            type="password"
+                            placeholder="Confirme a nova senha"
+                            value={confirmPassword}
+                            onChange={e => setConfirmPassword(e.target.value)}
+                            style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #444', background: '#222', color: '#fff' }}
+                        />
+                    </div>
+
+                    {editError && <p style={{ color: '#ff0055', fontSize: '0.8rem', marginBottom: '1rem' }}>{editError}</p>}
+                    {successMsg && <p style={{ color: '#00ff66', fontSize: '0.9rem', marginBottom: '1rem', textAlign: 'center' }}>{successMsg}</p>}
+
+                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                        <button type="button" onClick={() => setIsEditModalOpen(false)} className="btn-secondary" style={{ padding: '8px 16px' }}>Cancelar</button>
+                        <button type="submit" disabled={editLoading} className="btn-primary" style={{ padding: '8px 16px' }}>
+                            {editLoading ? 'Salvando...' : 'Salvar'}
+                        </button>
+                    </div>
+                </form>
+
+                <div style={{ marginTop: '2rem', borderTop: '1px solid #333', paddingTop: '1rem' }}>
+                    {!showDeleteConfirm ? (
+                        <button
+                            type="button"
+                            onClick={() => setShowDeleteConfirm(true)}
+                            style={{ background: 'transparent', border: '1px solid #ff0055', color: '#ff0055', width: '100%', padding: '10px', borderRadius: '5px', cursor: 'pointer', fontSize: '0.9rem' }}
+                        >
+                            Excluir Conta
+                        </button>
+                    ) : (
+                        <div className="animate-fade-in" style={{ background: 'rgba(255, 0, 85, 0.1)', padding: '1rem', borderRadius: '8px', border: '1px solid #ff0055', textAlign: 'center' }}>
+                            <p style={{ color: '#ff0055', fontWeight: 'bold', marginBottom: '10px', fontSize: '0.9rem' }}>
+                                Tem certeza? Esta ação é irreversível e apagará todos os seus dados.
+                            </p>
+                            <div style={{ display: 'flex', gap: '10px' }}>
                                 <button
-                                    onClick={() => setShowXpHistory(true)}
-                                    style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '0.7rem', textDecoration: 'underline' }}
+                                    type="button"
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                    style={{ flex: 1, padding: '8px', background: 'transparent', border: '1px solid #aaa', color: '#aaa', borderRadius: '5px', cursor: 'pointer' }}
                                 >
-                                    Ver Histórico
+                                    Cancelar
                                 </button>
-                                <span>{(profile.xp || 0) % 1000} / 1000 XP</span>
+                                <button
+                                    type="button"
+                                    onClick={() => { onDeleteAccount(); setIsEditModalOpen(false); }}
+                                    style={{ flex: 1, padding: '8px', background: '#ff0055', border: 'none', color: 'white', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
+                                >
+                                    SIM, EXCLUIR
+                                </button>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
+        </div>
+    )
+}
 
-            {/* XP History Modal */}
-            {showXpHistory && (
-                <div className="modal-overlay" onClick={() => setShowXpHistory(false)} style={{ zIndex: 10000 }}>
-                    <div className="wide-modal auth-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', padding: '1.5rem', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                            <h3 style={{ margin: 0 }}>Histórico de XP</h3>
-                            <button onClick={() => setShowXpHistory(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
-                        </div>
-
-                        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '5px' }}>
-                            {(!profile.xpHistory || profile.xpHistory.length === 0) ? (
-                                <p style={{ color: '#888', textAlign: 'center', marginTop: '2rem' }}>Nenhum registro de XP ainda.</p>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                    {profile.xpHistory.map((item, idx) => (
-                                        <div key={item.id || idx} style={{
-                                            background: 'rgba(255,255,255,0.03)',
-                                            padding: '12px',
-                                            borderRadius: '8px',
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            borderLeft: item.amount >= 0 ? '3px solid #00ff66' : '3px solid #ff0055'
-                                        }}>
-                                            <div>
-                                                <div style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '2px' }}>{item.reason || 'Geral'}</div>
-                                                <div style={{ fontSize: '0.75rem', color: '#888' }}>
-                                                    {new Date(item.date).toLocaleDateString()} • {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </div>
-                                            </div>
-                                            <div style={{
-                                                fontWeight: 'bold',
-                                                color: item.amount >= 0 ? '#00ff66' : '#ff0055',
-                                                fontSize: '1rem'
-                                            }}>
-                                                {item.amount >= 0 ? '+' : ''}{item.amount}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Avatar Selection Modal */}
-            {isAvatarModalOpen && (
-                <div className="modal-overlay" onClick={() => setIsAvatarModalOpen(false)} style={{ zIndex: 10000 }}>
-                    <div className="wide-modal auth-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', padding: '2rem' }}>
-                        <h3 style={{ marginBottom: '1rem', textAlign: 'center' }}>Escolha seu Avatar</h3>
-
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem' }}>
-                            <button
-                                onClick={() => setAvatarTab('male')}
-                                className={avatarTab === 'male' ? 'btn-primary' : 'btn-secondary'}
-                                style={{ flex: 1, padding: '8px', fontSize: '0.9rem' }}
-                            >
-                                Masculino
-                            </button>
-                            <button
-                                onClick={() => setAvatarTab('female')}
-                                className={avatarTab === 'female' ? 'btn-primary' : 'btn-secondary'}
-                                style={{ flex: 1, padding: '8px', fontSize: '0.9rem' }}
-                            >
-                                Feminino
-                            </button>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '2rem', maxHeight: '300px', overflowY: 'auto' }}>
-                            {avatars[avatarTab].map(av => (
-                                <div
-                                    key={av}
-                                    onClick={() => setTempAvatar(av)}
-                                    style={{
-                                        cursor: 'pointer',
-                                        borderRadius: '50%',
-                                        border: tempAvatar === av ? '3px solid var(--color-primary)' : '3px solid transparent',
-                                        opacity: tempAvatar === av ? 1 : 0.7,
-                                        overflow: 'hidden',
-                                        transition: 'all 0.2s',
-                                        aspectRatio: '1/1',
-                                        transform: tempAvatar === av ? 'scale(1.1)' : 'scale(1)'
-                                    }}
-                                >
-                                    <img src={`/avatars/${av}.png`} alt={av} style={{ width: '100%', height: '100%' }} />
-                                </div>
-                            ))}
-                        </div>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <button onClick={() => setIsAvatarModalOpen(false)} className="btn-secondary" style={{ flex: 1 }}>Cancelar</button>
-                            <button onClick={confirmAvatarSelection} className="btn-primary" style={{ flex: 1 }}>Salvar Avatar</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Bonus Modal - Only if Logged In */}
-            {isBonusModalOpen && profile.isLoggedIn && (
-                <div className="modal-overlay" onClick={() => setIsBonusModalOpen(false)} style={{ zIndex: 10000 }}>
-                    <div className="wide-modal auth-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', padding: '2rem', background: '#111', border: '1px solid #333' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <button onClick={() => setIsBonusModalOpen(false)} style={{ background: 'none', border: 'none', color: '#666', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
-                        </div>
-                        <DailyBonus profile={profile} onUpdateProfile={onUpdateProfile} />
-                    </div>
-                </div>
-            )}
-
-            {/* Friend Requests Modal - Only if Logged In */}
-            {isRequestsModalOpen && profile.isLoggedIn && (
-                <div className="modal-overlay" onClick={() => setIsRequestsModalOpen(false)} style={{ zIndex: 10000 }}>
-                    <div className="wide-modal auth-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', padding: '2rem', background: '#111', border: '1px solid #333' }}>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                            <button onClick={() => setIsRequestsModalOpen(false)} style={{ background: 'none', border: 'none', color: '#666', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
-                        </div>
-                        <FriendRequests
-                            profile={profile}
-                            onUpdateProfile={onUpdateProfile}
-                            onClose={() => setIsRequestsModalOpen(false)}
-                        />
-                    </div>
-                </div>
-            )}
-
-            {/* Main Action Buttons Area */}
-            {profile.isLoggedIn && (
-                <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
-
-                    {/* Bonus button removed as requested */}
-
-                    <button
-                        className="btn-primary"
-                        onClick={() => setIsRequestsModalOpen(true)}
-                        style={{
-                            flex: 1, position: 'relative',
-                            background: 'linear-gradient(135deg, #FFD700, #ffaa00)', border: 'none',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                            color: '#000', fontWeight: 'bold',
-                            overflow: 'visible' // Allow dot to be seen
-                        }}
-                    >
-                        👥 Solicitações
-                        {hasPendingRequests && (
-                            <div style={{
-                                position: 'absolute', top: '-5px', right: '-5px',
-                                width: '12px', height: '12px', background: '#ff0055',
-                                borderRadius: '50%', border: '2px solid #000'
-                            }}></div>
-                        )}
-                        {hasAcceptedRequests && !hasPendingRequests && (
-                            <div style={{
-                                position: 'absolute', top: '-5px', right: '-5px',
-                                width: '12px', height: '12px', background: '#00ff66',
-                                borderRadius: '50%', border: '2px solid #000'
-                            }}></div>
-                        )}
-                    </button>
-                    {/* Placeholder for other actions or just full width if alone */}
-                </div>
-            )}
-
-            {/* INVITE LINK SECTION */}
-            {profile.isLoggedIn && (profile.name || profile.userName) && (
-                <div className="card" style={{ marginBottom: '2rem', background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.05), rgba(0,0,0,0))', borderColor: '#ffd700' }}>
-                    <h3 style={{ marginBottom: '10px', color: '#ffd700', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>🎟️</span> Link de Convite (+100 XP)
-                    </h3>
-                    <p style={{ fontSize: '0.85rem', color: '#ccc', marginBottom: '1rem' }}>
-                        Envie para amigos. Quando eles criarem conta, ambos ganham bônus!
-                    </p>
-
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <div style={{
-                            flex: 1, background: 'rgba(0,0,0,0.5)', padding: '10px',
-                            borderRadius: '8px', fontSize: '0.8rem', color: '#888',
-                            overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
-                            fontFamily: 'monospace'
-                        }}>
-                            {(() => {
-                                // SECURE LINK LOGIC: Force HTTPS unless strictly localhost
-                                const origin = window.location.origin;
-                                const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('192.168');
-                                const protocol = isLocal ? origin.split('//')[0] : 'https:';
-                                const host = origin.split('//')[1];
-                                return `${protocol}//${host}/?ref=${profile.uid}`;
-                            })()}
-                        </div>
-                        <button
-                            onClick={() => {
-                                const origin = window.location.origin;
-                                const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('192.168');
-                                const protocol = isLocal ? origin.split('//')[0] : 'https:';
-                                const host = origin.split('//')[1]; // Remove existing protocol to replace cleanly
-                                const link = `${protocol}//${host}/?ref=${profile.uid}`;
-
-                                navigator.clipboard.writeText(link);
-                                alert("Link copiado! Envie para seus amigos via WhatsApp ou Telegram.");
-                            }}
-                            className="btn-primary"
-                            style={{ width: 'auto', padding: '0 20px', background: '#333' }}
-                        >
-                            Copiar
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Profile Modal */}
-            {isEditModalOpen && (
-                <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)} style={{ zIndex: 10000 }}>
-                    <div className="wide-modal auth-modal animate-fade-in" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px', padding: '2rem' }}>
-                        <h3 style={{ marginBottom: '1.5rem' }}>Editar Perfil</h3>
-                        <form onSubmit={handleSaveProfile}>
-                            <div className="input-group" style={{ marginBottom: '1rem' }}>
-                                <label>Nome</label>
-                                <input
-                                    type="text"
-                                    value={editName}
-                                    onChange={e => setEditName(e.target.value)}
-                                    style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #444', background: '#222', color: '#fff' }}
-                                />
-                            </div>
-                            <div className="input-group" style={{ marginBottom: '1rem' }}>
-                                <label>Email</label>
-                                <input
-                                    type="email"
-                                    value={editEmail}
-                                    onChange={e => setEditEmail(e.target.value)}
-                                    style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #444', background: '#222', color: '#fff' }}
-                                />
-                            </div>
-
-                            <hr style={{ borderColor: '#333', margin: '1.5rem 0' }} />
-                            <h4 style={{ fontSize: '0.9rem', marginBottom: '1rem', color: '#aaa' }}>Alterar Senha (Opcional)</h4>
-
-                            <div className="input-group" style={{ marginBottom: '1rem' }}>
-                                <label>Nova Senha</label>
-                                <input
-                                    type="password"
-                                    placeholder="Deixe em branco para manter"
-                                    value={newPassword}
-                                    onChange={e => setNewPassword(e.target.value)}
-                                    style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #444', background: '#222', color: '#fff' }}
-                                />
-                            </div>
-                            <div className="input-group" style={{ marginBottom: '1rem' }}>
-                                <label>Confirmar Senha</label>
-                                <input
-                                    type="password"
-                                    placeholder="Confirme a nova senha"
-                                    value={confirmPassword}
-                                    onChange={e => setConfirmPassword(e.target.value)}
-                                    style={{ width: '100%', padding: '10px', borderRadius: '5px', border: '1px solid #444', background: '#222', color: '#fff' }}
-                                />
-                            </div>
-
-                            {editError && <p style={{ color: '#ff0055', fontSize: '0.8rem', marginBottom: '1rem' }}>{editError}</p>}
-                            {successMsg && <p style={{ color: '#00ff66', fontSize: '0.9rem', marginBottom: '1rem', textAlign: 'center' }}>{successMsg}</p>}
-
-                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                                <button type="button" onClick={() => setIsEditModalOpen(false)} className="btn-secondary" style={{ padding: '8px 16px' }}>Cancelar</button>
-                                <button type="submit" disabled={editLoading} className="btn-primary" style={{ padding: '8px 16px' }}>
-                                    {editLoading ? 'Salvando...' : 'Salvar'}
-                                </button>
-                            </div>
-                        </form>
-
-                        <div style={{ marginTop: '2rem', borderTop: '1px solid #333', paddingTop: '1rem' }}>
-                            {!showDeleteConfirm ? (
-                                <button
-                                    type="button"
-                                    onClick={() => setShowDeleteConfirm(true)}
-                                    style={{ background: 'transparent', border: '1px solid #ff0055', color: '#ff0055', width: '100%', padding: '10px', borderRadius: '5px', cursor: 'pointer', fontSize: '0.9rem' }}
-                                >
-                                    Excluir Conta
-                                </button>
-                            ) : (
-                                <div className="animate-fade-in" style={{ background: 'rgba(255, 0, 85, 0.1)', padding: '1rem', borderRadius: '8px', border: '1px solid #ff0055', textAlign: 'center' }}>
-                                    <p style={{ color: '#ff0055', fontWeight: 'bold', marginBottom: '10px', fontSize: '0.9rem' }}>
-                                        Tem certeza? Esta ação é irreversível e apagará todos os seus dados.
-                                    </p>
-                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowDeleteConfirm(false)}
-                                            style={{ flex: 1, padding: '8px', background: 'transparent', border: '1px solid #aaa', color: '#aaa', borderRadius: '5px', cursor: 'pointer' }}
-                                        >
-                                            Cancelar
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => { onDeleteAccount(); setIsEditModalOpen(false); }}
-                                            style={{ flex: 1, padding: '8px', background: '#ff0055', border: 'none', color: 'white', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
-                                        >
-                                            SIM, EXCLUIR
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {!profile.isLoggedIn && (
-                <div className="card" style={{ marginBottom: '3rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderColor: 'var(--color-primary)' }}>
-                    <h3 style={{ marginBottom: '1rem' }}>Sincronize sua Evolução</h3>
-                    <p style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>Crie uma conta para salvar seus treinos e dietas na nuvem.</p>
-                    <button className="btn-auth-primary" style={{ width: '100%' }} onClick={onOpenAuth}>FAZER LOGIN / CRIAR CONTA</button>
-                </div>
-            )}
+{
+    !profile.isLoggedIn && (
+        <div className="card" style={{ marginBottom: '3rem', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderColor: 'var(--color-primary)' }}>
+            <h3 style={{ marginBottom: '1rem' }}>Sincronize sua Evolução</h3>
+            <p style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>Crie uma conta para salvar seus treinos e dietas na nuvem.</p>
+            <button className="btn-auth-primary" style={{ width: '100%' }} onClick={onOpenAuth}>FAZER LOGIN / CRIAR CONTA</button>
+        </div>
+    )
+}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '3rem' }}>
                 <div className="card">
@@ -620,17 +727,17 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                 </div>
             </div>
 
-            {/* Daily Bonus Section - REMOVED DIRECT RENDER */}
-            {/* 
+{/* Daily Bonus Section - REMOVED DIRECT RENDER */ }
+{/* 
             {profile.isLoggedIn && (
                 <DailyBonus profile={profile} onUpdateProfile={onUpdateProfile} />
             )} 
             */}
-            {/* Support Link */}
-            <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#666', fontSize: '0.8rem' }}>
-                Precisa de ajuda? Entre em contato com o <a href="mailto:metafitsuporte4@gmail.com" style={{ color: '#888', textDecoration: 'underline' }}>suporte</a>
-            </div>
-        </section>
+{/* Support Link */ }
+<div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#666', fontSize: '0.8rem' }}>
+    Precisa de ajuda? Entre em contato com o <a href="mailto:metafitsuporte4@gmail.com" style={{ color: '#888', textDecoration: 'underline' }}>suporte</a>
+</div>
+        </section >
     );
 };
 
