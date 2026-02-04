@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { registerUser, loginUser, resetPassword } from '../utils/db';
 
 const AuthModal = ({ onClose, onSuccess }) => {
-    const [isLoginMode, setIsLoginMode] = useState(true);
+    const savedInvite = localStorage.getItem('metafit_ref_code');
+    const [isLoginMode, setIsLoginMode] = useState(!savedInvite); // Default to register if invite exists
     const [isForgotMode, setIsForgotMode] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');

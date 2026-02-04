@@ -84,8 +84,8 @@ function App() {
     const refCode = params.get('ref');
     if (refCode) {
       localStorage.setItem('metafit_ref_code', refCode);
-      // Optional: Open Auth Modal immediately?
-      // setIsAuthModalOpen(true);
+      // Open Auth Modal immediately for registration
+      setIsAuthModalOpen(true);
 
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -700,21 +700,19 @@ function App() {
                 return;
               }
 
-            }
-
               // LOOSE WORKOUT LOGIC (Not Daily)
               // Base XP: 15
               // VIP Bonus: +5%
-              let baseXp= 15;
-        if (userProfile.vip) {
-          baseXp = Math.ceil(baseXp * 1.05); // +5%
+              let baseXp = 15;
+              if (userProfile.vip) {
+                baseXp = Math.ceil(baseXp * 1.05); // +5%
               }
 
-        addXp(baseXp, activeExercise ? `Treino: ${activeExercise.name}` : 'Treino Avulso');
-        setNotification(MESSAGES.XP.GAIN_DEFAULT(baseXp));
+              addXp(baseXp, activeExercise ? `Treino: ${activeExercise.name}` : 'Treino Avulso');
+              setNotification(MESSAGES.XP.GAIN_DEFAULT(baseXp));
               setTimeout(() => setNotification(null), 3000);
             }}
-        onAddXp={addXp}
+            onAddXp={addXp}
           />
         )}
 
