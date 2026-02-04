@@ -90,6 +90,25 @@ export const playSfx = (type) => {
     }
 };
 
+// Unlock/Resume Audio Context (Call this on first user interaction)
+export const enableAudio = () => {
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') {
+        ctx.resume().then(() => {
+            console.log("🔊 Audio Context RESUMED by user interaction.");
+        }).catch(err => console.error("🔊 Audio Context Resume Failed:", err));
+    }
+
+    // Play silent buffer to force "warm up" iOS/mobile
+    try {
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+    } catch (e) { }
+};
+
 // Text-to-Speech
 let voices = [];
 if (typeof window !== 'undefined' && window.speechSynthesis) {

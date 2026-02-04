@@ -90,6 +90,16 @@ function App() {
       // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+
+    // Enable Audio on first interaction
+    const unlockAudio = () => {
+      enableAudio();
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
+
   }, []);
 
   const handleTutorialComplete = () => {
