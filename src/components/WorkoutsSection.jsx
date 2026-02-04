@@ -181,6 +181,11 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
         else if (trainingDuration >= 15) xpReward = 250;
         else if (trainingDuration >= 10) xpReward = 200;
 
+        // VIP BONUS FOR SCHEDULED WORKOUTS: +15%
+        if (profile.vip) {
+            xpReward = Math.ceil(xpReward * 1.15);
+        }
+
         onCompleteDaily(xpReward);
     };
 

@@ -322,10 +322,16 @@ const RunMode = ({ profile, onAddXp }) => {
         // FIX: Firestore doesn't support nested arrays. Convert to valid objects.
         const pathForDb = pathCoordinates.map(p => ({ lat: p[0], lng: p[1] }));
 
+        // VIP BONUS: +15% on Run Finish
+        let finalXp = accumulatedXp;
+        if (profile.vip) {
+            finalXp = Math.ceil(finalXp * 1.15);
+        }
+
         const result = await saveRun(profile.uid, {
             distance,
             time: elapsedTime,
-            xp: accumulatedXp,
+            xp: finalXp, // Save with bonus
             path: pathForDb
         });
 
@@ -426,8 +432,10 @@ const RunMode = ({ profile, onAddXp }) => {
                             <div className="run-stat-label">TEMPO</div>
                         </div>
                         <div className="run-card-neon" style={{ flex: 1, padding: '10px' }}>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>+{accumulatedXp}</div>
-                            <div className="run-stat-label">XP GANHO</div>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                                +{profile.vip ? Math.ceil(accumulatedXp * 1.15) : accumulatedXp}
+                            </div>
+                            <div className="run-stat-label">XP GANHO {profile.vip && <span style={{ color: '#ffd700', fontSize: '0.7rem' }}>(+15%)</span>}</div>
                         </div>
                     </div>
 

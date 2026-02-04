@@ -700,11 +700,21 @@ function App() {
                 return;
               }
 
-              addXp(15, activeExercise ? `Treino: ${activeExercise.name}` : 'Treino Avulso');
-              setNotification(MESSAGES.XP.GAIN_DEFAULT(15));
+            }
+
+              // LOOSE WORKOUT LOGIC (Not Daily)
+              // Base XP: 15
+              // VIP Bonus: +5%
+              let baseXp= 15;
+        if (userProfile.vip) {
+          baseXp = Math.ceil(baseXp * 1.05); // +5%
+              }
+
+        addXp(baseXp, activeExercise ? `Treino: ${activeExercise.name}` : 'Treino Avulso');
+        setNotification(MESSAGES.XP.GAIN_DEFAULT(baseXp));
               setTimeout(() => setNotification(null), 3000);
             }}
-            onAddXp={addXp}
+        onAddXp={addXp}
           />
         )}
 
