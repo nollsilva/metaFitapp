@@ -53,8 +53,12 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
     const [expandedDays, setExpandedDays] = useState([]);
 
     useEffect(() => {
-        // Expand TODAY by default on mount
-        const todayStr = new Date().toISOString().split('T')[0];
+        // Expand TODAY by default on mount using LOCAL time
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
         setExpandedDays([todayStr]);
     }, []);
 
@@ -300,42 +304,66 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                                                 profile.xpHistory.forEach(item => {
                                                     let dateKey;
                                                     try {
+                                                        // Convert everything to a Date object first
+                                                        let d;
                                                         if (item.date && typeof item.date === 'string') {
-                                                            dateKey = item.date.split('T')[0];
-                                                        } else if (item.date && item.date.toDate) { // Firestore Timestamp
-                                                            dateKey = item.date.toDate().toISOString().split('T')[0];
+                                                            d = new Date(item.date);
+                                                        } else if (item.date && item.date.toDate) {
+                                                            d = item.date.toDate();
                                                         } else if (item.date instanceof Date) {
-                                                            dateKey = item.date.toISOString().split('T')[0];
+                                                            d = item.date;
                                                         } else {
-                                                            // Fallback or try constructor
-                                                            dateKey = new Date(item.date || Date.now()).toISOString().split('T')[0];
+                                                            d = new Date();
                                                         }
+
+                                                        // Get LOCAL YYYY-MM-DD
+                                                        const year = d.getFullYear();
+                                                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                                                        const day = String(d.getDate()).padStart(2, '0');
+                                                        dateKey = `${year}-${month}-${day}`;
+
                                                     } catch (e) {
-                                                        console.warn("Invalid date in history:", item);
-                                                        dateKey = new Date().toISOString().split('T')[0];
+                                                        const d = new Date();
+                                                        dateKey = d.toISOString().split('T')[0];
                                                     }
 
                                                     if (!grouped[dateKey]) grouped[dateKey] = [];
                                                     grouped[dateKey].push(item);
-                                                    if (!grouped[dateKey]) grouped[dateKey] = [];
-                                                    grouped[dateKey].push(item);
                                                 });
-                                            } // End Array Check
+                                            }
 
                                             const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
 
                                             return sortedDates.map(dateStr => {
                                                 const items = grouped[dateStr];
-                                                const dateObj = new Date(dateStr + 'T00:00:00'); // Force local time interpretation if needed, or stick to UTC split
-                                                const today = new Date().toISOString().split('T')[0];
-                                                const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+                                                // Create date object from the YYYY-MM-DD string (treated as local midnight)
+                                                // We act as if this string IS local time by appending T00:00:00 and letting logic handle it?
+                                                // Actually, simpler: comparing YYYY-MM-DD strings directly is safest.
+
+                                                const d = new Date();
+                                                const tYear = d.getFullYear();
+                                                const tMonth = String(d.getMonth() + 1).padStart(2, '0');
+                                                const tDay = String(d.getDate()).padStart(2, '0');
+                                                const today = `${tYear}-${tMonth}-${tDay}`;
+
+                                                const yD = new Date(Date.now() - 86400000);
+                                                const yYear = yD.getFullYear();
+                                                const yMonth = String(yD.getMonth() + 1).padStart(2, '0');
+                                                const yDay = String(yD.getDate()).padStart(2, '0');
+                                                const yesterday = `${yYear}-${yMonth}-${yDay}`;
 
                                                 let displayDateHeader = "";
 
-                                                // Weekday map
+                                                // Format DD/MM
+                                                const [year, month, day] = dateStr.split('-');
+                                                const formattedDate = `${day}/${month}`;
+
+                                                // Get Weekday
+                                                // Important: dateStr is YYYY-MM-DD. new Date(dateStr) might be UTC or Local depending on browser.
+                                                // safer: new Date(year, month-1, day)
+                                                const dateObj = new Date(year, month - 1, day);
                                                 const days = ['DOMINGO', 'SEGUNDA', 'TERÇA', 'QUARTA', 'QUINTA', 'SEXTA', 'SÁBADO'];
                                                 const weekDay = days[dateObj.getDay()];
-                                                const formattedDate = dateStr.split('-').reverse().slice(0, 2).join('/'); // DD/MM
 
                                                 if (dateStr === today) {
                                                     displayDateHeader = `HOJE ${formattedDate}`;
