@@ -57,3 +57,21 @@ export const calculateSeasonReset = (currentXp) => {
     // Bronze -> No Change
     return currentXp;
 };
+
+/**
+ * Calculates Level based on XP.
+ * Level 0: 0 - 1000
+ * Level 1: 1001 - 2000
+ * Level 2: 2001 - 3000
+ * Formula: floor((XP - 1) / 1000) (min 0)
+ */
+export const calculateLevel = (xp) => {
+    if (!xp || xp <= 1000) return 0;
+    return Math.floor((xp - 1) / 1000);
+};
+
+export const getXpForNextLevel = (level) => {
+    // Level 0 -> needs 1001 for Level 1
+    // Level 1 -> needs 2001 for Level 2
+    return (level + 1) * 1000 + 1;
+};

@@ -5,7 +5,7 @@
 export const MESSAGES = {
     XP: {
         LOST_STREAK: (penalty, days) => `Você perdeu ${penalty} XP por perder ${days} dia(s) de treino! 😢`,
-        LEVEL_UP: (level) => `PARABÈNS VOCÊSUBIU DE NÍVEL! AGORA VOCÊ É NÍVEL ${level} 🚀`,
+        LEVEL_UP: (level) => `PARABÉNS! VOCÊ SUBIU DE NÍVEL! AGORA VOCÊ É NÍVEL ${level} 🚀`,
         GAIN_DEFAULT: (xp) => `PARABÉNS! Exercício concluído! +${xp} XP`,
         GAIN_DAILY: (xp) => `Parabéns! Treino do dia concluído! +${xp} XP`
     },

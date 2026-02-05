@@ -15,7 +15,7 @@ import {
   updateUser, checkSeasonReset, checkVipExpiration, updateHeartbeat // Add updateHeartbeat
 } from './utils/db';
 import { sendRankUpEmail } from './utils/email';
-import { getRankTitle } from './utils/rankingSystem';
+import { getRankTitle, calculateLevel } from './utils/rankingSystem';
 import { getBadgeConfig } from './components/BadgeIcons';
 import { auth } from './lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -34,6 +34,7 @@ import NotificationSystem from './components/NotificationSystem'; // Imported
 import NotificationPermissionModal from './components/NotificationPermissionModal'; // Imported
 import NotificationsScreen from './components/NotificationsScreen'; // Imported
 import XPNotificationModal from './components/XPNotificationModal'; // Imported
+import LevelUpModal from './components/LevelUpModal'; // Imported
 
 // Helper to auto-reload page if a lazy-loaded chunk fails (e.g., after deployment)
 const lazyWithRetry = (componentImport) =>
@@ -144,6 +145,7 @@ function App() {
   const [notification, setNotification] = useState(null);
   const [vipNotification, setVipNotification] = useState(null); // VIP Notification State
   const [xpModalData, setXpModalData] = useState(null); // { penalty, dates: [], missedCount, currentXp, newHistory }
+  const [showLevelUpModal, setShowLevelUpModal] = useState({ show: false, level: 0 });
 
   // Check for missed workouts logic
   const checkMissedWorkouts = (profile) => {
@@ -234,7 +236,7 @@ function App() {
 
     const currentXp = userProfile.xp || 0;
     const newXp = Math.max(0, currentXp - penalty);
-    const newLevel = Math.floor(newXp / 1000) + 1;
+    const newLevel = calculateLevel(newXp);
 
     const historyEntry = {
       id: Date.now(),
@@ -439,10 +441,12 @@ function App() {
       }
 
       const newXp = (prev.xp || 0) + finalAmount;
-      const newLevel = Math.floor(newXp / 1000) + 1;
+      const newLevel = calculateLevel(newXp);
 
-      if (newLevel > (prev.level || 1)) {
-        setNotification(MESSAGES.XP.LEVEL_UP(newLevel));
+      if (newLevel > (prev.level || 0)) {
+        // Trigger Level Up Modal instead of simple notification
+        setShowLevelUpModal({ show: true, level: newLevel });
+        playSfx('levelup') // Assuming 'levelup' implies success/fanfare, else 'coin'
       }
 
       return {
@@ -598,6 +602,14 @@ function App() {
           dates={xpModalData.dates}
           currentXp={xpModalData.currentXp}
           onClose={handleConfirmXpPenalty}
+        />
+      )}
+
+      {/* Level Up Modal (Highest Priority) */}
+      {showLevelUpModal.show && (
+        <LevelUpModal
+          level={showLevelUpModal.level}
+          onClose={() => setShowLevelUpModal({ show: false, level: 0 })}
         />
       )}
 

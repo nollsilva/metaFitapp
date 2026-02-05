@@ -290,12 +290,24 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
 
                                             return sortedDates.map(dateStr => {
                                                 const items = grouped[dateStr];
+                                                const dateObj = new Date(dateStr + 'T00:00:00'); // Force local time interpretation if needed, or stick to UTC split
                                                 const today = new Date().toISOString().split('T')[0];
                                                 const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
-                                                let displayDate = dateStr.split('-').reverse().join('/');
-                                                if (dateStr === today) displayDate = "HOJE";
-                                                else if (dateStr === yesterday) displayDate = "ONTEM";
+                                                let displayDateHeader = "";
+
+                                                // Weekday map
+                                                const days = ['DOMINGO', 'SEGUNDA', 'TERÇA', 'QUARTA', 'QUINTA', 'SEXTA', 'SÁBADO'];
+                                                const weekDay = days[dateObj.getDay()];
+                                                const formattedDate = dateStr.split('-').reverse().slice(0, 2).join('/'); // DD/MM
+
+                                                if (dateStr === today) {
+                                                    displayDateHeader = `HOJE ${formattedDate}`;
+                                                } else if (dateStr === yesterday) {
+                                                    displayDateHeader = `ONTEM ${formattedDate}`;
+                                                } else {
+                                                    displayDateHeader = `${weekDay} ${formattedDate}`;
+                                                }
 
                                                 // CALCULATE DAILY SUMMARY
                                                 const summary = {
@@ -304,81 +316,42 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                                                 };
 
                                                 items.forEach(i => {
-                                                    if (i.amount > 0) {
-                                                        summary.total += i.amount;
-
-                                                        // Categorize
-                                                        let category = 'Outros 📊'; // Default
-                                                        const r = (i.reason || '').toLowerCase();
-
-                                                        if (r.includes('treino')) category = 'Treinos 💪';
-                                                        else if (r.includes('corrida') || r.includes('run')) category = 'Corridas 🏃';
-                                                        else if (r.includes('bônus diário') || r.includes('login')) category = 'Bônus Diário 🏅';
-                                                        else if (r.includes('convite') || r.includes('indicação')) category = 'Convites 🎟️';
-                                                        else if (r.includes('vip')) category = 'VIP Extra ⭐';
-                                                        else if (r.includes('duelo') || r.includes('batalha')) category = 'Duelos ⚔️';
-                                                        else if (r.includes('meta') || r.includes('hidratação') || r.includes('dieta')) category = 'Refeição/Água 🥗';
-
-                                                        if (!summary.sources[category]) summary.sources[category] = 0;
-                                                        summary.sources[category] += i.amount;
-                                                    }
+                                                    if (i.amount > 0) summary.total += i.amount;
                                                 });
 
                                                 return (
-                                                    <div key={dateStr}>
+                                                    <div key={dateStr} style={{ marginBottom: '20px' }}>
                                                         <div style={{
-                                                            fontSize: '0.8rem', fontWeight: 'bold', color: '#666',
-                                                            marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px'
+                                                            fontSize: '1rem', fontWeight: '900', color: '#fff',
+                                                            marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px',
+                                                            background: 'linear-gradient(90deg, #333, transparent)',
+                                                            padding: '8px 12px', borderRadius: '8px',
+                                                            borderLeft: '4px solid var(--color-primary)'
                                                         }}>
-                                                            📅 {displayDate}
+                                                            {displayDateHeader}
                                                         </div>
 
-                                                        {/* DAILY SUMMARY CARD */}
-                                                        {summary.total > 0 && (
-                                                            <div style={{
-                                                                background: 'linear-gradient(145deg, #151515, #080808)',
-                                                                border: '1px solid #333', borderRadius: '12px', padding: '15px',
-                                                                marginBottom: '15px', position: 'relative', overflow: 'hidden'
-                                                            }}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '1px solid #222', paddingBottom: '8px' }}>
-                                                                    <span style={{ fontSize: '0.9rem', color: '#aaa', fontWeight: 'bold' }}>📊 RESUMO DO DIA</span>
-                                                                    <span style={{ fontSize: '1.2rem', color: '#00ff66', fontWeight: '900' }}>+{summary.total} XP</span>
-                                                                </div>
-                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                                                    {Object.entries(summary.sources).map(([key, val]) => (
-                                                                        <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ccc' }}>
-                                                                            <span>{key}</span>
-                                                                            <span style={{ fontWeight: 'bold' }}>+{val}</span>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-
                                                         {/* DETAILED LIST */}
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '10px' }}>
                                                             {items.map((item, idx) => (
                                                                 <div key={item.id || idx} style={{
-                                                                    background: 'rgba(255,255,255,0.03)',
-                                                                    padding: '10px',
+                                                                    background: 'rgba(255,255,255,0.02)',
+                                                                    padding: '12px',
                                                                     borderRadius: '8px',
                                                                     display: 'flex',
                                                                     justifyContent: 'space-between',
                                                                     alignItems: 'center',
-                                                                    borderLeft: item.amount >= 0 ? '3px solid #00ff66' : '3px solid #ff0055'
+                                                                    borderLeft: item.amount >= 0 ? '2px solid #00ff66' : '2px solid #ff0055'
                                                                 }}>
                                                                     <div>
-                                                                        <div style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '2px' }}>{item.reason || 'Geral'}</div>
-                                                                        <div style={{ fontSize: '0.7rem', color: '#888' }}>
-                                                                            {new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                        </div>
+                                                                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#eee' }}>{item.reason || 'XP Geral'}</div>
                                                                     </div>
                                                                     <div style={{
-                                                                        fontWeight: 'bold',
+                                                                        fontWeight: '900',
                                                                         color: item.amount >= 0 ? '#00ff66' : '#ff0055',
-                                                                        fontSize: '0.9rem'
+                                                                        fontSize: '1rem'
                                                                     }}>
-                                                                        {item.amount >= 0 ? '+' : ''}{item.amount}
+                                                                        {item.amount >= 0 ? '+' : ''}{item.amount} XP
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -525,7 +498,7 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                                 fontWeight: 'bold', border: '1px solid #333',
                                 padding: '12px 32px', borderRadius: '50px', minHeight: '48px', // Match btn-primary
-                                background: 'rgba(255,255,255,0.05)'
+                                background: '#333', color: '#fff', border: 'none'
                             }}
                         >
                             📜 Histórico
