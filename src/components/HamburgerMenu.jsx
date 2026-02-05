@@ -12,7 +12,8 @@ const HamburgerMenu = ({ isOpen, onClose, activeTab, setActiveTab, onLogout, pro
         { id: 'tracker', label: 'Perfil', icon: '👤', hasNotification: notificationRequests, notificationColor: '#00ff66' },
         { id: 'notifications', label: 'Notificações', icon: '🔔' },
         { id: 'diet', label: 'Dieta', icon: '🥗' },
-        // Bonus and Help might trigger modals instead of tabs, we'll handle that passed in props or just tabs
+        { id: 'rpg', label: 'Academia RPG (BETA)', icon: '🥊' },
+        // Bonus and Help might trigger modals instead of tabs
         { id: 'bonus', label: 'Bônus Diário', icon: '🎁', action: 'bonus', hasNotification: notificationBonus, notificationColor: '#ff0055' },
         { id: 'help', label: 'Ajuda', icon: '❓', action: 'help' },
     ];

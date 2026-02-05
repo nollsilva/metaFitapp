@@ -297,7 +297,23 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                                         {(() => {
                                             const grouped = {};
                                             profile.xpHistory.forEach(item => {
-                                                const dateKey = item.date.split('T')[0]; // YYYY-MM-DD
+                                                let dateKey;
+                                                try {
+                                                    if (item.date && typeof item.date === 'string') {
+                                                        dateKey = item.date.split('T')[0];
+                                                    } else if (item.date && item.date.toDate) { // Firestore Timestamp
+                                                        dateKey = item.date.toDate().toISOString().split('T')[0];
+                                                    } else if (item.date instanceof Date) {
+                                                        dateKey = item.date.toISOString().split('T')[0];
+                                                    } else {
+                                                        // Fallback or try constructor
+                                                        dateKey = new Date(item.date || Date.now()).toISOString().split('T')[0];
+                                                    }
+                                                } catch (e) {
+                                                    console.warn("Invalid date in history:", item);
+                                                    dateKey = new Date().toISOString().split('T')[0];
+                                                }
+
                                                 if (!grouped[dateKey]) grouped[dateKey] = [];
                                                 grouped[dateKey].push(item);
                                             });

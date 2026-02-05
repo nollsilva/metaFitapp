@@ -35,6 +35,7 @@ import NotificationPermissionModal from './components/NotificationPermissionModa
 import NotificationsScreen from './components/NotificationsScreen'; // Imported
 import XPNotificationModal from './components/XPNotificationModal'; // Imported
 import LevelUpModal from './components/LevelUpModal'; // Imported
+import RPGMap from './components/rpg/RPGMap'; // Imported
 
 // Helper to auto-reload page if a lazy-loaded chunk fails (e.g., after deployment)
 const lazyWithRetry = (componentImport) =>
@@ -757,6 +758,13 @@ function App() {
 
         {activeTab === 'run' && (
           <RunMode profile={userProfile} onAddXp={addXp} />
+        )}
+
+        {activeTab === 'rpg' && (
+          <RPGMap
+            profile={userProfile}
+            onUpdateProfile={updateProfile}
+          />
         )}
 
         {/* Battle Arena Overlay */}
