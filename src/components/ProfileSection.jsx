@@ -296,27 +296,31 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                                         {/* GROUPED HISTORY Logic */}
                                         {(() => {
                                             const grouped = {};
-                                            profile.xpHistory.forEach(item => {
-                                                let dateKey;
-                                                try {
-                                                    if (item.date && typeof item.date === 'string') {
-                                                        dateKey = item.date.split('T')[0];
-                                                    } else if (item.date && item.date.toDate) { // Firestore Timestamp
-                                                        dateKey = item.date.toDate().toISOString().split('T')[0];
-                                                    } else if (item.date instanceof Date) {
-                                                        dateKey = item.date.toISOString().split('T')[0];
-                                                    } else {
-                                                        // Fallback or try constructor
-                                                        dateKey = new Date(item.date || Date.now()).toISOString().split('T')[0];
+                                            if (Array.isArray(profile.xpHistory)) {
+                                                profile.xpHistory.forEach(item => {
+                                                    let dateKey;
+                                                    try {
+                                                        if (item.date && typeof item.date === 'string') {
+                                                            dateKey = item.date.split('T')[0];
+                                                        } else if (item.date && item.date.toDate) { // Firestore Timestamp
+                                                            dateKey = item.date.toDate().toISOString().split('T')[0];
+                                                        } else if (item.date instanceof Date) {
+                                                            dateKey = item.date.toISOString().split('T')[0];
+                                                        } else {
+                                                            // Fallback or try constructor
+                                                            dateKey = new Date(item.date || Date.now()).toISOString().split('T')[0];
+                                                        }
+                                                    } catch (e) {
+                                                        console.warn("Invalid date in history:", item);
+                                                        dateKey = new Date().toISOString().split('T')[0];
                                                     }
-                                                } catch (e) {
-                                                    console.warn("Invalid date in history:", item);
-                                                    dateKey = new Date().toISOString().split('T')[0];
-                                                }
 
-                                                if (!grouped[dateKey]) grouped[dateKey] = [];
-                                                grouped[dateKey].push(item);
-                                            });
+                                                    if (!grouped[dateKey]) grouped[dateKey] = [];
+                                                    grouped[dateKey].push(item);
+                                                    if (!grouped[dateKey]) grouped[dateKey] = [];
+                                                    grouped[dateKey].push(item);
+                                                });
+                                            } // End Array Check
 
                                             const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
 
