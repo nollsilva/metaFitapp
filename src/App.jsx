@@ -756,15 +756,12 @@ function App() {
           />
         )}
 
-        {activeTab === 'run' && (
-          <RunMode profile={userProfile} onAddXp={addXp} />
+        {activeTab === 'ranking' && (
+          <RankingSection />
         )}
 
-        {activeTab === 'rpg' && (
-          <RPGMap
-            profile={userProfile}
-            onUpdateProfile={updateProfile}
-          />
+        {activeTab === 'run' && (
+          <RunMode profile={userProfile} onAddXp={addXp} />
         )}
 
         {/* Battle Arena Overlay */}
