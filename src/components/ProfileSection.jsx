@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { updateUser } from '../utils/db'; // Ensure this is imported effectively or passed down
 import { sendRankUpEmail } from '../utils/email';
 import { updateEmail, updateProfile as updateAuthProfile, updatePassword } from 'firebase/auth';
