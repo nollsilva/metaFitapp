@@ -49,8 +49,24 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
     const [tempAvatar, setTempAvatar] = useState(null);
     const [avatarTab, setAvatarTab] = useState('male'); // 'male' | 'female'
 
-    // Mock Data for History
-    // Mock Data removed
+    // History Collapsible State
+    const [expandedDays, setExpandedDays] = useState([]);
+
+    useEffect(() => {
+        // Expand TODAY by default on mount
+        const todayStr = new Date().toISOString().split('T')[0];
+        setExpandedDays([todayStr]);
+    }, []);
+
+    const toggleDay = (dateKey) => {
+        setExpandedDays(prev => {
+            if (prev.includes(dateKey)) {
+                return prev.filter(d => d !== dateKey);
+            } else {
+                return [...prev, dateKey];
+            }
+        });
+    };
 
 
     const openEditModal = () => {
@@ -319,43 +335,55 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                                                     if (i.amount > 0) summary.total += i.amount;
                                                 });
 
+                                                const isExpanded = expandedDays.includes(dateStr);
+
                                                 return (
-                                                    <div key={dateStr} style={{ marginBottom: '20px' }}>
-                                                        <div style={{
-                                                            fontSize: '1rem', fontWeight: '900', color: '#fff',
-                                                            marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px',
-                                                            background: 'linear-gradient(90deg, #333, transparent)',
-                                                            padding: '8px 12px', borderRadius: '8px',
-                                                            borderLeft: '4px solid var(--color-primary)'
-                                                        }}>
-                                                            {displayDateHeader}
+                                                    <div key={dateStr} style={{ marginBottom: '15px' }}>
+                                                        <div
+                                                            onClick={() => toggleDay(dateStr)}
+                                                            style={{
+                                                                fontSize: '1rem', fontWeight: '900', color: '#fff',
+                                                                marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '1px',
+                                                                background: 'linear-gradient(90deg, #333, transparent)',
+                                                                padding: '12px 15px', borderRadius: '8px',
+                                                                borderLeft: '4px solid var(--color-primary)',
+                                                                cursor: 'pointer',
+                                                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                                transition: 'background 0.2s'
+                                                            }}>
+                                                            <span>{displayDateHeader}</span>
+                                                            <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                                                                {isExpanded ? '▼' : '▶'}
+                                                            </span>
                                                         </div>
 
-                                                        {/* DETAILED LIST */}
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '10px' }}>
-                                                            {items.map((item, idx) => (
-                                                                <div key={item.id || idx} style={{
-                                                                    background: 'rgba(255,255,255,0.02)',
-                                                                    padding: '12px',
-                                                                    borderRadius: '8px',
-                                                                    display: 'flex',
-                                                                    justifyContent: 'space-between',
-                                                                    alignItems: 'center',
-                                                                    borderLeft: item.amount >= 0 ? '2px solid #00ff66' : '2px solid #ff0055'
-                                                                }}>
-                                                                    <div>
-                                                                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#eee' }}>{item.reason || 'XP Geral'}</div>
-                                                                    </div>
-                                                                    <div style={{
-                                                                        fontWeight: '900',
-                                                                        color: item.amount >= 0 ? '#00ff66' : '#ff0055',
-                                                                        fontSize: '1rem'
+                                                        {/* DETAILED LIST - Collapsible */}
+                                                        {isExpanded && (
+                                                            <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingLeft: '10px', marginTop: '10px' }}>
+                                                                {items.map((item, idx) => (
+                                                                    <div key={item.id || idx} style={{
+                                                                        background: 'rgba(255,255,255,0.02)',
+                                                                        padding: '12px',
+                                                                        borderRadius: '8px',
+                                                                        display: 'flex',
+                                                                        justifyContent: 'space-between',
+                                                                        alignItems: 'center',
+                                                                        borderLeft: item.amount >= 0 ? '2px solid #00ff66' : '2px solid #ff0055'
                                                                     }}>
-                                                                        {item.amount >= 0 ? '+' : ''}{item.amount} XP
+                                                                        <div>
+                                                                            <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#eee' }}>{item.reason || 'XP Geral'}</div>
+                                                                        </div>
+                                                                        <div style={{
+                                                                            fontWeight: '900',
+                                                                            color: item.amount >= 0 ? '#00ff66' : '#ff0055',
+                                                                            fontSize: '1rem'
+                                                                        }}>
+                                                                            {item.amount >= 0 ? '+' : ''}{item.amount} XP
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 );
                                             });
