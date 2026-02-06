@@ -75,6 +75,27 @@ function App() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [sessionChecks, setSessionChecks] = useState(new Set());
 
+  // --- AUDIO SYSTEM ---
+  const audioRef = React.useRef({
+    coin: new Audio('/sfx/coin.mp3'),
+    levelup: new Audio('/sfx/levelup.mp3')
+  });
+
+  const enableAudio = () => {
+    Object.values(audioRef.current).forEach(audio => {
+      audio.load();
+      audio.volume = 0.5;
+    });
+  };
+
+  const playSfx = (name) => {
+    const audio = audioRef.current[name];
+    if (audio) {
+      audio.currentTime = 0;
+      audio.play().catch(e => console.warn("Audio play failed:", e));
+    }
+  };
+
   useEffect(() => {
     const hasSeenTutorial = localStorage.getItem('metafit_tutorial_seen');
     if (!hasSeenTutorial) {
