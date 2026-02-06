@@ -31,6 +31,7 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
     const weekDays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     const now = new Date();
     const currentDayIdx = now.getDay();
+    const todayKey = now.toISOString().split('T')[0];
 
     useEffect(() => {
         // Full Exercise Library
