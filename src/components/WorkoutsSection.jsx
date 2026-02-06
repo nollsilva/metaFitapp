@@ -3,12 +3,31 @@ import ShareStoryCard from './ShareStoryCard';
 import { shareHiddenElement } from '../utils/share';
 
 const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteDaily, checkedExercises, onToggleCheck }) => {
-    const { goal, mealPlan, urgentPart, trainingDays, trainingDuration, workoutHistory = {} } = profile;
+    // Initialize form state from profile
+    const [urgentPart, setUrgentPart] = useState(profile.urgentPart || 'corpo todo');
+    const [trainingDays, setTrainingDays] = useState(profile.trainingDays || 3);
+    const [selectedWeekDays, setSelectedWeekDays] = useState(profile.selectedWeekDays || []);
+    const [trainingDuration, setTrainingDuration] = useState(profile.trainingDuration || 20);
+
+    // UI State
+    // Auto-open settings if no days selected
+    const [showSettings, setShowSettings] = useState(!profile.selectedWeekDays || profile.selectedWeekDays.length === 0);
+    const [activeTab, setActiveTab] = useState('guide'); // 'guide' | 'library'
+
+    const { goal, mealPlan, workoutHistory = {} } = profile;
 
     const [selectedExercise, setSelectedExercise] = useState(null);
     const [categorizedRoutine, setCategorizedRoutine] = useState({
         legs: [], chest_biceps: [], back_triceps: [], abs: []
     });
+
+    // Sync state if profile changes externally (optional but good practice)
+    useEffect(() => {
+        setUrgentPart(profile.urgentPart || 'corpo todo');
+        setTrainingDays(profile.trainingDays || 3);
+        setSelectedWeekDays(profile.selectedWeekDays || []);
+        setTrainingDuration(profile.trainingDuration || 20);
+    }, [profile.urgentPart, profile.trainingDays, profile.selectedWeekDays, profile.trainingDuration]);
 
     // Checkbox state for equipment
     const [hasBar, setHasBar] = useState(false);
@@ -98,6 +117,34 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
 
         setCategorizedRoutine(filteredLib);
     }, [hasBar]);
+
+    // --- Settings Logic ---
+    const handleDayToggle = (day) => {
+        let newDays = [...selectedWeekDays];
+        if (newDays.includes(day)) {
+            newDays = newDays.filter(d => d !== day);
+        } else {
+            newDays.push(day);
+        }
+        setSelectedWeekDays(newDays);
+        setTrainingDays(newDays.length || 1);
+    };
+
+    const handleSaveSettings = () => {
+        onUpdateProfile({
+            urgentPart,
+            trainingDays,
+            selectedWeekDays,
+            trainingDuration
+        });
+        setShowSettings(false);
+    };
+
+    const weekMap = [
+        { key: 'dom', label: 'D' }, { key: 'seg', label: 'S' }, { key: 'ter', label: 'T' },
+        { key: 'qua', label: 'Q' }, { key: 'qui', label: 'Q' }, { key: 'sex', label: 'S' },
+        { key: 'sab', label: 'S' }
+    ];
 
     // --- Dynamic Scheduling Logic ---
     const getDailyWorkout = () => {
@@ -214,7 +261,114 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
                 }}
             />
 
-            {/* Modal Detail Overlay */}
+            {/* --- SETTINGS ACCORDION --- */}
+            <div className="card" style={{ marginBottom: '2rem', border: '1px solid var(--color-primary)', background: 'rgba(0, 240, 255, 0.05)' }}>
+                <div
+                    onClick={() => setShowSettings(!showSettings)}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                >
+                    <h3 style={{ margin: 0, color: 'var(--color-primary)', fontSize: '1.2rem' }}>⚙️ Foco & Ritmo</h3>
+                    <div style={{ transform: showSettings ? 'rotate(180deg)' : 'rotate(0deg)', transition: '0.3s' }}>▼</div>
+                </div>
+
+                {showSettings && (
+                    <div className="animate-fade-in" style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem' }}>
+                            <div className="input-group">
+                                <label style={{ display: 'block', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Foco Muscular</label>
+                                <select
+                                    value={urgentPart}
+                                    onChange={(e) => setUrgentPart(e.target.value)}
+                                    style={{ width: '100%', padding: '10px', background: '#222', color: '#fff', border: '1px solid #444', borderRadius: '8px' }}
+                                >
+                                    <option value="corpo todo">Corpo Todo</option>
+                                    <option value="braço">Braços & Peito</option>
+                                    <option value="perna">Pernas & Glúteos</option>
+                                    <option value="abdomen">Abdômen & Core</option>
+                                </select>
+                            </div>
+
+                            <div className="input-group">
+                                <label style={{ display: 'block', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Dias de Treino ({trainingDays})</label>
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                    {weekMap.map(day => (
+                                        <button
+                                            key={day.key}
+                                            onClick={() => handleDayToggle(day.key)}
+                                            style={{
+                                                width: '36px', height: '36px', borderRadius: '50%',
+                                                border: '1px solid',
+                                                borderColor: selectedWeekDays.includes(day.key) ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)',
+                                                background: selectedWeekDays.includes(day.key) ? 'rgba(0, 240, 255, 0.2)' : 'rgba(255,255,255,0.05)',
+                                                color: selectedWeekDays.includes(day.key) ? '#fff' : 'var(--color-text-muted)',
+                                                fontWeight: 'bold', fontSize: '0.8rem',
+                                                cursor: 'pointer', transition: '0.2s',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                            }}
+                                        >
+                                            {day.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="input-group">
+                                <label style={{ display: 'block', color: 'var(--color-text-muted)', marginBottom: '0.5rem' }}>Duração por Treino</label>
+                                <select
+                                    value={trainingDuration}
+                                    onChange={(e) => setTrainingDuration(e.target.value)}
+                                    style={{ width: '100%', padding: '10px', background: '#222', color: '#fff', border: '1px solid #444', borderRadius: '8px' }}
+                                >
+                                    <option value="10">10 min</option>
+                                    <option value="15">15 min</option>
+                                    <option value="20">20 min</option>
+                                    <option value="30">30 min</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button
+                            className="btn-primary"
+                            style={{ marginTop: '1.5rem', width: '100%', padding: '10px' }}
+                            onClick={handleSaveSettings}
+                        >
+                            SALVAR & FECHAR
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* --- TABS --- */}
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <button
+                    onClick={() => setActiveTab('guide')}
+                    style={{
+                        padding: '10px 20px',
+                        background: 'none',
+                        border: 'none',
+                        borderBottom: activeTab === 'guide' ? '3px solid var(--color-primary)' : '3px solid transparent',
+                        color: activeTab === 'guide' ? '#fff' : 'var(--color-text-muted)',
+                        fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer'
+                    }}
+                >
+                    Guia Para Você
+                </button>
+                <button
+                    onClick={() => setActiveTab('library')}
+                    style={{
+                        padding: '10px 20px',
+                        background: 'none',
+                        border: 'none',
+                        borderBottom: activeTab === 'library' ? '3px solid var(--color-primary)' : '3px solid transparent',
+                        color: activeTab === 'library' ? '#fff' : 'var(--color-text-muted)',
+                        fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer'
+                    }}
+                >
+                    Treinos Avulsos
+                </button>
+            </div>
+
+            {/* Modal Detail Overlay (Shared) */}
             {selectedExercise && (
                 <div className="modal-overlay animate-fade-in" onClick={() => setSelectedExercise(null)}>
                     <div className="modal-content wide-modal" onClick={e => e.stopPropagation()}>
@@ -248,141 +402,151 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
                 </div>
             )}
 
-            {/* PARA VOCE Section */}
-            {mealPlan && (
-                <div className="animate-fade-in" style={{ marginBottom: '4rem' }}>
-                    <div className="card" style={{ border: '1px solid var(--color-primary)', background: 'rgba(0, 240, 255, 0.03)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-                            <div>
-                                <h2 style={{ fontSize: '1.8rem', marginBottom: '0.2rem' }}>GUIA <span className="title-gradient">PARA VOCÊ</span></h2>
-                                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Foco: {urgentPart.toUpperCase()} | {trainingDuration}min por dia</p>
-                                {/* Checkbox for Equipment (Restored) */}
-                                <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <input
-                                        type="checkbox"
-                                        checked={hasBar}
-                                        onChange={(e) => setHasBar(e.target.checked)}
-                                        style={{ accentColor: 'var(--color-primary)', cursor: 'pointer' }}
-                                        id="bar-check"
-                                    />
-                                    <label htmlFor="bar-check" style={{ fontSize: '0.85rem', color: '#fff', cursor: 'pointer' }}>
-                                        Tenho barra fixa em casa
-                                    </label>
-                                </div>
-                            </div>
-                            {todayDone ? (
-                                <div className="done-status-badge">CONCLUÍDO ✓</div>
-                            ) : (
-                                <div style={{ fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>
-                                    Conclua todos para pontuar
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Tracker Semanal */}
-                        <div className="weekly-tracker">
-                            {weekDays.map((day, idx) => {
-                                const isToday = day === currentDayName;
-                                const d = new Date();
-                                d.setDate(now.getDate() - (currentDayIdx - idx));
-                                const key = d.toISOString().split('T')[0];
-                                const status = workoutHistory[key];
-
-                                return (
-                                    <div key={day} className={`tracker-day ${isToday ? 'active' : ''}`}>
-                                        <div className="day-label">{day.substring(0, 3)}</div>
-                                        <div className={`status-icon ${status || 'pending'}`}>
-                                            {status === 'done' ? '✓' : status === 'missed' ? '✕' : isToday ? '○' : ''}
+            {/* --- CONTENT: GUIDE --- */}
+            {activeTab === 'guide' && (
+                <div className="animate-fade-in">
+                    {/* PARA VOCE Section */}
+                    {mealPlan && (
+                        <div style={{ marginBottom: '4rem' }}>
+                            <div className="card" style={{ border: '1px solid var(--color-primary)', background: 'rgba(0, 240, 255, 0.03)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+                                    <div>
+                                        <h2 style={{ fontSize: '1.8rem', marginBottom: '0.2rem' }}>GUIA <span className="title-gradient">PARA VOCÊ</span></h2>
+                                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Foco: {urgentPart.toUpperCase()} | {trainingDuration}min por dia</p>
+                                        {/* Checkbox for Equipment (Restored) */}
+                                        <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={hasBar}
+                                                onChange={(e) => setHasBar(e.target.checked)}
+                                                style={{ accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                                                id="bar-check"
+                                            />
+                                            <label htmlFor="bar-check" style={{ fontSize: '0.85rem', color: '#fff', cursor: 'pointer' }}>
+                                                Tenho barra fixa em casa
+                                            </label>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Today's Content */}
-                        <div className="today-content">
-                            <h3 style={{ marginBottom: '1.5rem', borderLeft: '3px solid var(--color-primary)', paddingLeft: '1rem' }}>
-                                HOJE: <span style={{ color: 'var(--color-primary)' }}>{todayWorkout.title}</span>
-                            </h3>
-                            {todayWorkout.category === 'rest' ? (
-                                <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.7 }}>😴 Dia de descanso planejado. Foque na nutrição!</div>
-                            ) : todayDone ? (
-                                <div style={{ textAlign: 'center', padding: '2rem' }}>
-                                    <div style={{ color: 'var(--color-primary)', fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem' }}>
-                                        Treino de hoje finalizado! Bom descanso. 🔥
-                                    </div>
-                                    <button
-                                        className="btn-primary"
-                                        onClick={() => handleShareWorkout()}
-                                        style={{
-                                            background: 'linear-gradient(90deg, #E1306C, #FD1D1D)',
-                                            border: 'none',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '8px'
-                                        }}
-                                    >
-                                        <span style={{ fontSize: '1.2rem' }}>📸</span> Compartilhar Conquista
-                                    </button>
+                                    {todayDone ? (
+                                        <div className="done-status-badge">CONCLUÍDO ✓</div>
+                                    ) : (
+                                        <div style={{ fontSize: '0.8rem', color: '#666', fontStyle: 'italic' }}>
+                                            Conclua todos para pontuar
+                                        </div>
+                                    )}
                                 </div>
-                            ) : (
-                                <>
-                                    <div className="mini-grid">
-                                        {todayWorkout.exercises.map((ex, i) => (
-                                            <div key={i} className="mini-ex-card" style={{
-                                                border: checkedExercises.has(i) ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.1)',
-                                                opacity: checkedExercises.has(i) ? 0.6 : 1,
-                                                position: 'relative'
-                                            }} onClick={() => {
-                                                setSelectedExercise(ex);
-                                            }}>
-                                                {/* Visual Indicator of Completion (non-clickable) */}
-                                                {checkedExercises.has(i) && (
-                                                    <div style={{
-                                                        position: 'absolute', top: '5px', right: '5px',
-                                                        color: 'var(--color-primary)', fontSize: '1.2rem', fontWeight: 'bold'
-                                                    }}>
-                                                        ✓
-                                                    </div>
-                                                )}
 
-                                                <img src={ex.image} alt={ex.name} style={{ cursor: 'pointer' }} />
-                                                <div style={{ flex: 1, cursor: 'pointer' }}>
-                                                    <div style={{ fontWeight: '600' }}>{ex.name}</div>
-                                                    <div style={{ fontSize: '0.8rem', color: 'var(--color-primary)' }}>{ex.reps}</div>
+                                {/* Tracker Semanal */}
+                                <div className="weekly-tracker">
+                                    {weekDays.map((day, idx) => {
+                                        const isToday = day === currentDayName;
+                                        const d = new Date();
+                                        d.setDate(now.getDate() - (currentDayIdx - idx));
+                                        const key = d.toISOString().split('T')[0];
+                                        const status = workoutHistory[key];
+
+                                        return (
+                                            <div key={day} className={`tracker-day ${isToday ? 'active' : ''}`}>
+                                                <div className="day-label">{day.substring(0, 3)}</div>
+                                                <div className={`status-icon ${status || 'pending'}`}>
+                                                    {status === 'done' ? '✓' : status === 'missed' ? '✕' : isToday ? '○' : ''}
                                                 </div>
-                                                <button className="btn-primary-sm" onClick={(e) => { e.stopPropagation(); onStartWorkout({ ...ex, isDaily: true, index: i }); }}>GO</button>
                                             </div>
-                                        ))}
-                                    </div>
+                                        );
+                                    })}
+                                </div>
 
-                                    <button
-                                        className="btn-primary"
-                                        style={{
-                                            width: '100%', marginTop: '2rem', padding: '15px', fontSize: '1.1rem',
-                                            opacity: allChecked ? 1 : 0.5,
-                                            cursor: allChecked ? 'pointer' : 'not-allowed',
-                                            filter: allChecked ? 'none' : 'grayscale(100%)'
-                                        }}
-                                        disabled={!allChecked}
-                                        onClick={handleCompleteWorkout}
-                                    >
-                                        {allChecked ? 'CONCLUIR TREINO' : 'CONCLUA TODOS OS EXERCÍCIOS'}
-                                    </button>
-                                </>
-                            )}
+                                {/* Today's Content */}
+                                <div className="today-content">
+                                    <h3 style={{ marginBottom: '1.5rem', borderLeft: '3px solid var(--color-primary)', paddingLeft: '1rem' }}>
+                                        HOJE: <span style={{ color: 'var(--color-primary)' }}>{todayWorkout.title}</span>
+                                    </h3>
+                                    {todayWorkout.category === 'rest' ? (
+                                        <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.7 }}>😴 Dia de descanso planejado. Foque na nutrição!</div>
+                                    ) : todayDone ? (
+                                        <div style={{ textAlign: 'center', padding: '2rem' }}>
+                                            <div style={{ color: 'var(--color-primary)', fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '1rem' }}>
+                                                Treino de hoje finalizado! Bom descanso. 🔥
+                                            </div>
+                                            <button
+                                                className="btn-primary"
+                                                onClick={() => handleShareWorkout()}
+                                                style={{
+                                                    background: 'linear-gradient(90deg, #E1306C, #FD1D1D)',
+                                                    border: 'none',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px'
+                                                }}
+                                            >
+                                                <span style={{ fontSize: '1.2rem' }}>📸</span> Compartilhar Conquista
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="mini-grid">
+                                                {todayWorkout.exercises.map((ex, i) => (
+                                                    <div key={i} className="mini-ex-card" style={{
+                                                        border: checkedExercises.has(i) ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.1)',
+                                                        opacity: checkedExercises.has(i) ? 0.6 : 1,
+                                                        position: 'relative'
+                                                    }} onClick={() => {
+                                                        setSelectedExercise(ex);
+                                                    }}>
+                                                        {/* Visual Indicator of Completion (non-clickable) */}
+                                                        {checkedExercises.has(i) && (
+                                                            <div style={{
+                                                                position: 'absolute', top: '5px', right: '5px',
+                                                                color: 'var(--color-primary)', fontSize: '1.2rem', fontWeight: 'bold'
+                                                            }}>
+                                                                ✓
+                                                            </div>
+                                                        )}
+
+                                                        <img src={ex.image} alt={ex.name} style={{ cursor: 'pointer' }} />
+                                                        <div style={{ flex: 1, cursor: 'pointer' }}>
+                                                            <div style={{ fontWeight: '600' }}>{ex.name}</div>
+                                                            <div style={{ fontSize: '0.8rem', color: 'var(--color-primary)' }}>{ex.reps}</div>
+                                                        </div>
+                                                        <button className="btn-primary-sm" onClick={(e) => { e.stopPropagation(); onStartWorkout({ ...ex, isDaily: true, index: i }); }}>GO</button>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <button
+                                                className="btn-primary"
+                                                style={{
+                                                    width: '100%', marginTop: '2rem', padding: '15px', fontSize: '1.1rem',
+                                                    opacity: allChecked ? 1 : 0.5,
+                                                    cursor: allChecked ? 'pointer' : 'not-allowed',
+                                                    filter: allChecked ? 'none' : 'grayscale(100%)'
+                                                }}
+                                                disabled={!allChecked}
+                                                onClick={handleCompleteWorkout}
+                                            >
+                                                {allChecked ? 'CONCLUIR TREINO' : 'CONCLUA TODOS OS EXERCÍCIOS'}
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             )}
 
-            <h2 className="section-title">Minha <span className="title-gradient">Biblioteca</span></h2>
-            <div className="routine-groups">
-                <CategoryGroup title="Membros Inferiores" list={categorizedRoutine.legs} onSelect={setSelectedExercise} />
-                <CategoryGroup title="Superiores & Braços" list={categorizedRoutine.chest_biceps} onSelect={setSelectedExercise} />
-                <CategoryGroup title="Costas & Tríceps" list={categorizedRoutine.back_triceps} onSelect={setSelectedExercise} />
-                <CategoryGroup title="Abdômen & Core" list={categorizedRoutine.abs} onSelect={setSelectedExercise} />
-            </div>
+            {/* --- CONTENT: LIBRARY --- */}
+            {activeTab === 'library' && (
+                <div className="animate-fade-in">
+                    <h2 className="section-title">Minha <span className="title-gradient">Biblioteca</span></h2>
+                    <div className="routine-groups">
+                        <CategoryGroup title="Membros Inferiores" list={categorizedRoutine.legs} onSelect={setSelectedExercise} />
+                        <CategoryGroup title="Superiores & Braços" list={categorizedRoutine.chest_biceps} onSelect={setSelectedExercise} />
+                        <CategoryGroup title="Costas & Tríceps" list={categorizedRoutine.back_triceps} onSelect={setSelectedExercise} />
+                        <CategoryGroup title="Abdômen & Core" list={categorizedRoutine.abs} onSelect={setSelectedExercise} />
+                    </div>
+                </div>
+            )}
 
             <style>{`
                 .weekly-tracker { display: flex; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; margin-bottom: 2rem; }

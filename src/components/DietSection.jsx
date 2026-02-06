@@ -9,12 +9,6 @@ const DietSection = ({ profile, onUpdateProfile }) => {
     const [activityLevel, setActivityLevel] = useState(profile.activityLevel || '1.55');
     const [goal, setGoal] = useState(profile.goal || 'maintain');
 
-    // Novos campos de Treino
-    const [urgentPart, setUrgentPart] = useState(profile.urgentPart || 'corpo todo');
-    const [trainingDays, setTrainingDays] = useState(profile.trainingDays || 3);
-    const [selectedWeekDays, setSelectedWeekDays] = useState(profile.selectedWeekDays || []);
-    const [trainingDuration, setTrainingDuration] = useState(profile.trainingDuration || 20);
-
     const [showInputs, setShowInputs] = useState(!profile.mealPlan);
 
     useEffect(() => {
@@ -24,10 +18,6 @@ const DietSection = ({ profile, onUpdateProfile }) => {
         setGender(profile.gender || 'male');
         setActivityLevel(profile.activityLevel);
         setGoal(profile.goal);
-        setUrgentPart(profile.urgentPart || 'corpo todo');
-        setTrainingDays(profile.trainingDays || 3);
-        setSelectedWeekDays(profile.selectedWeekDays || []);
-        setTrainingDuration(profile.trainingDuration || 20);
         if (profile.mealPlan) setShowInputs(false);
     }, [profile]);
 
@@ -69,8 +59,6 @@ const DietSection = ({ profile, onUpdateProfile }) => {
 
         onUpdateProfile({
             weight, height, age, gender, activityLevel, goal,
-            urgentPart, trainingDays, trainingDuration,
-            selectedWeekDays,
             targetCalories: Math.round(targetCalories),
             idealWeight: idealWeight.toFixed(1),
             mealPlan: newMealPlan,
@@ -81,18 +69,6 @@ const DietSection = ({ profile, onUpdateProfile }) => {
         });
 
         setShowInputs(false);
-    };
-
-    const handleDayToggle = (day) => {
-        let newDays = [...selectedWeekDays];
-        if (newDays.includes(day)) {
-            newDays = newDays.filter(d => d !== day);
-        } else {
-            newDays.push(day);
-        }
-        setSelectedWeekDays(newDays);
-        setTrainingDays(newDays.length || 1);
-        onUpdateProfile({ selectedWeekDays: newDays, trainingDays: newDays.length || 1 });
     };
 
     const generateMealPlan = (calories, currentGoal) => {
@@ -152,17 +128,6 @@ const DietSection = ({ profile, onUpdateProfile }) => {
 
         return "Opção balanceada conforme macros.";
     };
-
-    // Helper for days UI
-    const weekMap = [
-        { key: 'dom', label: 'D' },
-        { key: 'seg', label: 'S' },
-        { key: 'ter', label: 'T' },
-        { key: 'qua', label: 'Q' },
-        { key: 'qui', label: 'Q' },
-        { key: 'sex', label: 'S' },
-        { key: 'sab', label: 'S' }
-    ];
 
     return (
         <section className="container" style={{ paddingTop: '2rem', maxWidth: '800px', paddingBottom: '4rem' }}>
@@ -274,116 +239,6 @@ const DietSection = ({ profile, onUpdateProfile }) => {
                             <MealItem time="Almoço" content={profile.mealPlan.lunch} />
                             <MealItem time="Lanche da Tarde" content={profile.mealPlan.snack} />
                             <MealItem time="Jantar" content={profile.mealPlan.dinner} />
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start', marginBottom: '2rem' }}>
-                        {/* Configurações de Treino */}
-                        <div className="card" style={{ border: '1px solid var(--color-primary)', background: 'rgba(0, 240, 255, 0.02)', gridColumn: '1 / -1' }}>
-                            <h3 style={{ marginBottom: '1.5rem', color: 'var(--color-primary)' }}>Foco & Ritmo</h3>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem' }}>
-                                <div className="input-group">
-                                    <label>Foco Muscular</label>
-                                    <select value={urgentPart} onChange={(e) => { setUrgentPart(e.target.value); onUpdateProfile({ urgentPart: e.target.value }); }}>
-                                        <option value="corpo todo">Corpo Todo</option>
-                                        <option value="braço">Braços & Peito</option>
-                                        <option value="perna">Pernas & Glúteos</option>
-                                        <option value="abdomen">Abdômen & Core</option>
-                                    </select>
-                                </div>
-
-                                <div className="input-group">
-                                    <label>Dias de Treino ({trainingDays})</label>
-                                    {(() => {
-                                        // Logic to Lock Schedule
-                                        // 1. Get current week dates
-                                        const curr = new Date();
-                                        const first = curr.getDate() - curr.getDay(); // Sunday
-                                        const weekDates = [];
-                                        const weekKeys = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
-
-                                        for (let i = 0; i < 7; i++) {
-                                            let day = new Date(curr);
-                                            day.setDate(first + i);
-                                            weekDates.push({
-                                                dateStr: day.toISOString().split('T')[0],
-                                                dayKey: weekKeys[i]
-                                            });
-                                        }
-
-                                        // 2. Check scheduled vs done
-                                        const scheduledDays = selectedWeekDays || []; // e.g. ['seg', 'qua']
-                                        let doneCount = 0;
-                                        let scheduledButNotDoneCount = 0;
-                                        let hasStartedWeek = false;
-
-                                        weekDates.forEach(d => {
-                                            // If this day is in schedule
-                                            if (scheduledDays.includes(d.dayKey)) {
-                                                const status = (profile.workoutHistory || {})[d.dateStr];
-                                                if (status === 'done') {
-                                                    doneCount++;
-                                                    hasStartedWeek = true;
-                                                } else {
-                                                    scheduledButNotDoneCount++;
-                                                }
-                                            }
-                                        });
-
-                                        // Lock if started but not finished everything
-                                        // If doneCount == 0, not started -> Unlocked
-                                        // If scheduledButNotDoneCount == 0, finished all -> Unlocked
-                                        const isLocked = (doneCount > 0) && (scheduledButNotDoneCount > 0);
-
-                                        return (
-                                            <>
-                                                {isLocked && (
-                                                    <div style={{ fontSize: '0.75rem', color: '#ffaa00', marginBottom: '4px', fontStyle: 'italic' }}>
-                                                        🔒 Complete a semana para alterar
-                                                    </div>
-                                                )}
-                                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px', opacity: isLocked ? 0.5 : 1 }}>
-                                                    {weekMap.map(day => (
-                                                        <button
-                                                            key={day.key}
-                                                            onClick={() => {
-                                                                if (isLocked) {
-                                                                    alert("Você já começou os treinos desta semana! Complete todos os dias agendados antes de fazer alterações.");
-                                                                    return;
-                                                                }
-                                                                handleDayToggle(day.key);
-                                                            }}
-                                                            style={{
-                                                                width: '40px', height: '40px', borderRadius: '50%',
-                                                                border: '1px solid',
-                                                                borderColor: selectedWeekDays.includes(day.key) ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)',
-                                                                background: selectedWeekDays.includes(day.key) ? 'rgba(0, 240, 255, 0.2)' : 'rgba(255,255,255,0.05)',
-                                                                color: selectedWeekDays.includes(day.key) ? '#fff' : 'var(--color-text-muted)',
-                                                                fontWeight: 'bold', fontSize: '0.9rem',
-                                                                cursor: isLocked ? 'not-allowed' : 'pointer', transition: '0.2s',
-                                                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                                            }}
-                                                        >
-                                                            {day.label}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </>
-                                        );
-                                    })()}
-                                </div>
-
-                                <div className="input-group">
-                                    <label>Duração por Treino</label>
-                                    <select value={trainingDuration} onChange={(e) => { setTrainingDuration(e.target.value); onUpdateProfile({ trainingDuration: e.target.value }); }}>
-                                        <option value="10">10 min</option>
-                                        <option value="15">15 min</option>
-                                        <option value="20">20 min</option>
-                                        <option value="30">30 min</option>
-                                    </select>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
