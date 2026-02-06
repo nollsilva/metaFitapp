@@ -495,7 +495,7 @@ const RunMode = ({ profile, onAddXp }) => {
     }
 
     return (
-        <div style={{ height: '100dvh', width: '100vw', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', background: '#000' }}>
+        <div style={{ height: '100dvh', width: '100%', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', background: '#000' }}>
 
             {/* TOP CARD */}
             <div style={{
@@ -543,41 +543,39 @@ const RunMode = ({ profile, onAddXp }) => {
 
             {/* BOTTOM METRICS & CONTROLS */}
             <div style={{
-                position: 'absolute', bottom: '80px', left: '0', right: '0',
-                background: 'linear-gradient(to top, #000 85%, transparent)',
-                padding: '15px 10px 20px', zIndex: 1000
+                position: 'absolute', bottom: 0, left: 0, right: 0,
+                background: 'linear-gradient(to top, #000 90%, transparent)',
+                padding: '20px 10px calc(20px + env(safe-area-inset-bottom)) 10px', // Safe area support
+                zIndex: 1000,
+                display: 'flex', flexDirection: 'column', gap: '15px'
             }}>
                 {/* Metrics Grid */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', padding: '0 5px' }}>
-                    <div style={{ textAlign: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 10px', width: '100%', maxWidth: '600px', margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', flex: 1 }}>
                         <div className="run-stat-value" style={{ fontSize: '1.2rem' }}>{formatTime(elapsedTime)}</div>
                         <div className="run-stat-label" style={{ fontSize: '0.65rem' }}>TEMPO</div>
                     </div>
-                    <div style={{ textAlign: 'center' }}>
+                    <div style={{ textAlign: 'center', flex: 1 }}>
                         <div className="run-stat-value" style={{ fontSize: '1.2rem' }}>{formatPace(currentPace)}</div>
                         <div className="run-stat-label" style={{ fontSize: '0.65rem' }}>RITMO</div>
                     </div>
-                    <div style={{ textAlign: 'center' }}>
+                    <div style={{ textAlign: 'center', flex: 1 }}>
                         <div className="run-stat-value" style={{ fontSize: '1.2rem' }}>{currentSpeed.toFixed(1)}</div>
                         <div className="run-stat-label" style={{ fontSize: '0.65rem' }}>KM/H</div>
                     </div>
                 </div>
 
                 {/* Controls */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', alignItems: 'center', width: '100%', maxWidth: '500px', margin: '0 auto' }}>
                     {!isRunning ? (
                         <>
-                            <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', flexDirection: 'row', gap: '15px', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
                                 <button
                                     onClick={() => {
                                         if (profile && profile.uid) {
-                                            // alert("Carregando histórico..."); // Optional: Too invasive? Maybe just better UX later.
                                             getUserRuns(profile.uid).then(runs => {
                                                 console.log("Runs fetched:", runs);
                                                 setHistoryRuns(runs);
-                                                if (runs.length === 0) {
-                                                    // alert("Nenhum histórico encontrado no banco de dados.");
-                                                }
                                             }).catch(err => alert("Erro ao buscar histórico: " + err));
                                             setShowHistory(true);
                                         } else {
@@ -588,11 +586,12 @@ const RunMode = ({ profile, onAddXp }) => {
                                         background: 'rgba(0,0,0,0.6)',
                                         border: '1px solid #333',
                                         color: '#fff',
-                                        width: '60px',
-                                        height: '60px',
+                                        width: '50px',
+                                        height: '50px',
                                         borderRadius: '50%',
-                                        fontSize: '1.5rem',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                        fontSize: '1.2rem',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        flexShrink: 0
                                     }}
                                     title="Histórico"
                                 >
@@ -601,7 +600,12 @@ const RunMode = ({ profile, onAddXp }) => {
 
                                 <button
                                     className="btn-control-large"
-                                    style={{ background: '#00ff66', color: '#000', boxShadow: '0 0 25px rgba(0,255,102,0.4)', width: '100px', height: '100px' }}
+                                    style={{
+                                        background: '#00ff66', color: '#000',
+                                        boxShadow: '0 0 25px rgba(0,255,102,0.4)',
+                                        width: '80px', height: '80px', // Slightly smaller
+                                        fontSize: '2rem'
+                                    }}
                                     onClick={startRun}
                                 >
                                     ▶
@@ -613,7 +617,7 @@ const RunMode = ({ profile, onAddXp }) => {
                             {isPaused ? (
                                 <button
                                     className="btn-control-large"
-                                    style={{ background: '#00ff66', color: '#000' }}
+                                    style={{ background: '#00ff66', color: '#000', width: '80px', height: '80px' }}
                                     onClick={resumeRun}
                                 >
                                     ▶
@@ -621,7 +625,7 @@ const RunMode = ({ profile, onAddXp }) => {
                             ) : (
                                 <button
                                     className="btn-control-large"
-                                    style={{ background: '#ffcc00', color: '#000' }}
+                                    style={{ background: '#ffcc00', color: '#000', width: '80px', height: '80px' }}
                                     onClick={pauseRun}
                                 >
                                     ⏸
