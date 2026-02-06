@@ -87,18 +87,21 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     const [myHp, setMyHp] = useState(getMaxHp(myProfile));
     const [enemyHp, setEnemyHp] = useState(() => {
         const base = getMaxHp(enemyProfile);
-        return enemyProfile.id === 'BOT_METAFIT' ? Math.floor(base * 1.25) : base;
+        // Bot HP = User HP + 20 (Fixed advantage)
+        return enemyProfile.id === 'BOT_METAFIT' ? (getMaxHp(myProfile) + 20) : base;
     });
 
-    // Buffed Bot Profile for Display/Logic (25% stronger attributes)
+    // Smart Bot Profile: Stats = User Stats + 1
     const [effectiveEnemyProfile, setEffectiveEnemyProfile] = useState(() => {
         if (enemyProfile.id !== 'BOT_METAFIT') return enemyProfile;
+
+        const userStats = myProfile.attributes || { strength: 0, speed: 0, defense: 0 };
         return {
             ...enemyProfile,
             attributes: {
-                strength: Math.ceil((enemyProfile.attributes?.strength || 0) * 1.25),
-                speed: Math.ceil((enemyProfile.attributes?.speed || 0) * 1.25),
-                defense: Math.ceil((enemyProfile.attributes?.defense || 0) * 1.25)
+                strength: (userStats.strength || 0) + 1,
+                speed: (userStats.speed || 0) + 1,
+                defense: (userStats.defense || 0) + 1
             }
         };
     });
@@ -106,7 +109,9 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     // Resource Pools (Starts with Base * 10)
     // Formula: (10 base + Attribute) * 10
     const getInitialPool = (p, isBotProfile = false) => {
-        const multiplier = isBotProfile ? 12.5 : 10;
+        // Both User and Bot use same multiplier now for fairness in pool calculation logic,
+        // but Bot has higher base stats so pool will be naturally slightly larger (+10 pts per attr)
+        const multiplier = 10;
         return {
             strength: (10 + (p.attributes?.strength || 0)) * multiplier,
             speed: (10 + (p.attributes?.speed || 0)) * multiplier,
@@ -116,10 +121,11 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
     // Store Max Capacity for % calculations
     const [pMaxPool] = useState(getInitialPool(myProfile));
-    const [eMaxPool] = useState(getInitialPool(enemyProfile, enemyProfile.id === 'BOT_METAFIT'));
+    // Calculate bot pool based on effective (boosted) profile
+    const [eMaxPool] = useState(getInitialPool(effectiveEnemyProfile, enemyProfile.id === 'BOT_METAFIT'));
 
     const [myPool, setMyPool] = useState(getInitialPool(myProfile));
-    const [enemyPool, setEnemyPool] = useState(getInitialPool(enemyProfile, enemyProfile.id === 'BOT_METAFIT'));
+    const [enemyPool, setEnemyPool] = useState(getInitialPool(effectiveEnemyProfile, enemyProfile.id === 'BOT_METAFIT'));
 
     // Current Turn Bid (What user is betting this turn)
     const [turnBid, setTurnBid] = useState({ strength: 0, speed: 0, defense: 0 });
@@ -174,7 +180,8 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                     {
                         profile: enemyProfile,
                         hp: enemyHp,
-                        maxHp: effectiveEnemyProfile.id === 'BOT_METAFIT' ? Math.floor(getMaxHp(enemyProfile) * 1.25) : getMaxHp(enemyProfile),
+                        // Bot Max HP for calc is same as start
+                        maxHp: effectiveEnemyProfile.id === 'BOT_METAFIT' ? (getMaxHp(myProfile) + 20) : getMaxHp(enemyProfile),
                         history: enemyLastBid,
                         maxPool: eMaxPool // Pass Max Pool for % Logic
                     }
@@ -207,7 +214,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
     // Handle Turn Advancement Sync (PvP Only)
     useEffect(() => {
-        if (battleId && myNextTurnReady && opponentNextTurnReady) {
+        if (battleId && myNextTurnReady && opponentTurnConfirmed) {
             if (processingTurn.current) return;
 
             console.log(`[BattleArena] Both ready. Advancing from Turn ${turn}`);
@@ -239,47 +246,48 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         } else {
             setPhase('combat');
 
-            // Simple AI: Spend ~33% of remaining pool + random variance
-            // If Last turn, dump everything!
             // Smarter AI Strategy
             const aiBid = { strength: 0, speed: 0, defense: 0 };
             const isBot = enemyProfile.id === 'BOT_METAFIT';
 
             if (isBot) {
-                // Extreme Bot Intelligence (Aggressive & Tactical)
+                // 100% Intelligent & Aggressive Bot Logic
+                // It knows exactly how much it has and how to pressure the user
+
+                const myHpPercent = (myHp / getMaxHp(myProfile)) * 100;
+
                 if (turn === 3) {
-                    // Final turn: Dump everything
+                    // TURN 3: ALL-IN (FINISHER)
+                    // Dumps absolutely everything remaining into the bid
                     aiBid.strength = enemyPool.strength;
                     aiBid.speed = enemyPool.speed;
                     aiBid.defense = enemyPool.defense;
                 } else if (turn === 1) {
-                    // Turn 1: Focus on winning initiative and dealing early damage
-                    // Bots have 25% more resources, they can afford to spend more early
-                    aiBid.speed = Math.floor(enemyPool.speed * 0.45); // Heavy initiative focus
-                    aiBid.strength = Math.floor(enemyPool.strength * 0.4); // Solid damage
-                    aiBid.defense = Math.floor(enemyPool.defense * 0.15); // Light defense
+                    // TURN 1: AGGRESSIVE OPENER
+                    // Goal: Win initiative (Speed) and deal heavy damage (Strength)
+                    // Sacrifice defense early to establish dominance
+                    aiBid.speed = Math.floor(enemyPool.speed * 0.50); // 50% of speed pool
+                    aiBid.strength = Math.floor(enemyPool.strength * 0.40); // 40% of strength pool
+                    aiBid.defense = Math.floor(enemyPool.defense * 0.10); // Minimal defense
                 } else {
-                    // Turn 2: Reactive strategy
-                    const myHpPercent = (myHp / getMaxHp(myProfile)) * 100;
-                    const botHpPercent = (enemyHp / getMaxHp(enemyProfile)) * 100;
-
-                    if (botHpPercent < myHpPercent) {
-                        // Bot is losing: High damage gamble (All-in on offense)
-                        aiBid.strength = Math.floor(enemyPool.strength * 0.8);
-                        aiBid.speed = Math.floor(enemyPool.speed * 0.5);
-                        aiBid.defense = Math.floor(enemyPool.defense * 0.2);
-                    } else if (myHpPercent < 50) {
-                        // Opponent is low: Go for the finish with speed and damage
-                        aiBid.speed = Math.floor(enemyPool.speed * 0.7);
-                        aiBid.strength = Math.floor(enemyPool.strength * 0.7);
-                        aiBid.defense = Math.floor(enemyPool.defense * 0.1);
+                    // TURN 2: TACTICAL PRESSURE
+                    if (myHpPercent < 50) {
+                        // User is weak? KILL IT.
+                        aiBid.speed = Math.floor(enemyPool.speed * 0.60); // High speed to ensure hit
+                        aiBid.strength = Math.floor(enemyPool.strength * 0.40); // Moderate strength
+                        aiBid.defense = 0; // No fear
                     } else {
-                        // Balanced aggressive mid-game
-                        aiBid.strength = Math.floor(enemyPool.strength * 0.6);
-                        aiBid.speed = Math.floor(enemyPool.speed * 0.4);
-                        aiBid.defense = Math.floor(enemyPool.defense * 0.4);
+                        // User is healthy? Balanced but heavy hitting.
+                        aiBid.strength = Math.floor(enemyPool.strength * 0.50);
+                        aiBid.speed = Math.floor(enemyPool.speed * 0.30);
+                        aiBid.defense = Math.floor(enemyPool.defense * 0.20);
                     }
                 }
+
+                // Safety clamp to ensure we don't bet more than we have (rounding errors)
+                aiBid.strength = Math.min(aiBid.strength, enemyPool.strength);
+                aiBid.speed = Math.min(aiBid.speed, enemyPool.speed);
+                aiBid.defense = Math.min(aiBid.defense, enemyPool.defense);
             } else {
                 // Legacy AI for generic opponents
                 ['strength', 'speed', 'defense'].forEach(attr => {
