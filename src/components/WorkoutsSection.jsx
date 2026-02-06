@@ -470,36 +470,94 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
                 </button>
             </div>
 
-            {/* Modal Detail Overlay (Shared) */}
             {selectedExercise && (
-                <div className="modal-overlay animate-fade-in" onClick={() => setSelectedExercise(null)}>
-                    <div className="modal-content wide-modal" onClick={e => e.stopPropagation()}>
-                        <button className="close-btn" onClick={() => setSelectedExercise(null)}>×</button>
-                        <div className="modal-inner">
-                            <div className="modal-media-panel">
-                                <div className="media-wrapper"><img src={selectedExercise.image} alt={selectedExercise.name} /></div>
-                                <div className="exercise-stats"><div className="stat-pill">TEMPO: {trainingDuration} MIN</div></div>
-                            </div>
-                            <div className="modal-info-panel">
-                                <h2 className="modal-title">{selectedExercise.name}</h2>
-                                <p className="modal-subtitle">{selectedExercise.desc}</p>
-                                <div className="instruction-section">
-                                    <h3 className="section-subtitle">Instruções:</h3>
-                                    {selectedExercise.howTo.split('\n').map((step, i) => (
-                                        <p key={i} style={{ marginBottom: '0.4rem', fontSize: '0.9rem' }}>
-                                            <strong style={{ color: 'var(--color-primary)' }}>{i + 1}.</strong> {step.split('. ')[1] || step}
-                                        </p>
-                                    ))}
-                                </div>
-                                {selectedExercise.proTip && (
-                                    <div className="pro-tip-box"><div className="pro-tip-header">✦ DICA PRO</div><p className="pro-tip-text">{selectedExercise.proTip}</p></div>
-                                )}
-                                <button className="btn-primary start-btn" onClick={() => {
-                                    onStartWorkout(selectedExercise);
-                                    setSelectedExercise(null);
-                                }}>INICIAR</button>
-                            </div>
+                <div className="modal-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000
+                }} onClick={() => setSelectedExercise(null)}>
+                    <div className="animate-scale-in" style={{
+                        background: 'rgba(20, 20, 30, 0.95)',
+                        border: '2px solid #00f0ff',
+                        borderRadius: '16px',
+                        padding: '1.5rem',
+                        width: '90%',
+                        maxWidth: '400px',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        position: 'relative',
+                        boxShadow: '0 0 30px rgba(0,240,255,0.2)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center'
+                    }} onClick={(e) => e.stopPropagation()}>
+
+                        {/* Close Button */}
+                        <button onClick={() => setSelectedExercise(null)} style={{
+                            position: 'absolute', top: '10px', right: '10px',
+                            background: 'transparent', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer'
+                        }}>×</button>
+
+                        {/* Image */}
+                        <div style={{
+                            width: '100%',
+                            height: '200px',
+                            borderRadius: '12px',
+                            overflow: 'hidden',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            marginBottom: '1rem',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: '#000'
+                        }}>
+                            <img src={selectedExercise.image} alt={selectedExercise.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </div>
+
+                        {/* Title & Stats */}
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: '0.2rem' }}>
+                            {selectedExercise.name}
+                        </h2>
+                        <div style={{ color: '#00f0ff', fontSize: '0.9rem', marginBottom: '1rem', fontWeight: 'bold' }}>
+                            {selectedExercise.reps}
+                        </div>
+
+                        {/* Description */}
+                        <p style={{ color: '#aaa', fontSize: '0.9rem', textAlign: 'center', marginBottom: '1.5rem', lineHeight: '1.4' }}>
+                            {selectedExercise.desc}
+                        </p>
+
+                        {/* Instructions */}
+                        <div style={{ width: '100%', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '8px' }}>
+                            <h3 style={{ fontSize: '0.9rem', color: '#fff', marginBottom: '0.5rem', borderBottom: '1px solid #333', paddingBottom: '0.3rem' }}>EXECUÇÃO:</h3>
+                            {selectedExercise.howTo.split('\n').map((step, i) => (
+                                <p key={i} style={{ marginBottom: '0.4rem', fontSize: '0.85rem', color: '#ddd' }}>
+                                    <strong style={{ color: '#00f0ff' }}>{i + 1}.</strong> {step.split('. ')[1] || step}
+                                </p>
+                            ))}
+                        </div>
+
+                        {/* Pro Tip */}
+                        {selectedExercise.proTip && (
+                            <div style={{ width: '100%', background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.3)', borderRadius: '8px', padding: '0.8rem', marginBottom: '1.5rem' }}>
+                                <div style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '0.8rem', marginBottom: '0.3rem' }}>✦ DICA PRO</div>
+                                <p style={{ color: '#fff', fontSize: '0.85rem', fontStyle: 'italic' }}>{selectedExercise.proTip}</p>
+                            </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <button className="btn-primary" onClick={() => {
+                            onStartWorkout(selectedExercise);
+                            setSelectedExercise(null);
+                        }} style={{
+                            width: '100%',
+                            background: 'linear-gradient(90deg, #00f0ff, #00afff)',
+                            boxShadow: '0 0 20px rgba(0, 240, 255, 0.4)',
+                            border: 'none',
+                            fontWeight: 'bold',
+                            fontSize: '1.1rem',
+                            padding: '12px'
+                        }}>
+                            INICIAR TREINO
+                        </button>
                     </div>
                 </div>
             )}

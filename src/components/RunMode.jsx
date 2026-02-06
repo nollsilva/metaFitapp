@@ -173,19 +173,12 @@ const RunMode = ({ profile, onAddXp }) => {
 
                                     // XP Logic: 10 XP per 100m (Formula: Distance / 10)
                                     // Constraint: Minimum 100m to start scoring.
+                                    // FIX: Only update accumulated for DISPLAY. Do not award yet.
                                     if (newDist >= 100) {
-                                        const currentTotalXp = Math.floor(newDist / 10);
-                                        const prevTotalXp = Math.floor(d / 10);
-
-                                        // Effective previous XP (considering the 100m thershold)
-                                        const effectivePrevXp = d < 100 ? 0 : prevTotalXp;
-
-                                        const xpToAdd = currentTotalXp - effectivePrevXp;
-
-                                        if (xpToAdd > 0) {
-                                            onAddXp(xpToAdd, 'Corrida');
-                                            setAccumulatedXp(xp => xp + xpToAdd);
-                                        }
+                                        const totalPotentialXp = Math.floor(newDist / 10);
+                                        setAccumulatedXp(totalPotentialXp);
+                                    } else {
+                                        setAccumulatedXp(0);
                                     }
 
                                     return newDist;
@@ -328,6 +321,11 @@ const RunMode = ({ profile, onAddXp }) => {
             finalXp = Math.ceil(finalXp * 1.15);
         }
 
+        // AWARD XP NOW (Only once at the end)
+        if (finalXp > 0) {
+            onAddXp(finalXp, `Corrida (${(distance / 1000).toFixed(2)}km)`);
+        }
+
         const result = await saveRun(profile.uid, {
             distance,
             time: elapsedTime,
@@ -407,7 +405,7 @@ const RunMode = ({ profile, onAddXp }) => {
         const bonus = Math.floor(accumulatedXp * 0.10); // 10%
         if (bonus > 0) {
             setAccumulatedXp(prev => prev + bonus);
-            onAddXp(bonus, 'Bônus Ad: Corrida');
+            // onAddXp(bonus, 'Bônus Ad: Corrida'); // Removed to avoid double-dip. Awarded at Save.
             setBonusApplied(true);
         }
     };
