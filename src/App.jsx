@@ -74,7 +74,34 @@ function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isHamburgerOpen, setIsHamburgerOpen] = useState(false); // New State
   const [showTutorial, setShowTutorial] = useState(false);
-  const [sessionChecks, setSessionChecks] = useState(new Set());
+
+  // Initialize sessionChecks from localStorage if valid for today
+  const [sessionChecks, setSessionChecks] = useState(() => {
+    try {
+      const todayKey = new Date().toISOString().split('T')[0];
+      const stored = localStorage.getItem(`metafit_checks_${todayKey}`);
+      if (stored) {
+        return new Set(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.warn("Failed to parse stored checks:", e);
+    }
+    return new Set();
+  });
+
+  // Sync sessionChecks to localStorage whenever it changes
+  useEffect(() => {
+    const todayKey = new Date().toISOString().split('T')[0];
+    const checksArray = Array.from(sessionChecks);
+    localStorage.setItem(`metafit_checks_${todayKey}`, JSON.stringify(checksArray));
+
+    // Cleanup old keys (optional but good for hygiene)
+    // Simple naive cleanup: remove yesterday's key if exists
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayKey = yesterday.toISOString().split('T')[0];
+    localStorage.removeItem(`metafit_checks_${yesterdayKey}`);
+  }, [sessionChecks]);
 
   // --- AUDIO SYSTEM ---
   const audioRef = React.useRef({
