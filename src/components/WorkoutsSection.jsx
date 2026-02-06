@@ -34,9 +34,60 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
     const todayKey = now.toISOString().split('T')[0];
     const currentDayName = weekDays[currentDayIdx];
 
+
+    // --- Dynamic Progression Logic ---
+    const getExerciseDetails = (baseEx, level = 1) => {
+        // Default (Level 1 - Volume)
+        let details = { ...baseEx };
+
+        if (level === 2) {
+            // Level 2 - Control (Time Under Tension)
+            details.desc = `${baseEx.desc} (Lento)`;
+            // Adjust reps to be lower but controlled
+            if (details.reps.includes('x')) {
+                const parts = details.reps.split('x');
+                const sets = parts[0].trim();
+                const reps = parts[1].trim();
+                // Heuristic: Reduce reps by ~20% but add "Lento"
+                details.reps = `${sets} x ${reps.replace(/\d+/, m => Math.max(8, Math.floor(parseInt(m) * 0.8)))} (Lento 3s)`;
+            }
+            details.howTo = `${baseEx.howTo}\n⚠️ EXECUÇÃO: Desça em 3 segundos, suba em 1 segundo. Sem impulso.`;
+        } else if (level === 3) {
+            // Level 3 - Isometry (Pauses)
+            details.desc = `${baseEx.desc} (Pausa)`;
+            // Adjust reps further down or keep same but add pause
+            if (details.reps.includes('x')) {
+                const parts = details.reps.split('x');
+                const sets = parts[0].trim();
+                // Heuristic: Reduce reps by ~30% from base
+                const baseRepsVal = parseInt(parts[1].trim());
+                // Avoid NaN if reps is '12/lado' etc
+                const match = parts[1].match(/\d+/);
+                const num = match ? parseInt(match[0]) : 12;
+
+                details.reps = `${sets} x ${Math.max(6, Math.floor(num * 0.7))} (Pausa 2s)`;
+            }
+            details.howTo = `${baseEx.howTo}\n⚠️ EXECUÇÃO: Pausa de 2 segundos no ponto mais difícil (embaixo ou contração máxima).`;
+        }
+
+        return details;
+    };
+
+    const userLevel = profile.workoutLevel || 1;
+
+    // Level Badges/Titles
+    const levelTitles = {
+        1: { title: "Nível 1: Volume", icon: "📊", color: "#00f0ff" },
+        2: { title: "Nível 2: Controle", icon: "⏱️", color: "#ff0055" },
+        3: { title: "Nível 3: Isometria", icon: "🧘", color: "#ccff00" }
+    };
+    const currentLevelInfo = levelTitles[userLevel] || levelTitles[1];
+
+
+
     useEffect(() => {
-        // Full Exercise Library
-        const lib = {
+        // Base Exercise Library (Level 1 Data)
+        const baseLib = {
             legs: [
                 { name: 'Agachamento Livre', reps: '3 x 15', image: '/squat.png', desc: 'Base fundamental.', howTo: '1. Pés largura ombros.\n2. Inicie pelo quadril.\n3. Desça até paralelo.\n4. Suba empurrando o chão.', proTip: 'Mantenha o peito alto.' },
                 { name: 'Agachamento Isométrico (Parede)', reps: '3 x 45s', image: '/wall_sit.png', desc: 'Resistência quadríceps.', howTo: '1. Encoste na parede.\n2. Desça até 90 graus.\n3. Segure firme.\n4. Mãos fora das pernas.', proTip: 'Pressione as costas na parede.' },
@@ -48,14 +99,14 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
                 { name: 'Elevação Pélvica', reps: '3 x 20', image: '/bridge.png', desc: 'Ponte de Glúteo.', howTo: '1. Deitado.\n2. Pés no chão.\n3. Eleve o quadril.\n4. Contraia no topo.', proTip: 'Force os calcanhares.' },
                 { name: 'Elevação Pélvica Unilateral', reps: '3 x 12/lado', image: '/single_leg_bridge.png', desc: 'Glúteo isolado.', howTo: '1. Uma perna esticada.\n2. Suba com a outra.\n3. Quadril alinhado.\n4. Contraia forte.', proTip: 'Não gire o quadril.' },
                 { name: 'Agachamento Sumô', reps: '3 x 15', image: '/sumo.png', desc: 'Foco adutores/glúteo.', howTo: '1. Base larga.\n2. Pés para fora.\n3. Agache reto.\n4. Joelhos abertos.', proTip: 'Coluna vertical.' },
-                { name: 'Afundo Reverso', reps: '3 x 12/lado', image: '/reverse_lunge.png', desc: 'Cadeia posterior.', howTo: '1. Passo para trás.\n2. Desça vertical.\n3. Joelho 90 graus.\n4. Volte à base.', proTip: 'Tronco levemente à frente.' }, // Using explicit name
+                { name: 'Afundo Reverso', reps: '3 x 12/lado', image: '/reverse_lunge.png', desc: 'Cadeia posterior.', howTo: '1. Passo para trás.\n2. Desça vertical.\n3. Joelho 90 graus.\n4. Volte à base.', proTip: 'Tronco levemente à frente.' },
                 { name: 'Coice de Glúteo (4 Apoios)', reps: '3 x 15/lado', image: '/glute_kickback.png', desc: 'Foco total glúteo.', howTo: '1. Quatro apoios.\n2. Chute para o teto.\n3. Joelho 90 graus ou reto.\n4. Não arqueie a lombar.', proTip: 'Aperte o glúteo no topo.' }
             ],
             chest: [
                 { name: 'Flexão Tradicional', reps: '3 x 12', image: '/pushup.png', desc: 'Peitoral médio.', howTo: '1. Mãos largas.\n2. Corpo prancha.\n3. Peito ao chão.\n4. Empurre.', proTip: 'Core travado.' },
                 { name: 'Flexão com Pausa', reps: '3 x 10', image: '/pause_pushup.png', desc: 'Força estática.', howTo: '1. Desça normal.\n2. Segure 2s no fundo.\n3. Não encoste no chão.\n4. Exploda para subir.', proTip: 'Segure a respiração embaixo.' },
-                { name: 'Flexão Inclinada (Pés Elevados)', reps: '3 x 10', image: '/decline_pushup.png', desc: 'Peitoral Superior.', howTo: '1. Pés no banco.\n2. Mãos no chão.\n3. Desça até o queixo.\n4. Mantenha core firme.', proTip: 'Não deixe o quadril cair.' }, // Techically Decline in English
-                { name: 'Flexão Declinada (Mãos Elevadas)', reps: '3 x 15', image: '/incline_pushup.png', desc: 'Peitoral Inferior.', howTo: '1. Mãos no banco/sofá.\n2. Pés no chão.\n3. Leve o peito ao banco.\n4. Empurre.', proTip: 'Ótimo para iniciantes.' }, // Technically Incline in English
+                { name: 'Flexão Inclinada (Pés Elevados)', reps: '3 x 10', image: '/decline_pushup.png', desc: 'Peitoral Superior.', howTo: '1. Pés no banco.\n2. Mãos no chão.\n3. Desça até o queixo.\n4. Mantenha core firme.', proTip: 'Não deixe o quadril cair.' },
+                { name: 'Flexão Declinada (Mãos Elevadas)', reps: '3 x 15', image: '/incline_pushup.png', desc: 'Peitoral Inferior.', howTo: '1. Mãos no banco/sofá.\n2. Pés no chão.\n3. Leve o peito ao banco.\n4. Empurre.', proTip: 'Ótimo para iniciantes.' },
                 { name: 'Flexão Explosiva', reps: '3 x 8', image: '/explosive_pushup.png', desc: 'Potência.', howTo: '1. Desça controlado.\n2. Empurre com máxima força.\n3. Tire as mãos do chão.\n4. Amorteça a queda.', proTip: 'Cuidado com os pulsos.' }
             ],
             back: [
@@ -65,13 +116,12 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
                 { name: 'Remada Unilateral (Toalha)', reps: '3 x 12/lado', image: '/door_row.png', desc: 'Dorsais em casa.', howTo: '1. Prenda toalha na maçaneta.\n2. Pés próximos à porta.\n3. Incline para trás.\n4. Puxe com um braço.\n4. Puxe com um braço.', proTip: 'Maçaneta deve ser forte!' },
                 { name: 'Pull-down Isométrico (Toalha)', reps: '3 x 15s', image: '/towel_pulldown.png', desc: 'Ativação latíssimo.', howTo: '1. Segure toalha acima cabeça.\n2. Puxe para fora tentando rasgar.\n3. Traga ao peito tensionando.\n4. Segure embaixo.', proTip: 'Tensão constante na toalha.' }
             ],
-            shoulders_biceps: [ // Renamed residual category
+            shoulders_biceps: [
                 { name: 'Chin-up (Supinada)', reps: '3 x 6', image: '/chinup.png', desc: 'Bíceps e dorsais.', howTo: '1. Palmas para você.\n2. Puxe até o queixo.\n3. Desça total.\n4. Controle.', proTip: 'Sem balanço.', requiresBar: true },
                 { name: 'Hammer Curl', reps: '3 x 12', image: '/hammer_curl.png', desc: 'Bíceps e Antebraço.', howTo: '1. Halteres neutros.\n2. Cotovelos fixos.\n3. Suba até o ombro.\n4. Desça controlado.', proTip: 'Não balance o tronco.' },
                 { name: 'Desenvolvimento Ombros', reps: '3 x 12', image: '/shoulder_press.png', desc: 'Ombros completo.', howTo: '1. Halteres na altura orelha.\n2. Empurre para cima.\n3. Braços esticados.\n4. Retorne a 90 graus.', proTip: 'Core firme.' },
                 { name: 'Flexão Pike', reps: '3 x 10', image: '/pike_pushup.png', desc: 'Ombros Calistenia.', howTo: '1. Corpo em V invertido.\n2. Olhe para os pés.\n3. Dobre cotovelos.\n4. Empurre o chão.', proTip: 'Mantenha pernas esticadas.' }
             ],
-            // back_triceps DEPRECATED - Content moved to 'back' and 'arms'
             arms: [
                 { name: 'Flexão Diamante', reps: '3 x 10', image: '/diamond.png', desc: 'Ênfase em tríceps.', howTo: '1. Mãos unidas formando diamante.\n2. Desça o peito até a mão.\n3. Empurre focando no tríceps.\n4. Mantenha cotovelos próximos.', proTip: 'Não abra os cotovelos.' },
                 { name: 'Flexão Fechada', reps: '3 x 12', image: '/close_grip_pushup.png', desc: 'Tríceps e Peito miolo.', howTo: '1. Mãos na largura dos ombros.\n2. Cotovelos raspando no tronco.\n3. Desça controlado.\n4. Empurre explosivo.', proTip: 'Cotovelos sempre colados ao corpo.' },
@@ -88,53 +138,50 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
             ]
         };
 
-        // GENDER ADAPTATIONS
+        // GENDER ADAPTATIONS (Preserve original structure but apply level logic)
         if (profile.gender === 'female') {
-            // BRAÇO (Bíceps + Tríceps)
-            lib.arms = [
+            baseLib.arms = [
                 { name: 'Flexão na Parede', reps: '3 x 15', image: '/wall_pushup.png', desc: 'Tríceps/Peito leve.', howTo: '1. Corpo inclinado.\n2. Mãos na parede.\n3. Flexione cotovelos.\n4. Empurre.', proTip: 'Reduz carga no ombro drasticamente.' },
                 { name: 'Flexão Inclinada (Sofá)', reps: '3 x 12', image: '/incline_pushup.png', desc: 'Intermediário.', howTo: '1. Mãos no sofá.\n2. Corpo reto.\n3. Desça o peito.\n4. Empurre.', proTip: 'Menos peso que no chão.' },
                 { name: 'Tríceps Isométrico (Parede)', reps: '3 x 30s', image: '/wall_tricep_iso.png', desc: 'Força estática.', howTo: '1. Cotovelos flexionados na parede.\n2. Empurre sem mover.\n3. Sustente a força.\n4. Respire.', proTip: 'Isometria funciona muito.' }
             ];
 
-            // PEITO
-            lib.chest = [
+            baseLib.chest = [
                 { name: 'Flexão com Joelhos', reps: '3 x 12', image: '/knee_pushup.png', desc: 'Peitoral seguro.', howTo: '1. Joelhos no chão.\n2. Mãos largas.\n3. Desça controlado.\n4. Empurre.', proTip: 'Sem sobrecarga, estímulo real.' },
                 { name: 'Abertura de Braços (Chão)', reps: '3 x 15', image: '/floor_fly.png', desc: 'Contração focal.', howTo: '1. Deitada.\n2. Abra os braços em cruz.\n3. Feche no centro.\n4. Movimento lento.', proTip: 'Foco em esmagar o peitoral.' },
                 { name: 'Pressão Palmar', reps: '3 x 20s', image: '/palm_press.png', desc: 'Ativação sem impacto.', howTo: '1. Mãos juntas (rezar).\n2. Pressione uma contra outra.\n3. Segure forte altura peito.\n4. Relaxe.', proTip: 'Não precisa de peso.' }
             ];
 
-            // COSTAS
-            lib.back = [
+            baseLib.back = [
                 { name: 'Remada Toalha (Porta)', reps: '3 x 15', image: '/door_row.png', desc: 'Curta amplitude.', howTo: '1. Pés perto da porta.\n2. Corpo pouco inclinado.\n3. Puxe controlado.\n4. Retorne.', proTip: 'Quanto mais em pé, mais fácil.' },
                 { name: 'Superman Alternado', reps: '3 x 12/lado', image: '/superman_alt.png', desc: 'Lombar segura.', howTo: '1. Deitada de bruços.\n2. Erga braço direito e perna esquerda.\n3. Troque.\n4. Sem trancos.', proTip: 'Menos carga lombar que o completo.' },
                 { name: 'Retração Escapular', reps: '3 x 15', image: '/scapular_retraction.png', desc: 'Postura.', howTo: '1. Sentada.\n2. Puxe ombros para trás.\n3. Junte as escápulas.\n4. Segure 2s.', proTip: 'Se a postura não melhora, o treino falha.' }
             ];
 
-            // ABDÔMEN
-            lib.abs = [
+            baseLib.abs = [
                 { name: 'Abdominal Curto', reps: '3 x 20', image: '/crunch.png', desc: 'Crunch pequeno.', howTo: '1. Mãos na cabeça.\n2. Tire apenas ombros do chão.\n3. Não puxe pescoço.\n4. Volte.', proTip: 'Movimento mínimo, controle máximo.' },
                 { name: 'Elevação Joelhos Alternada', reps: '3 x 20', image: '/alt_leg_raise.png', desc: 'Infra seguro.', howTo: '1. Deitada.\n2. Puxe um joelho ao peito.\n3. Estique e troque.\n4. Lombar colada.', proTip: 'Reduz tensão lombar.' },
                 { name: 'Prancha com Joelhos', reps: '3 x 30s', image: '/knee_plank.png', desc: 'Estabilidade.', howTo: '1. Apoie antebraços e joelhos.\n2. Corpo alinhado.\n3. Contraia abdômen.\n4. Respire.', proTip: 'Constância > Exagero.' }
             ];
 
-            // GLÚTEO
-            lib.glutes = [
+            baseLib.glutes = [
                 { name: 'Ponte Curta', reps: '3 x 20', image: '/bridge.png', desc: 'Controle total.', howTo: '1. Suba o quadril.\n2. Pare antes de arquear costas.\n3. Contraia glúteo.\n4. Desça.', proTip: 'Sobe só até onde mantém controle.' },
                 { name: 'Chute 4 Apoios Curto', reps: '3 x 15/lado', image: '/glute_kickback.png', desc: 'Foco contração.', howTo: '1. Quatro apoios.\n2. Chute curto para trás.\n3. Não "lance" a perna.\n4. Aperte no topo.', proTip: 'Glúteo cresce com intenção, não balanço.' },
                 { name: 'Elevação Pélvica Assistida', reps: '3 x 12/lado', image: '/single_leg_bridge.png', desc: 'Unilateral leve.', howTo: '1. Um pé firme.\n2. Outro pé só apoiando ponta.\n3. Suba focando na perna firme.\n4. Troque.', proTip: 'Progressão para unilateral total.' }
             ];
 
-            // PERNA
-            lib.legs = [
+            baseLib.legs = [
                 { name: 'Agachamento Parcial', reps: '3 x 15', image: '/squat.png', desc: 'Meio agachamento.', howTo: '1. Desça até a metade.\n2. Mantenha postura.\n3. Suba.\n4. Ideal iniciantes.', proTip: 'Segurança articular.' },
                 { name: 'Sentar e Levantar', reps: '3 x 15', image: '/chair_squat.png', desc: 'Funcional.', howTo: '1. Cadeira atrás.\n2. Sente controlado.\n3. Levante sem impulso.\n4. Repita.', proTip: 'Seguro e muito eficaz.' },
                 { name: 'Avanço Estático Curto', reps: '3 x 10/lado', image: '/lunge.png', desc: 'Controle.', howTo: '1. Pés afastados antero-posterior.\n2. Desça pouco o joelho.\n3. Suba.\n4. Sem passo largo.', proTip: 'Se dói, corrija a execução.' }
             ];
-
-            // Shoulders & Biceps remain default for now, or could imply adaptation, but user didn't specify list.
-            // Keeping defaults for shoulders/biceps as they are relatively safe (dumbbells usually adjustable).
         }
+
+        // Apply Level to ALL exercises in baseLib
+        const lib = {};
+        Object.keys(baseLib).forEach(category => {
+            lib[category] = baseLib[category].map(ex => getExerciseDetails(ex, userLevel));
+        });
 
         // Filter library based on hasBar
         const filteredLib = {
@@ -466,7 +513,23 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
                             <div className="card" style={{ border: '1px solid var(--color-primary)', background: 'rgba(0, 240, 255, 0.03)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
                                     <div>
-                                        <h2 style={{ fontSize: '1.8rem', marginBottom: '0.2rem' }}>GUIA <span className="title-gradient">PARA VOCÊ</span></h2>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                                            <h2 style={{ fontSize: '1.8rem', marginBottom: '0.2rem' }}>GUIA <span className="title-gradient">PARA VOCÊ</span></h2>
+                                            {/* Level Indicator */}
+                                            <div style={{
+                                                background: 'rgba(255,255,255,0.05)',
+                                                padding: '0.3rem 0.8rem',
+                                                borderRadius: '20px',
+                                                border: `1px solid ${currentLevelInfo.color}`,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                                fontSize: '0.8rem'
+                                            }}>
+                                                <span>{currentLevelInfo.icon}</span>
+                                                <span style={{ color: currentLevelInfo.color, fontWeight: 'bold' }}>{currentLevelInfo.title}</span>
+                                            </div>
+                                        </div>
                                         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Foco: {urgentPart.toUpperCase()} | {trainingDuration}min por dia</p>
                                         {/* Checkbox for Equipment (Restored) */}
                                         <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -594,7 +657,22 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
             {activeTab === 'library' && (
                 <div className="animate-fade-in">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="section-title mb-0">Minha <span className="title-gradient">Biblioteca</span></h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <h2 className="section-title mb-0">Minha <span className="title-gradient">Biblioteca</span></h2>
+                            <div style={{
+                                background: 'rgba(255,255,255,0.05)',
+                                padding: '0.3rem 0.8rem',
+                                borderRadius: '20px',
+                                border: `1px solid ${currentLevelInfo.color}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                fontSize: '0.8rem'
+                            }}>
+                                <span>{currentLevelInfo.icon}</span>
+                                <span style={{ color: currentLevelInfo.color, fontWeight: 'bold' }}>{currentLevelInfo.title}</span>
+                            </div>
+                        </div>
 
                         {/* Category Navigation Dropdown */}
                         <select

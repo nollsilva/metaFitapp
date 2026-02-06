@@ -36,6 +36,7 @@ import NotificationsScreen from './components/NotificationsScreen'; // Imported
 import XPNotificationModal from './components/XPNotificationModal'; // Imported
 import LevelUpModal from './components/LevelUpModal'; // Imported
 import RPGMap from './components/rpg/RPGMap'; // Imported
+import WeeklyCheckinModal from './components/WeeklyCheckinModal'; // Imported
 
 // Helper to auto-reload page if a lazy-loaded chunk fails (e.g., after deployment)
 const lazyWithRetry = (componentImport) =>
@@ -168,6 +169,24 @@ function App() {
   const [vipNotification, setVipNotification] = useState(null); // VIP Notification State
   const [xpModalData, setXpModalData] = useState(null); // { penalty, dates: [], missedCount, currentXp, newHistory }
   const [showLevelUpModal, setShowLevelUpModal] = useState({ show: false, level: 0 });
+  const [showWeeklyCheckin, setShowWeeklyCheckin] = useState(false); // Weekly Check-in State
+
+  // Weekly Check-in Logic
+  useEffect(() => {
+    if (userProfile.isLoggedIn && userProfile.selectedWeekDays && userProfile.selectedWeekDays.length > 0) {
+      const today = new Date();
+      const lastCheckDate = userProfile.lastWeeklyCheckin ? new Date(userProfile.lastWeeklyCheckin) : new Date(userProfile.createdAt || Date.now());
+      const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon
+
+      // Check if enough time passed (e.g. 4 days) to avoid showing same week
+      const diffTime = Math.abs(today - lastCheckDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if ((dayOfWeek === 0 || dayOfWeek === 1) && diffDays >= 4) {
+        setShowWeeklyCheckin(true);
+      }
+    }
+  }, [userProfile.isLoggedIn, userProfile.lastWeeklyCheckin, userProfile.selectedWeekDays]);
 
   // Check for missed workouts logic
   const checkMissedWorkouts = (profile) => {
@@ -829,6 +848,24 @@ function App() {
         )}
 
       </main>
+
+      {/* Weekly Check-in Modal */}
+      {showWeeklyCheckin && (
+        <WeeklyCheckinModal
+          profile={userProfile}
+          onUpdateProfile={(updated) => {
+            setUserProfile(prev => ({ ...prev, ...updated }));
+            setShowWeeklyCheckin(false);
+          }}
+          onClose={(msg) => {
+            setShowWeeklyCheckin(false);
+            if (msg) {
+              setNotification(msg);
+              setTimeout(() => setNotification(null), 4000);
+            }
+          }}
+        />
+      )}
 
       {/* Auth Modal Global */}
       {isAuthModalOpen && (
