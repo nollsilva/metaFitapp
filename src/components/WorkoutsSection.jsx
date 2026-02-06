@@ -593,15 +593,42 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
             {/* --- CONTENT: LIBRARY --- */}
             {activeTab === 'library' && (
                 <div className="animate-fade-in">
-                    <h2 className="section-title">Minha <span className="title-gradient">Biblioteca</span></h2>
-                    <div className="routine-groups">
-                        <CategoryGroup title="Peito" list={categorizedRoutine.chest} onSelect={setSelectedExercise} />
-                        <CategoryGroup title="Costas" list={categorizedRoutine.back} onSelect={setSelectedExercise} />
-                        <CategoryGroup title="Pernas" list={categorizedRoutine.legs} onSelect={setSelectedExercise} />
-                        <CategoryGroup title="Glúteos" list={categorizedRoutine.glutes} onSelect={setSelectedExercise} />
-                        <CategoryGroup title="Ombros & Bíceps" list={categorizedRoutine.shoulders_biceps} onSelect={setSelectedExercise} />
-                        <CategoryGroup title="Braço (Bíceps + Tríceps)" list={categorizedRoutine.arms} onSelect={setSelectedExercise} />
-                        <CategoryGroup title="Abdômen & Core" list={categorizedRoutine.abs} onSelect={setSelectedExercise} />
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="section-title mb-0">Minha <span className="title-gradient">Biblioteca</span></h2>
+
+                        {/* Category Navigation Dropdown */}
+                        <select
+                            className="bg-gray-800 text-white text-sm p-2 rounded-lg border border-gray-700 outline-none focus:border-yellow-500 transition-colors"
+                            onChange={(e) => {
+                                const id = e.target.value;
+                                if (id) {
+                                    const element = document.getElementById(id);
+                                    if (element) {
+                                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }
+                                }
+                            }}
+                            defaultValue=""
+                        >
+                            <option value="" disabled>Ir para...</option>
+                            <option value="cat-chest">Peito</option>
+                            <option value="cat-back">Costas</option>
+                            <option value="cat-legs">Pernas</option>
+                            <option value="cat-glutes">Glúteos</option>
+                            <option value="cat-shoulders">Ombros & Bíceps</option>
+                            <option value="cat-arms">Braço (Tríceps)</option>
+                            <option value="cat-abs">Abdômen</option>
+                        </select>
+                    </div>
+
+                    <div className="routine-groups space-y-8">
+                        <div id="cat-chest" className="scroll-mt-20"><CategoryGroup title="Peito" list={categorizedRoutine.chest} onSelect={setSelectedExercise} /></div>
+                        <div id="cat-back" className="scroll-mt-20"><CategoryGroup title="Costas" list={categorizedRoutine.back} onSelect={setSelectedExercise} /></div>
+                        <div id="cat-legs" className="scroll-mt-20"><CategoryGroup title="Pernas" list={categorizedRoutine.legs} onSelect={setSelectedExercise} /></div>
+                        <div id="cat-glutes" className="scroll-mt-20"><CategoryGroup title="Glúteos" list={categorizedRoutine.glutes} onSelect={setSelectedExercise} /></div>
+                        <div id="cat-shoulders" className="scroll-mt-20"><CategoryGroup title="Ombros & Bíceps" list={categorizedRoutine.shoulders_biceps} onSelect={setSelectedExercise} /></div>
+                        <div id="cat-arms" className="scroll-mt-20"><CategoryGroup title="Braço (Bíceps + Tríceps)" list={categorizedRoutine.arms} onSelect={setSelectedExercise} /></div>
+                        <div id="cat-abs" className="scroll-mt-20"><CategoryGroup title="Abdômen & Core" list={categorizedRoutine.abs} onSelect={setSelectedExercise} /></div>
                     </div>
                 </div>
             )}
