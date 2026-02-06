@@ -89,24 +89,50 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
 
         // GENDER ADAPTATIONS
         if (profile.gender === 'female') {
-            const kneePushup = { name: 'Flexão com Joelhos', reps: '3 x 12', image: '/knee_pushup.png', desc: 'Peitoral (Adaptado).', howTo: '1. Joelhos no chão.\n2. Mãos largas.\n3. Desça o peito.\n4. Empurre.', proTip: 'Mantenha quadril alinhado.' };
-            const wallPushup = { name: 'Flexão na Parede', reps: '3 x 15', image: '/wall_pushup.png', desc: 'Iniciante.', howTo: '1. Pés afastados da parede.\n2. Mãos altura ombro.\n3. Aproxime rosto.\n4. Empurre.', proTip: 'Corpo reto.' };
+            // BRAÇO (Bíceps + Tríceps)
+            lib.arms = [
+                { name: 'Flexão na Parede', reps: '3 x 15', image: '/wall_pushup.png', desc: 'Tríceps/Peito leve.', howTo: '1. Corpo inclinado.\n2. Mãos na parede.\n3. Flexione cotovelos.\n4. Empurre.', proTip: 'Reduz carga no ombro drasticamente.' },
+                { name: 'Flexão Inclinada (Sofá)', reps: '3 x 12', image: '/incline_pushup.png', desc: 'Intermediário.', howTo: '1. Mãos no sofá.\n2. Corpo reto.\n3. Desça o peito.\n4. Empurre.', proTip: 'Menos peso que no chão.' },
+                { name: 'Tríceps Isométrico (Parede)', reps: '3 x 30s', image: '/wall_tricep_iso.png', desc: 'Força estática.', howTo: '1. Cotovelos flexionados na parede.\n2. Empurre sem mover.\n3. Sustente a força.\n4. Respire.', proTip: 'Isometria funciona muito.' }
+            ];
 
-            // Chest
-            lib.chest[0] = kneePushup;
-            lib.chest[2] = { name: 'Flexão Banco (Pés chão)', reps: '3 x 12', image: '/incline_pushup.png', desc: 'Peitoral (Mais leve).', howTo: '1. Mãos no banco.\n2. Corpo reto.\n3. Toque o peito.\n4. Empurre.', proTip: 'Mais fácil que chão.' }; // Replace 'Pés Elevados' (Hard) with Hands Elevated (Easy) for scaling if needed, or Keep?
-            // User requested specific exercises, but gender logic usually simplifies. I'll stick to replacing the hardest ones or adapting.
-            // Keeping it simple for now as per refactor.
+            // PEITO
+            lib.chest = [
+                { name: 'Flexão com Joelhos', reps: '3 x 12', image: '/knee_pushup.png', desc: 'Peitoral seguro.', howTo: '1. Joelhos no chão.\n2. Mãos largas.\n3. Desça controlado.\n4. Empurre.', proTip: 'Sem sobrecarga, estímulo real.' },
+                { name: 'Abertura de Braços (Chão)', reps: '3 x 15', image: '/floor_fly.png', desc: 'Contração focal.', howTo: '1. Deitada.\n2. Abra os braços em cruz.\n3. Feche no centro.\n4. Movimento lento.', proTip: 'Foco em esmagar o peitoral.' },
+                { name: 'Pressão Palmar', reps: '3 x 20s', image: '/palm_press.png', desc: 'Ativação sem impacto.', howTo: '1. Mãos juntas (rezar).\n2. Pressione uma contra outra.\n3. Segure forte altura peito.\n4. Relaxe.', proTip: 'Não precisa de peso.' }
+            ];
 
-            // Other adaptations...
-            lib.arms[0] = { name: 'Tríceps Coice', reps: '3 x 15', image: '/tricep_kickback.png', desc: 'Tríceps (Halteres).', howTo: '1. Tronco inclinado.\n2. Cotovelo alto fixo.\n3. Estenda o braço.\n4. Volte 90 graus.', proTip: 'Não balance o ombro.' };
+            // COSTAS
+            lib.back = [
+                { name: 'Remada Toalha (Porta)', reps: '3 x 15', image: '/door_row.png', desc: 'Curta amplitude.', howTo: '1. Pés perto da porta.\n2. Corpo pouco inclinado.\n3. Puxe controlado.\n4. Retorne.', proTip: 'Quanto mais em pé, mais fácil.' },
+                { name: 'Superman Alternado', reps: '3 x 12/lado', image: '/superman_alt.png', desc: 'Lombar segura.', howTo: '1. Deitada de bruços.\n2. Erga braço direito e perna esquerda.\n3. Troque.\n4. Sem trancos.', proTip: 'Menos carga lombar que o completo.' },
+                { name: 'Retração Escapular', reps: '3 x 15', image: '/scapular_retraction.png', desc: 'Postura.', howTo: '1. Sentada.\n2. Puxe ombros para trás.\n3. Junte as escápulas.\n4. Segure 2s.', proTip: 'Se a postura não melhora, o treino falha.' }
+            ];
 
-            // Shoulders adaptation
-            lib.shoulders_biceps[3] = { name: 'Prancha Toca Ombro', reps: '3 x 20', image: '/shoulder_tap.png', desc: 'Estabilidade Ombro.', howTo: '1. Posição prancha alta.\n2. Tira uma mão.\n3. Toca ombro oposto.\n4. Evite girar quadril.', proTip: 'Contraia abdômen forte.' };
+            // ABDÔMEN
+            lib.abs = [
+                { name: 'Abdominal Curto', reps: '3 x 20', image: '/crunch.png', desc: 'Crunch pequeno.', howTo: '1. Mãos na cabeça.\n2. Tire apenas ombros do chão.\n3. Não puxe pescoço.\n4. Volte.', proTip: 'Movimento mínimo, controle máximo.' },
+                { name: 'Elevação Joelhos Alternada', reps: '3 x 20', image: '/alt_leg_raise.png', desc: 'Infra seguro.', howTo: '1. Deitada.\n2. Puxe um joelho ao peito.\n3. Estique e troque.\n4. Lombar colada.', proTip: 'Reduz tensão lombar.' },
+                { name: 'Prancha com Joelhos', reps: '3 x 30s', image: '/knee_plank.png', desc: 'Estabilidade.', howTo: '1. Apoie antebraços e joelhos.\n2. Corpo alinhado.\n3. Contraia abdômen.\n4. Respire.', proTip: 'Constância > Exagero.' }
+            ];
 
-            // Back
-            // Ensure Australian row has an alternative if no "table"? Or just keep defaults.
-            // Woman adaptations for Back usually involve lighter load or emphasis on form. The list is bodyweight/towel, should be fine.
+            // GLÚTEO
+            lib.glutes = [
+                { name: 'Ponte Curta', reps: '3 x 20', image: '/bridge.png', desc: 'Controle total.', howTo: '1. Suba o quadril.\n2. Pare antes de arquear costas.\n3. Contraia glúteo.\n4. Desça.', proTip: 'Sobe só até onde mantém controle.' },
+                { name: 'Chute 4 Apoios Curto', reps: '3 x 15/lado', image: '/glute_kickback.png', desc: 'Foco contração.', howTo: '1. Quatro apoios.\n2. Chute curto para trás.\n3. Não "lance" a perna.\n4. Aperte no topo.', proTip: 'Glúteo cresce com intenção, não balanço.' },
+                { name: 'Elevação Pélvica Assistida', reps: '3 x 12/lado', image: '/single_leg_bridge.png', desc: 'Unilateral leve.', howTo: '1. Um pé firme.\n2. Outro pé só apoiando ponta.\n3. Suba focando na perna firme.\n4. Troque.', proTip: 'Progressão para unilateral total.' }
+            ];
+
+            // PERNA
+            lib.legs = [
+                { name: 'Agachamento Parcial', reps: '3 x 15', image: '/squat.png', desc: 'Meio agachamento.', howTo: '1. Desça até a metade.\n2. Mantenha postura.\n3. Suba.\n4. Ideal iniciantes.', proTip: 'Segurança articular.' },
+                { name: 'Sentar e Levantar', reps: '3 x 15', image: '/chair_squat.png', desc: 'Funcional.', howTo: '1. Cadeira atrás.\n2. Sente controlado.\n3. Levante sem impulso.\n4. Repita.', proTip: 'Seguro e muito eficaz.' },
+                { name: 'Avanço Estático Curto', reps: '3 x 10/lado', image: '/lunge.png', desc: 'Controle.', howTo: '1. Pés afastados antero-posterior.\n2. Desça pouco o joelho.\n3. Suba.\n4. Sem passo largo.', proTip: 'Se dói, corrija a execução.' }
+            ];
+
+            // Shoulders & Biceps remain default for now, or could imply adaptation, but user didn't specify list.
+            // Keeping defaults for shoulders/biceps as they are relatively safe (dumbbells usually adjustable).
         }
 
         // Filter library based on hasBar
