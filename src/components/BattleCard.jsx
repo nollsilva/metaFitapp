@@ -118,7 +118,6 @@ const BattleCard = ({ profile, health, maxHealth, isEnemy, activeTurn, resultSta
                 borderRadius: '8px'
             }}>
                 <div title="Força">💪 {profile.attributes?.strength || 0}</div>
-                <div title="Velocidade">⚡ {profile.attributes?.speed || 0}</div>
                 <div title="Defesa">🛡️ {profile.attributes?.defense || 0}</div>
             </div>
         </div>

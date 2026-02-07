@@ -59,7 +59,12 @@ export const getBotAction = (botState, playerState, history, turnNumber) => {
 
     // 2. DECISION TREE
 
-    // A. SURVIVAL (Critical HP)
+    // A. MERCY / FINISHER (Player has no resources)
+    if (playerState.attack <= 0 && playerState.defense <= 0 && botState.attack > 0) {
+        return { type: 'ATTACK', reason: 'Mercy Finisher', amount: botState.attack };
+    }
+
+    // B. SURVIVAL (Critical HP)
     if (hpPercent <= 0.30) {
         // Can we heal?
         if (botState.conversionsUsed < 2 && botState.attack > 10) {
@@ -74,7 +79,7 @@ export const getBotAction = (botState, playerState, history, turnNumber) => {
     // "Se ataque_bot < 30% [assume of base?] e Defesa_bot >= 20 -> converter Defesa -> Ataque"
     // Let's interpret "ataque_bot < 30%" as relative to some baseline or just low. 
     // Let's say if Attack is very low compared to Defense.
-    if (botState.attack < 20 && botState.defense >= 20 && hpPercent < 1.0) {
+    if (botState.attack < 20 && botState.defense >= 20 && hpPercent < 1.0 && botState.conversionsUsed < 2) {
         // Only if HP isn't full (rule says HP < HP_max for conversion, though Def->Atk only restricted by simple HP<Max? 
         // Prompt says: "Converter Defesa -> Ataque ... Se HP atual estiver cheio -> não é permitido converter."
         return { type: 'CONVERT_DEF_TO_ATK', reason: 'Rebalancing Stats' };
@@ -87,7 +92,7 @@ export const getBotAction = (botState, playerState, history, turnNumber) => {
 
     // D. OPPORTUNISM (Player Healed recently)
     const lastPlayerAction = history.length > 0 ? history[history.length - 1].playerAction : null;
-    if (lastPlayerAction === 'CONVERT_ATK_TO_HP') {
+    if (lastPlayerAction === 'CONVERT_ATK_TO_HP' && botState.attack > 0) {
         // Enemy just healed (and likely has 0 attack/defense for that turn or is vulnerable next?)
         // Actually, if they healed, they couldn't attack.
         // Rule: "Se inimigo acabou de curar -> atacar agressivo"
@@ -95,33 +100,40 @@ export const getBotAction = (botState, playerState, history, turnNumber) => {
     }
 
     // E. LOW RISK / HIGH HEALTH -> ATTACK
-    if (hpPercent > 0.50 && riskOfDeath < 0.3) {
-        return { type: 'ATTACK', reason: 'High Health Pressure' };
+    if (hpPercent > 0.50 && riskOfDeath < 0.3 && botState.attack > 0) {
+        // Spend generous amount (60-90%)
+        const spend = Math.floor(botState.attack * (0.6 + Math.random() * 0.3));
+        return { type: 'ATTACK', reason: 'High Health Pressure', amount: Math.max(1, spend) };
     }
 
     // F. HIGH RISK -> DEFEND
     if (riskOfDeath >= 0.7) {
-        return { type: 'DEFEND', reason: 'High Risk Mitigation' };
-        // Note: "Defend" action isn't explicitly defined in formulas as boosting stat, 
-        // but typically means "Block" or "Reduce Dmg". 
-        // User prompt says: "Ação: Defender (Sempre)". 
-        // We need to define what Defender DOES. Usually increases Def or reduces dmg by %?
-        // Let's assume for now it's a valid action tag.
+        // Spend high defense (70-100%) to survive
+        const spend = Math.floor(botState.defense * (0.7 + Math.random() * 0.3));
+        return { type: 'DEFEND', reason: 'High Risk Mitigation', amount: Math.max(1, spend) };
     }
 
     // G. DEFAULT / FALLBACK / RANDOMNESS
-    // "Aleatoriedade controlada: 20–30% chance de ação alternativa"
     const roll = Math.random();
 
     if (roll < 0.20 && botState.conversionsUsed < 2 && botState.hp < botState.maxHp && botState.attack > 20) {
         return { type: 'CONVERT_ATK_TO_HP', reason: 'Random Sustain' };
     }
 
-    if (roll < 0.40 && botState.hp < botState.maxHp && botState.defense > 20) {
+    if (roll < 0.40 && botState.conversionsUsed < 2 && botState.hp < botState.maxHp && botState.defense > 20) {
         return { type: 'CONVERT_DEF_TO_ATK', reason: 'Random Buff' };
     }
 
-    return { type: 'ATTACK', reason: 'Default Aggression' };
+    // Default Action
+    if (botState.attack > 0) {
+        // Default Attack (spend 50-80%)
+        const defaultSpend = Math.floor(botState.attack * (0.5 + Math.random() * 0.3));
+        return { type: 'ATTACK', reason: 'Default Aggression', amount: Math.max(1, defaultSpend) };
+    } else {
+        // Fallback to Defense if no Attack (and not empty, as empty is handled by Arena)
+        const defSpend = Math.floor(botState.defense * (0.5 + Math.random() * 0.3));
+        return { type: 'DEFEND', reason: 'Forced Defense (No Atk)', amount: Math.max(1, defSpend) };
+    }
 };
 
 
@@ -164,12 +176,13 @@ export const resolveHealAction = (state, amount = null) => {
     }
 
     return {
-        newHp: state.hp + healedAmount,
-        newAttack: state.attack - rawAmount,
+        hp: state.hp + healedAmount,
+        attack: state.attack - rawAmount,
         conversionsUsed: state.conversionsUsed + 1,
         isStunned: nextTurnStun,
         amountHealed: healedAmount,
-        amountConverted: rawAmount
+        amountConverted: rawAmount,
+        isConversion: true // Flag to handle logging if needed
     };
 };
 
@@ -218,11 +231,12 @@ export const resolveBuffAction = (state, amount = null) => {
     }
 
     return {
-        newDefense: state.defense - convertAmount,
-        newAttack: state.attack + actualAttackGained,
+        defense: state.defense - convertAmount,
+        attack: state.attack + actualAttackGained,
         conversionsUsed: state.conversionsUsed + 1, // Increment shared counter
         isStunned: nextTurnStun,
         amountConverted: convertAmount,
-        attackGained: actualAttackGained
+        attackGained: actualAttackGained,
+        isConversion: true
     };
 };
