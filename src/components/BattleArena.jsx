@@ -4,7 +4,7 @@ import { updateUser } from '../utils/db'; // Import DB update
 import { ChallengeService } from '../services/ChallengeService';
 import { playSfx } from '../utils/audio';
 import BattleCard from './BattleCard';
-// import StatisticSelector from './StatisticSelector'; // Removed
+import StatisticSelector from './StatisticSelector';
 import DuelTutorialOverlay from './DuelTutorialOverlay';
 import { calculateMaxHp, calculateDamage, getBotAction, resolveHealAction, resolveBuffAction } from '../utils/battleLogic';
 
@@ -23,23 +23,17 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         return {
             hp: max,
             maxHp: max,
-            attack: (myProfile.attributes?.strength || 0) * 2, // Arbitrary base scaling for 'Attack Stat' from raw Strength? 
-            // Or just use raw attributes? User formulas imply raw usage: "Vida = 100 + Str*2...". 
-            // "Dano = Ataque * ...". If 'Ataque' is just Strength, we use that. 
-            // Let's assume: Attack = Strength, Defense = Defense (Resistence/Defense).
-            // Actually, "Ataque_atual" changes. So we initialize it with base Strength.
-            baseAttack: (myProfile.attributes?.strength || 10),
-            baseDefense: (myProfile.attributes?.defense || 10),
-
-            // Dynamic Battle Stats
             attack: (myProfile.attributes?.strength || 10),
             defense: (myProfile.attributes?.defense || 10),
-
             conversionsUsed: 0,
             isStunned: false,
             lastAction: null
         };
     });
+
+    // --- SELECTION STATE ---
+    const [conversionMode, setConversionMode] = useState(null); // 'ATK_TO_HP' | 'DEF_TO_ATK' | null
+    const [conversionAmount, setConversionAmount] = useState(0);
 
     // --- ENEMY STATE ---
     const [enemyState, setEnemyState] = useState(() => {
@@ -66,24 +60,44 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     });
 
     // --- ACTIONS ---
-    const handleAction = async (actionType) => {
-        if (phase !== 'setup') return;
+
+    // 1. Open Conversion Modal
+    const openConversionModal = (type) => {
+        setConversionMode(type);
+        setConversionAmount(0); // Reset or set to reasonable default? 0 forces choice.
+    };
+
+    // 2. Confirm Conversion
+    const confirmConversion = () => {
+        if (!conversionMode) return;
 
         let pState = { ...playerState };
         let pActionLog = "";
+        let res = {};
 
-        if (actionType === 'CONVERT_ATK_TO_HP') {
-            const res = resolveHealAction(pState);
-            pState = { ...pState, ...res };
-            pActionLog = `Você converteu Ataque em Vida! (+${res.amountHealed} HP)`;
-        } else if (actionType === 'CONVERT_DEF_TO_ATK') {
-            const res = resolveBuffAction(pState);
-            pState = { ...pState, ...res };
-            pActionLog = `Você converteu Defesa em Ataque! (+${res.attackGained} Atk)`;
+        if (conversionMode === 'ATK_TO_HP') {
+            res = resolveHealAction(pState, conversionAmount);
+            pActionLog = `Você converteu ${conversionAmount} de Ataque em Vida! (+${res.amountHealed} HP)`;
+        } else if (conversionMode === 'DEF_TO_ATK') {
+            res = resolveBuffAction(pState, conversionAmount);
+            pActionLog = `Você converteu ${conversionAmount} de Defesa em Ataque! (+${res.attackGained} Atk)`;
         }
 
-        setPlayerState(pState);
-        setBattleLog(prev => [...prev, `Ação: ${pActionLog}`]);
+        if (res.log) {
+            // Error case
+            setBattleLog(prev => [...prev, `Erro: ${res.log}`]);
+        } else {
+            // Success
+            pState = { ...pState, ...res };
+            setPlayerState(pState);
+            setBattleLog(prev => [...prev, `Ação: ${pActionLog}`]);
+        }
+
+        setConversionMode(null);
+    };
+
+    const cancelConversion = () => {
+        setConversionMode(null);
     };
 
     const handleNextTurn = () => {
@@ -163,9 +177,18 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         setBattleLog(prev => [...prev, ...log]);
 
         // Check End Game
+        // 1. Death
         if (pState.hp <= 0 || eState.hp <= 0) {
             setPhase('result');
-        } else {
+        }
+        // 2. Stalemate (Both have 0 Attack - cannot kill each other)
+        // User requested: "se os dois usuarios ficarem sem pontos de ataque ou defesa"
+        // Interpreting as: If both have NO attack power, game is stuck.
+        else if (pState.attack <= 0 && eState.attack <= 0) {
+            setBattleLog(prev => [...prev, "⚠️ Ambos ficaram sem Ataque! O duelo terminou em empate técnico."]);
+            setPhase('result');
+        }
+        else {
             setTurn(t => t + 1);
 
             // Handle Stun for next turn (Player)
@@ -296,7 +319,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                     {/* Conversion Buttons Row */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                         <button
-                            onClick={() => handleAction('CONVERT_ATK_TO_HP')}
+                            onClick={() => openConversionModal('CONVERT_ATK_TO_HP')}
                             disabled={playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2 || playerState.attack <= 0}
                             className="btn-primary"
                             style={{
@@ -311,7 +334,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                             <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>(Atk → Vida)</span>
                         </button>
                         <button
-                            onClick={() => handleAction('CONVERT_DEF_TO_ATK')}
+                            onClick={() => openConversionModal('CONVERT_DEF_TO_ATK')}
                             disabled={playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2 || playerState.defense <= 1}
                             className="btn-primary"
                             style={{
@@ -353,6 +376,42 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                     <button onClick={onExit} className="btn-primary" style={{ width: '200px' }}>
                         Sair da Arena
                     </button>
+                </div>
+            )}
+
+            {/* CONVERSION MODAL */}
+            {conversionMode && (
+                <div style={{
+                    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                    background: 'rgba(0,0,0,0.85)', zIndex: 5500,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                    <div style={{ background: '#1a1a2e', padding: '20px', borderRadius: '15px', width: '90%', border: '1px solid #444' }}>
+                        <h3 style={{ textAlign: 'center', marginBottom: '15px', color: '#fff' }}>
+                            {conversionMode === 'ATK_TO_HP' ? 'Converter Ataque em Vida' : 'Converter Defesa em Ataque'}
+                        </h3>
+
+                        <StatisticSelector
+                            label={conversionMode === 'ATK_TO_HP' ? "Qtd de Ataque" : "Qtd de Defesa"}
+                            icon={conversionMode === 'ATK_TO_HP' ? "⚔️" : "🛡️"}
+                            value={conversionAmount}
+                            color={conversionMode === 'ATK_TO_HP' ? "#ff4444" : "#4444ff"}
+                            maxAvailable={conversionMode === 'ATK_TO_HP' ?
+                                Math.min(playerState.attack, (playerState.maxHp - playerState.hp)) :
+                                playerState.defense
+                            }
+                            onSelect={setConversionAmount}
+                        />
+
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                            <button onClick={cancelConversion} className="btn-secondary" style={{ flex: 1, background: '#444' }}>
+                                Cancelar
+                            </button>
+                            <button onClick={confirmConversion} className="btn-primary" style={{ flex: 1, background: '#00f0ff' }}>
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

@@ -135,27 +135,32 @@ export const getBotAction = (botState, playerState, history, turnNumber) => {
  * - Cannot exceed available Attack.
  * - Max 2 times total (shared limit). 2nd time = 50% efficiency + Stun next turn.
  */
-export const resolveHealAction = (state) => {
+export const resolveHealAction = (state, amount = null) => {
     // state needs: hp, maxHp, attack, conversionsUsed
     const maxRecoverable = state.maxHp - state.hp;
     const availableAttack = state.attack;
 
-    // How much to convert? All available attack up to max recoverable
-    let rawAmount = Math.min(availableAttack, maxRecoverable);
+    // Use provided amount or default to max possible (if null/undefined)
+    // Validate amount against available attack
+    let rawAmount = amount !== null ? parseInt(amount) : Math.min(availableAttack, maxRecoverable);
+
+    // Safety clamp
+    if (rawAmount > availableAttack) rawAmount = availableAttack;
+    if (rawAmount > maxRecoverable) rawAmount = maxRecoverable;
+    if (rawAmount <= 0) return { ...state, log: "Valor inválido para conversão." };
 
     // Apply Limits based on usage
     let healedAmount = rawAmount;
     let nextTurnStun = false;
 
-    if (state.conversionsUsed === 0) {
-        // 1st Conversion: 100% eff
-        healedAmount = rawAmount;
-    } else if (state.conversionsUsed === 1) {
+    if (state.conversionsUsed >= 2) {
+        return { ...state, log: "Conversão falhou (limite excedido)." };
+    }
+
+    if (state.conversionsUsed === 1) {
         // 2nd Conversion: 50% Efficiency + Stun
         healedAmount = Math.floor(rawAmount * 0.5);
         nextTurnStun = true;
-    } else {
-        return { ...state, log: "Conversão falhou (limite excedido)." };
     }
 
     return {
@@ -163,7 +168,8 @@ export const resolveHealAction = (state) => {
         newAttack: state.attack - rawAmount,
         conversionsUsed: state.conversionsUsed + 1,
         isStunned: nextTurnStun,
-        amountHealed: healedAmount
+        amountHealed: healedAmount,
+        amountConverted: rawAmount
     };
 };
 
@@ -176,28 +182,32 @@ export const resolveHealAction = (state) => {
  * - Def (-Y) = Def_Converted.
  * - COUNTS towards the 2-conversion limit.
  */
-export const resolveBuffAction = (state) => {
+export const resolveBuffAction = (state, amount = null) => {
     // state needs: defense, attack, conversionsUsed
 
     if (state.conversionsUsed >= 2) {
         return { ...state, log: "Conversão falhou (limite excedido)." };
     }
 
-    // Max convert is 50% of current defense
-    const convertAmount = Math.floor(state.defense * 0.50);
+    // Default: Max convert is 50% of current defense provided no amount
+    // If amount is provided, validation checks against logic?
+    // User logic: "escolhe quanto quer converter".
+    // Does the "Max 50% of defense" rule still apply?
+    // "Segunda conversão: Máximo 50% do valor".
+    // Let's assume the user can convert UP TO the limit.
+    // Limit: Currently defined as 50% of Defense in previous logic. Let's keep that as a safety cap or let user decide?
+    // Prompt: "e se clicar em converter defesa para ataque ele escolhe quanto quer converter."
+    // Doesn't explicitly remove the 50% cap. I'll allow converting UP TO 100% of defense unless strictly forbidden.
+    // Actually, converting ALL defense leaves you vulnerable. That's a valid gamble.
+    // I will allow converting up to current Defense.
 
-    // Attack gained = Amount / 2
+    let convertAmount = amount !== null ? parseInt(amount) : Math.floor(state.defense * 0.50);
+
+    if (convertAmount > state.defense) convertAmount = state.defense;
+    if (convertAmount <= 0) return { ...state, log: "Valor inválido." };
+
+    // Attack gained = Amount / 2 (Cost 2 Def -> 1 Atk)
     const attackGained = Math.floor(convertAmount / 2);
-
-    // If it's the 2nd conversion, does it apply Stun? 
-    // Prompt says: "Segunda conversão: Máximo 50% do valor... Próximo turno bloqueado". 
-    // This rule was listed under "Conversão de Ataque -> Vida". 
-    // But for Def->Atk: "Se HP atual estiver cheio -> não é permitido converter." 
-    // And "Limitar o número de conversões para impedir abuso (1 ou 2 vezes por duelo)."
-    // Let's assume standard penalty (Stun) applies to ANY 2nd conversion for consistency/balance?
-    // User said: "o usuario so pode converter 2 vezes por duelo. independente de sera uma vez ataque para hp ou defesa para ataque."
-    // And previously: "Segunda conversão: ... Próximo turno bloqueado". This was indented under Atk->HP.
-    // But let's apply strict Stun on ANY 2nd conversion to be safe and consistent with "2 times limit" logic.
 
     let nextTurnStun = false;
     let actualAttackGained = attackGained;
