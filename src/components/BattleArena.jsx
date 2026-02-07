@@ -35,7 +35,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             attack: (myProfile.attributes?.strength || 10),
             defense: (myProfile.attributes?.defense || 10),
 
-            healsUsed: 0,
+            conversionsUsed: 0,
             isStunned: false,
             lastAction: null
         };
@@ -59,7 +59,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             attack: baseStr,
             defense: baseDef,
 
-            healsUsed: 0,
+            conversionsUsed: 0,
             isStunned: false,
             lastAction: null
         };
@@ -82,12 +82,12 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
             pState.isDefending = true;
         } else if (actionType === 'CONVERT_ATK_TO_HP') {
             const res = resolveHealAction(pState);
-            pState = { ...pState, ...res }; // updates hp, attack, healsUsed, isStunned
+            pState = { ...pState, ...res }; // updates hp, attack, conversionsUsed, isStunned
             pActionLog = `Você converteu Ataque em Vida! (+${res.amountHealed} HP)`;
             // Cannot attack this turn
         } else if (actionType === 'CONVERT_DEF_TO_ATK') {
             const res = resolveBuffAction(pState);
-            pState = { ...pState, ...res }; // updates def, atk
+            pState = { ...pState, ...res }; // updates def, atk, conversionsUsed
             pActionLog = `Você converteu Defesa em Ataque! (+${res.attackGained} Atk)`;
             // Cannot double convert, but can attack? 
             // Rules: "Converter Def -> Atk ... não pode converter atk -> vida". 
@@ -189,7 +189,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     // Auto-Skip Player Turn if Stunned
     useEffect(() => {
         if (phase === 'setup' && playerState.isStunned) {
-            setBattleLog(prev => [...prev, "⚠️ Você está atordoado pela cura excessiva! Turno pulado."]);
+            setBattleLog(prev => [...prev, "⚠️ Você está atordoado pelo esforço excessivo! Turno pulado."]);
             setPlayerState(prev => ({ ...prev, isStunned: false })); // Clear stun
 
             // Force Skip Action
@@ -198,7 +198,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                 resolveTurn('SKIP', { ...playerState, isStunned: false });
             }, 1000);
         }
-    }, [turn, phase]); // Check on turn start
+    }, [turn, phase, playerState]); // Check on turn start
 
     // --- RENDER HELPERS ---
     const getHpColor = (current, max) => {
@@ -242,7 +242,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                         <div style={{ display: 'flex', gap: '15px', fontSize: '0.9rem', color: '#ccc' }}>
                             <span>⚔️ {enemyState.attack}</span>
                             <span>🛡️ {enemyState.defense}</span>
-                            {enemyState.healsUsed > 0 && <span style={{ color: '#00f0ff' }}>💊 {enemyState.healsUsed}/2</span>}
+                            {enemyState.conversionsUsed > 0 && <span style={{ color: '#00f0ff' }}>💊 {enemyState.conversionsUsed}/2</span>}
                         </div>
                     </div>
                 </div>
@@ -271,7 +271,7 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                         <div style={{ display: 'flex', gap: '15px', fontSize: '0.9rem', color: '#ccc' }}>
                             <span>⚔️ {playerState.attack}</span>
                             <span>🛡️ {playerState.defense}</span>
-                            {playerState.healsUsed > 0 && <span style={{ color: '#00f0ff' }}>💊 {playerState.healsUsed}/2</span>}
+                            {playerState.conversionsUsed > 0 && <span style={{ color: '#00f0ff' }}>💊 {playerState.conversionsUsed}/2</span>}
                         </div>
                     </div>
                 </div>
@@ -289,17 +289,17 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                     </button>
                     <button
                         onClick={() => handleAction('CONVERT_ATK_TO_HP')}
-                        disabled={playerState.hp >= playerState.maxHp || playerState.healsUsed >= 2 || playerState.attack <= 0}
+                        disabled={playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2 || playerState.attack <= 0}
                         className="btn-primary"
-                        style={{ background: 'linear-gradient(90deg, #00f0ff, #0099ff)', fontSize: '0.8rem', opacity: (playerState.hp >= playerState.maxHp || playerState.healsUsed >= 2) ? 0.5 : 1 }}
+                        style={{ background: 'linear-gradient(90deg, #00f0ff, #0099ff)', fontSize: '0.8rem', opacity: (playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2) ? 0.5 : 1 }}
                     >
                         ❤️ CURAR (Atk→HP)
                     </button>
                     <button
                         onClick={() => handleAction('CONVERT_DEF_TO_ATK')}
-                        disabled={playerState.hp >= playerState.maxHp || playerState.defense <= 1}
+                        disabled={playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2 || playerState.defense <= 1}
                         className="btn-primary"
-                        style={{ background: 'linear-gradient(90deg, #ffaa00, #ff5500)', fontSize: '0.8rem', opacity: (playerState.hp >= playerState.maxHp) ? 0.5 : 1 }}
+                        style={{ background: 'linear-gradient(90deg, #ffaa00, #ff5500)', fontSize: '0.8rem', opacity: (playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2) ? 0.5 : 1 }}
                     >
                         🔥 BUFF (Def→Atk)
                     </button>

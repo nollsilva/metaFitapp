@@ -55,14 +55,14 @@ export const getBotAction = (botState, playerState, history, turnNumber) => {
     const riskOfDeath = damageToBot / botState.hp; // > 1.0 means likely death
     const pressure = botState.attack / playerState.hp; // High pressure capability
 
-    console.log(`[BOT AI] Turn ${turnNumber} | HP: ${(hpPercent * 100).toFixed(1)}% | Risk: ${riskOfDeath.toFixed(2)} | Heals: ${botState.healsUsed}`);
+    console.log(`[BOT AI] Turn ${turnNumber} | HP: ${(hpPercent * 100).toFixed(1)}% | Risk: ${riskOfDeath.toFixed(2)} | Heals: ${botState.conversionsUsed}`);
 
     // 2. DECISION TREE
 
     // A. SURVIVAL (Critical HP)
     if (hpPercent <= 0.30) {
         // Can we heal?
-        if (botState.healsUsed < 2 && botState.attack > 10) {
+        if (botState.conversionsUsed < 2 && botState.attack > 10) {
             // Priority: Heal if low HP and has Attack to convert
             // Don't heal if it kills our attack completely unless desperate?
             // Rule: "Se HP_bot <= 30% e curas disponíveis -> converter Ataque -> Vida"
@@ -113,7 +113,7 @@ export const getBotAction = (botState, playerState, history, turnNumber) => {
     // "Aleatoriedade controlada: 20–30% chance de ação alternativa"
     const roll = Math.random();
 
-    if (roll < 0.20 && botState.healsUsed < 2 && botState.hp < botState.maxHp && botState.attack > 20) {
+    if (roll < 0.20 && botState.conversionsUsed < 2 && botState.hp < botState.maxHp && botState.attack > 20) {
         return { type: 'CONVERT_ATK_TO_HP', reason: 'Random Sustain' };
     }
 
@@ -133,10 +133,10 @@ export const getBotAction = (botState, playerState, history, turnNumber) => {
  * - 1 Atk -> 1 HP. 
  * - Max recover = MaxHP - CurHP. 
  * - Cannot exceed available Attack.
- * - Max 2 times. 2nd time = 50% efficiency + Stun next turn. 3rd time forbidden.
+ * - Max 2 times total (shared limit). 2nd time = 50% efficiency + Stun next turn.
  */
 export const resolveHealAction = (state) => {
-    // state needs: hp, maxHp, attack, healsUsed
+    // state needs: hp, maxHp, attack, conversionsUsed
     const maxRecoverable = state.maxHp - state.hp;
     const availableAttack = state.attack;
 
@@ -147,26 +147,21 @@ export const resolveHealAction = (state) => {
     let healedAmount = rawAmount;
     let nextTurnStun = false;
 
-    if (state.healsUsed === 0) {
-        // 1st Heal: 100% eff
+    if (state.conversionsUsed === 0) {
+        // 1st Conversion: 100% eff
         healedAmount = rawAmount;
-    } else if (state.healsUsed === 1) {
-        // 2nd Heal: 50% max of FIRST conversion? Or 50% efficiency?
-        // Prompt: "Segunda conversão: Máximo 50% do valor da primeira conversão" OR "50% efficiency"? 
-        // Let's assume 50% efficiency of THIS conversion for simplicity/balance unless we track 1st amount.
-        // "Máximo 50% do valor da primeira conversão" implies we track the first amount.
-        // To simplify (since we might not have history): 50% Efficiency.
+    } else if (state.conversionsUsed === 1) {
+        // 2nd Conversion: 50% Efficiency + Stun
         healedAmount = Math.floor(rawAmount * 0.5);
         nextTurnStun = true;
     } else {
-        // 3rd+ prohibited (UI/AI should prevent this, but fail-safe)
-        return { ...state, log: "Cura falhou (limite excedido)." };
+        return { ...state, log: "Conversão falhou (limite excedido)." };
     }
 
     return {
         newHp: state.hp + healedAmount,
-        newAttack: state.attack - rawAmount, // Cost is always the raw amount extracted? Or scaled? Usually raw.
-        healsUsed: state.healsUsed + 1,
+        newAttack: state.attack - rawAmount,
+        conversionsUsed: state.conversionsUsed + 1,
         isStunned: nextTurnStun,
         amountHealed: healedAmount
     };
@@ -179,9 +174,14 @@ export const resolveHealAction = (state) => {
  * - Cost: 2 Def -> 1 Atk.
  * - Atk (+X) = Def_Converted / 2.
  * - Def (-Y) = Def_Converted.
+ * - COUNTS towards the 2-conversion limit.
  */
 export const resolveBuffAction = (state) => {
-    // state needs: defense, attack
+    // state needs: defense, attack, conversionsUsed
+
+    if (state.conversionsUsed >= 2) {
+        return { ...state, log: "Conversão falhou (limite excedido)." };
+    }
 
     // Max convert is 50% of current defense
     const convertAmount = Math.floor(state.defense * 0.50);
@@ -189,10 +189,30 @@ export const resolveBuffAction = (state) => {
     // Attack gained = Amount / 2
     const attackGained = Math.floor(convertAmount / 2);
 
+    // If it's the 2nd conversion, does it apply Stun? 
+    // Prompt says: "Segunda conversão: Máximo 50% do valor... Próximo turno bloqueado". 
+    // This rule was listed under "Conversão de Ataque -> Vida". 
+    // But for Def->Atk: "Se HP atual estiver cheio -> não é permitido converter." 
+    // And "Limitar o número de conversões para impedir abuso (1 ou 2 vezes por duelo)."
+    // Let's assume standard penalty (Stun) applies to ANY 2nd conversion for consistency/balance?
+    // User said: "o usuario so pode converter 2 vezes por duelo. independente de sera uma vez ataque para hp ou defesa para ataque."
+    // And previously: "Segunda conversão: ... Próximo turno bloqueado". This was indented under Atk->HP.
+    // But let's apply strict Stun on ANY 2nd conversion to be safe and consistent with "2 times limit" logic.
+
+    let nextTurnStun = false;
+    let actualAttackGained = attackGained;
+
+    if (state.conversionsUsed === 1) {
+        nextTurnStun = true;
+        actualAttackGained = Math.floor(attackGained * 0.5); // Apply 50% nerf to 2nd conversion too?
+    }
+
     return {
         newDefense: state.defense - convertAmount,
-        newAttack: state.attack + attackGained,
+        newAttack: state.attack + actualAttackGained,
+        conversionsUsed: state.conversionsUsed + 1, // Increment shared counter
+        isStunned: nextTurnStun,
         amountConverted: convertAmount,
-        attackGained: attackGained
+        attackGained: actualAttackGained
     };
 };
