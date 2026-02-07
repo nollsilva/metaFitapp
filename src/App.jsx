@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import WorkoutTimer from './components/WorkoutTimer';
 import ProfileSection from './components/ProfileSection';
-import DietSection from './components/DietSection';
+
 import WorkoutsSection from './components/WorkoutsSection';
 import RankingSection from './components/RankingSection';
 import AuthModal from './components/AuthModal';
@@ -807,12 +807,7 @@ function App() {
           />
         )}
 
-        {activeTab === 'diet' && (
-          <DietSection
-            profile={userProfile}
-            onUpdateProfile={updateProfile}
-          />
-        )}
+
 
         {activeTab === 'tracker' && (
           <ProfileSection

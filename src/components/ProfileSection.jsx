@@ -631,7 +631,78 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                 )
             }
 
-            {/* Edit Profile Modal */}
+            {/* BMI Calculator Section */}
+            <div className="card" style={{ marginBottom: '2rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    ⚖️ Calculadora de IMC
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '1rem' }}>
+                    <div style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#aaa', display: 'block', marginBottom: '5px' }}>Peso (kg)</label>
+                        <input
+                            type="number"
+                            placeholder="Ex: 70"
+                            value={profile.weight || ''}
+                            onChange={(e) => onUpdateProfile({ weight: e.target.value })}
+                            style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '1.2rem', fontWeight: 'bold' }}
+                        />
+                    </div>
+                    <div style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#aaa', display: 'block', marginBottom: '5px' }}>Altura (cm)</label>
+                        <input
+                            type="number"
+                            placeholder="Ex: 175"
+                            value={profile.height || ''}
+                            onChange={(e) => onUpdateProfile({ height: e.target.value })}
+                            style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '1.2rem', fontWeight: 'bold' }}
+                        />
+                    </div>
+                </div>
+
+                {/* Calculation Display */}
+                {(() => {
+                    const h = parseFloat(profile.height) / 100;
+                    const w = parseFloat(profile.weight);
+                    if (h > 0 && w > 0) {
+                        const imc = (w / (h * h)).toFixed(1);
+                        let classification = '';
+                        let color = '#fff';
+
+                        if (imc < 18.5) { classification = 'Abaixo do Peso'; color = '#00d4ff'; }
+                        else if (imc < 24.9) { classification = 'Peso Normal'; color = '#00ff66'; }
+                        else if (imc < 29.9) { classification = 'Sobrepeso'; color = '#ffaa00'; }
+                        else if (imc < 34.9) { classification = 'Obesidade I'; color = '#ff5500'; }
+                        else { classification = 'Obesidade II/III'; color = '#ff0055'; }
+
+                        // Auto-update profile IMC string (optional prevention of infinite loop required if doing useEffect, 
+                        // but here we just render. We could convert this to a button "Save Stats" if preferred, 
+                        // but user said "calculator". Live update is nicer.
+                        // Ideally we save the calculated IMC to profile when values change? 
+                        // The profile already has 'imc' field in display. We can just display it here dynamically.
+
+                        return (
+                            <div style={{
+                                background: `linear-gradient(90deg, rgba(0,0,0,0.5), ${color}22)`,
+                                padding: '15px', borderRadius: '8px',
+                                borderLeft: `4px solid ${color}`,
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                            }}>
+                                <div>
+                                    <div style={{ fontSize: '0.9rem', color: '#ccc' }}>Seu IMC</div>
+                                    <div style={{ fontSize: '1.5rem', fontWeight: '900', color: color }}>{imc}</div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>{classification}</div>
+                                    <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Classificação</div>
+                                </div>
+                            </div>
+                        );
+                    } else {
+                        return <div style={{ fontSize: '0.9rem', color: '#666', textAlign: 'center', padding: '10px' }}>Insira peso e altura para calcular.</div>;
+                    }
+                })()}
+            </div>
+
             {
                 isEditModalOpen && (
                     <div className="modal-overlay" onClick={() => setIsEditModalOpen(false)} style={{ zIndex: 10000 }}>
