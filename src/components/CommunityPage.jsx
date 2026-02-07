@@ -8,7 +8,7 @@ import { subscribeToCommunityFeed, deleteCommunityPost } from '../utils/db'; // 
 const CommunityPage = ({ profile }) => { // Receives profile
     const [showJoinModal, setShowJoinModal] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [posts, setPosts] = useState(communityData);
+    const [posts, setPosts] = useState([]);
     const [isAdmin, setIsAdmin] = useState(false);
     const [headerClicks, setHeaderClicks] = useState(0);
 
@@ -30,7 +30,7 @@ const CommunityPage = ({ profile }) => { // Receives profile
         }
 
         const unsubscribe = subscribeToCommunityFeed((newPosts) => {
-            const combined = [...newPosts, ...communityData];
+            const combined = [...newPosts];
             setPosts(combined);
         });
         return () => unsubscribe && unsubscribe();
