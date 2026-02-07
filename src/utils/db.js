@@ -1,4 +1,4 @@
-import { auth, db } from '../lib/firebase';
+import { auth, db, storage } from '../lib/firebase';
 import { sendWelcomeEmail } from './email';
 import {
     createUserWithEmailAndPassword,
@@ -723,15 +723,27 @@ export const updateHeartbeat = async (uid) => {
 // --- COMMUNITY SYSTEM ---
 
 export const uploadCommunityImage = async (file) => {
+    console.log("Starting uploadCommunityImage for file:", file?.name);
     if (!file) return { error: "Nenhum arquivo selecionado." };
     try {
+        if (!storage) {
+            console.error("Storage instance is missing!");
+            return { error: "Erro interno: Storage não inicializado." };
+        }
         const storageRef = ref(storage, `community/${Date.now()}_${file.name}`);
+        console.log("Created storage ref:", storageRef);
+
+        console.log("Uploading bytes...");
         const snapshot = await uploadBytes(storageRef, file);
+        console.log("Upload complete, snapshot:", snapshot);
+
         const url = await getDownloadURL(snapshot.ref);
+        console.log("Got download URL:", url);
+
         return { success: true, url };
     } catch (e) {
-        console.error("Upload Error:", e);
-        return { error: "Erro ao fazer upload da imagem." };
+        console.error("Upload Error in db.js:", e);
+        return { error: e.message || "Erro desconhecido no upload." };
     }
 };
 

@@ -8,6 +8,7 @@ const AddPostModal = ({ onClose, postToEdit = null }) => {
     const [isFeatured, setIsFeatured] = useState(false);
     const [imageFile, setImageFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
+    const [imageFit, setImageFit] = useState('cover');
     const [uploading, setUploading] = useState(false);
 
     // Pre-fill if editing
@@ -17,6 +18,7 @@ const AddPostModal = ({ onClose, postToEdit = null }) => {
             setType(postToEdit.type || 'Treino Concluído');
             setTimeText(postToEdit.timeText || 'Agora mesmo');
             setIsFeatured(postToEdit.isFeatured || false);
+            setImageFit(postToEdit.imageFit || 'cover');
             if (postToEdit.image) setPreviewUrl(postToEdit.image);
         }
     }, [postToEdit]);
@@ -56,6 +58,7 @@ const AddPostModal = ({ onClose, postToEdit = null }) => {
                 type,
                 timeText,
                 image: imageUrl,
+                imageFit, // Save preference
                 isFeatured,
                 // Do not overwrite createdAt if editing
                 createdAt: postToEdit ? postToEdit.createdAt : new Date().toISOString()
@@ -117,7 +120,36 @@ const AddPostModal = ({ onClose, postToEdit = null }) => {
                         />
                         <label htmlFor="post-image-upload" style={{ cursor: 'pointer' }}>
                             {previewUrl ? (
-                                <img src={previewUrl} alt="Preview" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '10px' }} />
+                                <div style={{ position: 'relative', marginTop: '10px', borderRadius: '10px', overflow: 'hidden' }}>
+                                    <img
+                                        src={previewUrl}
+                                        alt="Preview"
+                                        style={{
+                                            width: '100%',
+                                            height: '300px',
+                                            objectFit: imageFit,
+                                            background: '#000'
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setImageFit(prev => prev === 'cover' ? 'contain' : 'cover')}
+                                        style={{
+                                            position: 'absolute',
+                                            bottom: '10px',
+                                            right: '10px',
+                                            background: 'rgba(0,0,0,0.7)',
+                                            color: '#fff',
+                                            border: '1px solid #fff',
+                                            borderRadius: '5px',
+                                            padding: '5px 10px',
+                                            cursor: 'pointer',
+                                            fontSize: '0.8rem'
+                                        }}
+                                    >
+                                        {imageFit === 'cover' ? '↔️ Ajustar (Caber)' : '🔍 Preencher (Cortar)'}
+                                    </button>
+                                </div>
                             ) : (
                                 <div style={{
                                     padding: '30px', border: '2px dashed #444',
@@ -172,8 +204,8 @@ const AddPostModal = ({ onClose, postToEdit = null }) => {
 
                     <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                         <button type="button" onClick={onClose} style={{ flex: 1, padding: '10px', background: '#444', border: 'none', color: '#fff', borderRadius: '5px', cursor: 'pointer' }}>Cancelar</button>
-                        <button type="submit" disabled={loading} className="btn-primary" style={{ flex: 1, padding: '10px' }}>
-                            {loading ? 'Enviando...' : 'Publicar'}
+                        <button type="submit" disabled={uploading} className="btn-primary" style={{ flex: 1, padding: '10px' }}>
+                            {uploading ? 'Enviando...' : 'Publicar'}
                         </button>
                     </div>
                 </form>

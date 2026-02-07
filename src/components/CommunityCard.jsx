@@ -1,4 +1,3 @@
-```javascript
 import React from 'react';
 
 const CommunityCard = ({ post, isAdmin, onEdit, onDelete }) => {
@@ -7,9 +6,12 @@ const CommunityCard = ({ post, isAdmin, onEdit, onDelete }) => {
             background: 'rgba(20, 20, 25, 0.8)',
             border: post.isFeatured ? '1px solid #ffd700' : '1px solid rgba(255, 255, 255, 0.1)',
             borderRadius: '15px',
-            marginBottom: '15px',
+            marginBottom: '25px', // Increased margin
+            width: '85%', // Reduced width for "1.5 posts" effect
+            margin: '0 auto 25px', // Center and margin bottom
             overflow: 'hidden',
-            position: 'relative' // For absolute positioning of admin buttons
+            position: 'relative',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.5)' // Added shadow for depth
         }}>
             {/* ADMIN CONTROLS */}
             {isAdmin && (
@@ -21,7 +23,7 @@ const CommunityCard = ({ post, isAdmin, onEdit, onDelete }) => {
                     display: 'flex',
                     gap: '5px'
                 }}>
-                    <button 
+                    <button
                         onClick={(e) => { e.stopPropagation(); onEdit(post); }}
                         style={{
                             background: 'rgba(0, 100, 255, 0.8)', color: '#fff', border: 'none',
@@ -30,7 +32,7 @@ const CommunityCard = ({ post, isAdmin, onEdit, onDelete }) => {
                     >
                         ✏️
                     </button>
-                    <button 
+                    <button
                         onClick={(e) => { e.stopPropagation(); onDelete(post.id); }}
                         style={{
                             background: 'rgba(255, 0, 0, 0.8)', color: '#fff', border: 'none',
@@ -60,7 +62,7 @@ const CommunityCard = ({ post, isAdmin, onEdit, onDelete }) => {
                 </div>
             )}
 
-            <div style={{ position: 'relative', width: '100%', paddingTop: '100%' /* Square aspect ratio 1:1 */ }}>
+            <div style={{ position: 'relative', width: '100%', paddingTop: '177.77%' /* Story aspect ratio 9:16 */ }}>
                 <img
                     src={post.image}
                     alt={post.name}
@@ -70,7 +72,8 @@ const CommunityCard = ({ post, isAdmin, onEdit, onDelete }) => {
                         left: 0,
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover'
+                        objectFit: post.imageFit || 'cover', // Dynamic fit
+                        background: '#000' // Black background for 'contain' mode
                     }}
                     loading="lazy"
                 />
