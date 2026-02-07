@@ -22,8 +22,11 @@ import {
     arrayUnion,
     arrayRemove, // Imported
     increment,
-    limit
+    limit,
+    orderBy, // Added
+    onSnapshot // Added
 } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Added
 
 // Generate 6-digit ID
 export const generateId = () => {
@@ -714,5 +717,63 @@ export const updateHeartbeat = async (uid) => {
         });
     } catch (e) {
         console.error("Error updating heartbeat:", e);
+    }
+};
+
+// --- COMMUNITY SYSTEM ---
+
+export const uploadCommunityImage = async (file) => {
+    if (!file) return { error: "Nenhum arquivo selecionado." };
+    try {
+        const storageRef = ref(storage, `community/${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(snapshot.ref);
+        return { success: true, url };
+    } catch (e) {
+        console.error("Upload Error:", e);
+        return { error: "Erro ao fazer upload da imagem." };
+    }
+};
+
+export const addCommunityPost = async (postData) => {
+    try {
+        await addDoc(collection(db, "community_feed"), {
+            ...postData,
+            createdAt: new Date().toISOString()
+        });
+        return { success: true };
+    } catch (e) {
+        console.error("Add Post Error:", e);
+        return { error: e.message };
+    }
+};
+
+export const subscribeToCommunityFeed = (callback) => {
+    try {
+        // Query ALL posts (client-side sort for safety against import errors)
+        const q = query(collection(db, "community_feed"));
+
+        return onSnapshot(q, (snapshot) => {
+            const posts = [];
+            snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+
+            // Client-side Sort (Newest First)
+            posts.sort((a, b) => {
+                const dateA = new Date(a.createdAt || 0);
+                const dateB = new Date(b.createdAt || 0);
+                return dateB - dateA;
+            });
+
+            // Limit to 50
+            const limitedPosts = posts.slice(0, 50);
+
+            callback(limitedPosts);
+        }, (error) => {
+            console.error("Community Feed Error:", error);
+            callback([]);
+        });
+    } catch (err) {
+        console.error("Setup Feed Error:", err);
+        return () => { };
     }
 };

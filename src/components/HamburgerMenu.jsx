@@ -14,6 +14,7 @@ const HamburgerMenu = ({ isOpen, onClose, activeTab, setActiveTab, onLogout, pro
 
         // Bonus and Help might trigger modals instead of tabs
         { id: 'bonus', label: 'Bônus Diário', icon: '🎁', action: 'bonus', hasNotification: notificationBonus, notificationColor: '#ff0055' },
+        { id: 'community', label: 'Comunidade', icon: '👥' }, // New Item
         { id: 'help', label: 'Ajuda', icon: '❓', action: 'help' },
     ];
 

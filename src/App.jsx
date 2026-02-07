@@ -67,6 +67,8 @@ const lazyWithRetry = (componentImport) =>
 
 // Lazy load BattleArena with retry logic
 const BattleArena = lazyWithRetry(() => import('./components/BattleArena'));
+// const CommunityScreen = lazyWithRetry(() => import('./components/CommunityScreen')); // Commented out suspect file
+const CommunityScreen = lazyWithRetry(() => import('./components/CommunityPage')); // Using new file
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -769,6 +771,8 @@ function App() {
             onToggleCheck={handleToggleCheck}
           />
         )}
+
+        {activeTab === 'community' && <CommunityScreen />}
 
         {activeTab === 'timer' && activeExercise && (
           <WorkoutTimer
