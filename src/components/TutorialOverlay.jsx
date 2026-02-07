@@ -6,28 +6,34 @@ import TutorialCard from './TutorialCard';
 const cardsContent = [
     {
         step: 1,
-        title: "Perfil & Metas 🎯",
-        text: "Passo mais importante: Cadastre seu Peso, Altura e Objetivo na aba Perfil! Sem isso, nossa IA não consegue montar sua dieta e treino ideal."
+        title: "Perfil & Biometria 🎯",
+        text: "Cadastre Peso e Altura para calcular seu IMC automaticamente (Perfil). Defina seu Objetivo para personalizar sua jornada."
     },
     {
         step: 2,
-        title: "Ganhe XP 🚀",
-        text: "Treine diariamente e convide amigos (+100 XP cada!) para subir de nível no Rank Global. Acesse seu Link de Convite no Perfil."
+        title: "Ganhe XP & Rank 🚀",
+        text: "Treine, Corra e convide amigos (+100 XP!). Suba no Rank Global e desbloqueie novas Ligas com recompensas exclusivas."
     },
     {
         step: 3,
-        title: "Dieta & Treino 🥗",
-        text: "Sua rotina é gerada automaticamente. Siga o Timer nos treinos e os macros na dieta para evoluir seus atributos (Força, Velocidade)."
+        title: "Treino & Evolução 💪",
+        text: "Siga o Timer nos treinos diários. Cada exercício concluído gera XP e melhora os atributos reais do seu avatar (Força, Velocidade)."
     },
     {
         step: 4,
-        title: "Batalhas PvP ⚔️",
-        text: "Use seus atributos para desafiar amigos ou o Bot no modo Duelo! Estratégia conta tanto quanto força bruta."
+        title: "Modo Corrida 🏃",
+        text: "Rastreie suas corridas com GPS. Acompanhe ritmo, distância e controle sua música sem sair da tela, tudo em um layout otimizado."
     },
     {
         step: 5,
+        title: "Batalhas PvP ⚔️",
+        text: "Use seus atributos reais (conquistados nos treinos) para desafiar amigos em duelos de estratégia! Vença para roubar pontos."
+    },
+    {
+        step: 6, // Added extra step for App install if needed, or keep 5. Let's keep the "Pro Tip" as 6 if user wants, but I'll stick to 5 relevant ones + the Pro Tip from before if it fits, or replace one. 
+        // The previous had 5. Let's make it 6 to include the App Install tip which is valuable.
         title: "Dica Pro 📲",
-        text: "Instale o App (Adicionar à Tela de Início) para acessar offline e receber lembretes de água e refeições!"
+        text: "Instale o App (Adicionar à Tela de Início) para ter a melhor performance, acesso offline e receber lembretes!"
     }
 ];
 

@@ -14,8 +14,8 @@ const OnboardingGuide = () => {
                             <div className="btn-primary-sm" style={{ marginTop: '10px', pointerEvents: 'none' }}>GERAR DIETA</div>
                         </div>
                     </div>
-                    <h3>Plano de Dieta IA</h3>
-                    <p>Nossa IA analisa sua biometria e gera um plano nutricional de precisão cirúrgica para queimar gordura ou ganhar massa.</p>
+                    <h3>Análise Biométrica</h3>
+                    <p>Nossa IA analisa sua biometria, calcula seu IMC e define as metas ideais para queimar gordura ou ganhar massa.</p>
                 </div>
 
                 <div className="onboarding-step animate-fade-in" style={{ animationDelay: '0.4s' }}>
