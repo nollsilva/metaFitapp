@@ -69,46 +69,32 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
     const handleAction = async (actionType) => {
         if (phase !== 'setup') return;
 
-        // 1. Player Choice Process
         let pState = { ...playerState };
         let pActionLog = "";
 
-        if (actionType === 'ATTACK') {
-            pActionLog = "Você preparou um ataque!";
-        } else if (actionType === 'DEFEND') {
-            pActionLog = "Você assumiu postura defensiva (+50% Defesa temporária).";
-            // Defensive Stance Logic: Maybe boost defense for calculation?
-            // Let's implement Defense Stance as a temp buff for turn resolution
-            pState.isDefending = true;
-        } else if (actionType === 'CONVERT_ATK_TO_HP') {
+        if (actionType === 'CONVERT_ATK_TO_HP') {
             const res = resolveHealAction(pState);
-            pState = { ...pState, ...res }; // updates hp, attack, conversionsUsed, isStunned
+            pState = { ...pState, ...res };
             pActionLog = `Você converteu Ataque em Vida! (+${res.amountHealed} HP)`;
-            // Cannot attack this turn
         } else if (actionType === 'CONVERT_DEF_TO_ATK') {
             const res = resolveBuffAction(pState);
-            pState = { ...pState, ...res }; // updates def, atk, conversionsUsed
+            pState = { ...pState, ...res };
             pActionLog = `Você converteu Defesa em Ataque! (+${res.attackGained} Atk)`;
-            // Cannot double convert, but can attack? 
-            // Rules: "Converter Def -> Atk ... não pode converter atk -> vida". 
-            // "Ação: Escolher APENAS UMA". 
-            // So if I convert, I do NOT attack this turn?
-            // "O jogador pode escolher apenas uma ação por turno: Converter Defesa → Ataque".
-            // This implies the turn ENDS after conversion? 
-            // If so, no damage dealt? That makes Convert Def->Atk very risky (open to free hit).
-            // But valid strategy for preparing next turn finish.
         }
 
-        // Apply Player State Update (Immediate visual feedback)
         setPlayerState(pState);
-        setBattleLog(prev => [...prev, `Turno ${turn}: ${pActionLog}`]);
+        setBattleLog(prev => [...prev, `Ação: ${pActionLog}`]);
+    };
 
-        // 2. Bot Response (Simulated Network Delay)
-        setPhase('acting'); // Lock inputs
+    const handleNextTurn = () => {
+        if (phase !== 'setup') return;
+        setPhase('acting');
 
+        // Player "Attacks" by default with current stats
+        // We simulate a delay for "cinematic" feel
         setTimeout(() => {
-            resolveTurn(actionType, pState);
-        }, 1500);
+            resolveTurn('ATTACK', playerState);
+        }, 1000);
     };
 
     const resolveTurn = (playerActionType, currentPlayerState) => {
@@ -154,7 +140,11 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
         }
 
         // 2. Bot trying to deal damage?
-        if (botAction.type === 'ATTACK') {
+        // Bot attacks unless it's strictly Defending or Skipped (Stunned)
+        // This ensures Bot behaves like Player (Convert + Attack)
+        const botCanAttack = ['ATTACK', 'CONVERT_ATK_TO_HP', 'CONVERT_DEF_TO_ATK'].includes(botAction.type);
+
+        if (botCanAttack) {
             let effectiveDef = pState.defense;
             if (pState.isDefending) effectiveDef = Math.floor(effectiveDef * 1.5);
 
@@ -230,20 +220,31 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
                 {/* Enemy Card */}
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
-                    <div className="card" style={{ width: '80%', border: '1px solid #ff4444' }}>
+                    <div className="card" style={{ width: '80%', border: '1px solid #ff4444', padding: '10px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                             <strong style={{ color: '#ff4444' }}>OPONENTE (Bot)</strong>
                             <span style={{ color: getHpColor(enemyState.hp, enemyState.maxHp) }}>{enemyState.hp}/{enemyState.maxHp} HP</span>
                         </div>
                         {/* HP Bar */}
-                        <div style={{ height: '8px', background: '#333', borderRadius: '4px', overflow: 'hidden', marginBottom: '10px' }}>
-                            <div style={{ width: `${(enemyState.hp / enemyState.maxHp) * 100}%`, height: '100%', background: getHpColor(enemyState.hp, enemyState.maxHp), transition: 'width 0.5s' }}></div>
+                        <div style={{ height: '8px', background: '#333', borderRadius: '4px', overflow: 'hidden', marginBottom: '5px' }}>
+                            <div style={{ width: `${Math.min((enemyState.hp / enemyState.maxHp) * 100, 100)}%`, height: '100%', background: getHpColor(enemyState.hp, enemyState.maxHp), transition: 'width 0.5s' }}></div>
                         </div>
-                        <div style={{ display: 'flex', gap: '15px', fontSize: '0.9rem', color: '#ccc' }}>
-                            <span>⚔️ {enemyState.attack}</span>
-                            <span>🛡️ {enemyState.defense}</span>
-                            {enemyState.conversionsUsed > 0 && <span style={{ color: '#00f0ff' }}>💊 {enemyState.conversionsUsed}/2</span>}
+                        {/* Stats Bars */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.8rem', color: '#ccc' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span>⚔️ {enemyState.attack}</span>
+                                <div style={{ flex: 1, height: '4px', background: '#333', borderRadius: '2px' }}>
+                                    <div style={{ width: `${Math.min((enemyState.attack / 150) * 100, 100)}%`, height: '100%', background: '#ff4444' }}></div>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span>🛡️ {enemyState.defense}</span>
+                                <div style={{ flex: 1, height: '4px', background: '#333', borderRadius: '2px' }}>
+                                    <div style={{ width: `${Math.min((enemyState.defense / 150) * 100, 100)}%`, height: '100%', background: '#4444ff' }}></div>
+                                </div>
+                            </div>
                         </div>
+                        {enemyState.conversionsUsed > 0 && <div style={{ textAlign: 'right', marginTop: '5px', fontSize: '0.7rem', color: '#00f0ff' }}>💊 Conversões: {enemyState.conversionsUsed}/2</div>}
                     </div>
                 </div>
 
@@ -254,25 +255,35 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
                             {log}
                         </div>
                     ))}
-                    {/* Dummy div to scroll to bottom could go here */}
                 </div>
 
                 {/* Player Card */}
                 <div style={{ marginBottom: '20px' }}>
-                    <div className="card" style={{ width: '85%', border: '1px solid #00f0ff' }}>
+                    <div className="card" style={{ width: '85%', border: '1px solid #00f0ff', padding: '10px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                             <strong style={{ color: '#00f0ff' }}>VOCÊ</strong>
                             <span style={{ color: getHpColor(playerState.hp, playerState.maxHp) }}>{playerState.hp}/{playerState.maxHp} HP</span>
                         </div>
                         {/* HP Bar */}
-                        <div style={{ height: '8px', background: '#333', borderRadius: '4px', overflow: 'hidden', marginBottom: '10px' }}>
-                            <div style={{ width: `${(playerState.hp / playerState.maxHp) * 100}%`, height: '100%', background: getHpColor(playerState.hp, playerState.maxHp), transition: 'width 0.5s' }}></div>
+                        <div style={{ height: '8px', background: '#333', borderRadius: '4px', overflow: 'hidden', marginBottom: '5px' }}>
+                            <div style={{ width: `${Math.min((playerState.hp / playerState.maxHp) * 100, 100)}%`, height: '100%', background: getHpColor(playerState.hp, playerState.maxHp), transition: 'width 0.5s' }}></div>
                         </div>
-                        <div style={{ display: 'flex', gap: '15px', fontSize: '0.9rem', color: '#ccc' }}>
-                            <span>⚔️ {playerState.attack}</span>
-                            <span>🛡️ {playerState.defense}</span>
-                            {playerState.conversionsUsed > 0 && <span style={{ color: '#00f0ff' }}>💊 {playerState.conversionsUsed}/2</span>}
+                        {/* Stats Bars */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.9rem', color: '#ccc' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span>⚔️ {playerState.attack}</span>
+                                <div style={{ flex: 1, height: '6px', background: '#333', borderRadius: '3px' }}>
+                                    <div style={{ width: `${Math.min((playerState.attack / 150) * 100, 100)}%`, height: '100%', background: '#ff4444', transition: 'width 0.3s' }}></div>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span>🛡️ {playerState.defense}</span>
+                                <div style={{ flex: 1, height: '6px', background: '#333', borderRadius: '3px' }}>
+                                    <div style={{ width: `${Math.min((playerState.defense / 150) * 100, 100)}%`, height: '100%', background: '#4444ff', transition: 'width 0.3s' }}></div>
+                                </div>
+                            </div>
                         </div>
+                        {playerState.conversionsUsed > 0 && <div style={{ marginTop: '5px', fontSize: '0.8rem', color: '#00f0ff' }}>💊 Conversões: {playerState.conversionsUsed}/2</div>}
                     </div>
                 </div>
 
@@ -280,28 +291,56 @@ const BattleArena = ({ myProfile, enemyProfile, onExit, onUpdateProfile, battleI
 
             {/* Action Bar */}
             {phase === 'setup' && (
-                <div style={{ background: '#111', padding: '15px', borderTop: '1px solid #333', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <button onClick={() => handleAction('ATTACK')} className="btn-primary" style={{ background: '#ff4444' }}>
-                        ⚔️ ATACAR
-                    </button>
-                    <button onClick={() => handleAction('DEFEND')} className="btn-primary" style={{ background: '#444' }}>
-                        🛡️ DEFENDER
-                    </button>
+                <div style={{ background: '#111', padding: '15px', borderTop: '1px solid #333', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+                    {/* Conversion Buttons Row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <button
+                            onClick={() => handleAction('CONVERT_ATK_TO_HP')}
+                            disabled={playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2 || playerState.attack <= 0}
+                            className="btn-primary"
+                            style={{
+                                background: 'linear-gradient(90deg, #00f0ff, #0099ff)',
+                                padding: '12px',
+                                fontSize: '0.9rem',
+                                opacity: (playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2) ? 0.5 : 1,
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1.2'
+                            }}
+                        >
+                            <span>❤️ Converter</span>
+                            <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>(Atk → Vida)</span>
+                        </button>
+                        <button
+                            onClick={() => handleAction('CONVERT_DEF_TO_ATK')}
+                            disabled={playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2 || playerState.defense <= 1}
+                            className="btn-primary"
+                            style={{
+                                background: 'linear-gradient(90deg, #ffaa00, #ff5500)',
+                                padding: '12px',
+                                fontSize: '0.9rem',
+                                opacity: (playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2) ? 0.5 : 1,
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1.2'
+                            }}
+                        >
+                            <span>🔥 Converter</span>
+                            <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>(Def → Atk)</span>
+                        </button>
+                    </div>
+
+                    {/* Next Turn Button */}
                     <button
-                        onClick={() => handleAction('CONVERT_ATK_TO_HP')}
-                        disabled={playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2 || playerState.attack <= 0}
+                        onClick={handleNextTurn}
                         className="btn-primary"
-                        style={{ background: 'linear-gradient(90deg, #00f0ff, #0099ff)', fontSize: '0.8rem', opacity: (playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2) ? 0.5 : 1 }}
+                        style={{
+                            background: '#444',
+                            border: '1px solid #666',
+                            padding: '15px',
+                            fontSize: '1.1rem',
+                            fontWeight: 'bold',
+                            marginTop: '5px'
+                        }}
                     >
-                        ❤️ CURAR (Atk→HP)
-                    </button>
-                    <button
-                        onClick={() => handleAction('CONVERT_DEF_TO_ATK')}
-                        disabled={playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2 || playerState.defense <= 1}
-                        className="btn-primary"
-                        style={{ background: 'linear-gradient(90deg, #ffaa00, #ff5500)', fontSize: '0.8rem', opacity: (playerState.hp >= playerState.maxHp || playerState.conversionsUsed >= 2) ? 0.5 : 1 }}
-                    >
-                        🔥 BUFF (Def→Atk)
+                        PRÓXIMO TURNO ⏩
                     </button>
                 </div>
             )}
