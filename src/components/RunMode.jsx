@@ -497,7 +497,7 @@ const RunMode = ({ profile, onAddXp }) => {
     return (
         <div style={{ height: '100dvh', width: '100%', boxSizing: 'border-box', overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column', background: '#000' }}>
 
-            {/* TOP CARD */}
+            {/* TOP CARD (Absolute Overlay on Map) */}
             <div style={{
                 position: 'absolute', top: '10px', left: '10px', right: '10px', zIndex: 1000, pointerEvents: 'none'
             }}>
@@ -509,10 +509,10 @@ const RunMode = ({ profile, onAddXp }) => {
                 </div>
             </div>
 
-            {/* MAP LAYOUT */}
-            <div style={{ flex: 1, height: '100%', width: '100%', position: 'relative' }}>
+            {/* MAP LAYOUT (Flex Grow - Takes ~65% or available space) */}
+            <div style={{ flex: '1', position: 'relative', minHeight: '60%' }}>
                 {!position ? (
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#fff' }}>
                         <p>Buscando GPS...</p>
                     </div>
                 ) : (
@@ -541,35 +541,36 @@ const RunMode = ({ profile, onAddXp }) => {
                 )}
             </div>
 
-            {/* BOTTOM METRICS & CONTROLS */}
+            {/* BOTTOM METRICS & CONTROLS (Static Block - Solid Background) */}
             <div style={{
-                position: 'absolute', bottom: 0, left: 0, right: 0,
-                background: 'linear-gradient(to top, #000 90%, transparent)',
+                background: 'linear-gradient(to top, #000 90%, #111)',
                 padding: '20px 10px calc(20px + env(safe-area-inset-bottom)) 10px', // Safe area support
                 zIndex: 1000,
-                display: 'flex', flexDirection: 'column', gap: '15px'
+                display: 'flex', flexDirection: 'column', gap: '15px',
+                borderTop: '1px solid #333',
+                boxShadow: '0 -5px 20px rgba(0,0,0,0.8)'
             }}>
                 {/* Metrics Grid */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 10px', width: '100%', maxWidth: '600px', margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', flex: 1 }}>
-                        <div className="run-stat-value" style={{ fontSize: '1.2rem' }}>{formatTime(elapsedTime)}</div>
-                        <div className="run-stat-label" style={{ fontSize: '0.65rem' }}>TEMPO</div>
+                        <div className="run-stat-value" style={{ fontSize: '1.5rem', color: '#fff', fontWeight: 'bold' }}>{formatTime(elapsedTime)}</div>
+                        <div className="run-stat-label" style={{ fontSize: '0.7rem', color: '#888' }}>TEMPO</div>
                     </div>
                     <div style={{ textAlign: 'center', flex: 1 }}>
-                        <div className="run-stat-value" style={{ fontSize: '1.2rem' }}>{formatPace(currentPace)}</div>
-                        <div className="run-stat-label" style={{ fontSize: '0.65rem' }}>RITMO</div>
+                        <div className="run-stat-value" style={{ fontSize: '1.5rem', color: '#fff', fontWeight: 'bold' }}>{formatPace(currentPace)}</div>
+                        <div className="run-stat-label" style={{ fontSize: '0.7rem', color: '#888' }}>RITMO</div>
                     </div>
                     <div style={{ textAlign: 'center', flex: 1 }}>
-                        <div className="run-stat-value" style={{ fontSize: '1.2rem' }}>{currentSpeed.toFixed(1)}</div>
-                        <div className="run-stat-label" style={{ fontSize: '0.65rem' }}>KM/H</div>
+                        <div className="run-stat-value" style={{ fontSize: '1.5rem', color: '#fff', fontWeight: 'bold' }}>{currentSpeed.toFixed(1)}</div>
+                        <div className="run-stat-label" style={{ fontSize: '0.7rem', color: '#888' }}>KM/H</div>
                     </div>
                 </div>
 
                 {/* Controls */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', alignItems: 'center', width: '100%', maxWidth: '500px', margin: '0 auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', alignItems: 'center', width: '100%', maxWidth: '500px', margin: '10px auto 0' }}>
                     {!isRunning ? (
                         <>
-                            <div style={{ display: 'flex', flexDirection: 'row', gap: '15px', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+                            <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
                                 <button
                                     onClick={() => {
                                         if (profile && profile.uid) {
@@ -583,7 +584,7 @@ const RunMode = ({ profile, onAddXp }) => {
                                         }
                                     }}
                                     style={{
-                                        background: 'rgba(0,0,0,0.6)',
+                                        background: 'rgba(255,255,255,0.1)',
                                         border: '1px solid #333',
                                         color: '#fff',
                                         width: '50px',
@@ -604,7 +605,9 @@ const RunMode = ({ profile, onAddXp }) => {
                                         background: '#00ff66', color: '#000',
                                         boxShadow: '0 0 25px rgba(0,255,102,0.4)',
                                         width: '80px', height: '80px', // Slightly smaller
-                                        fontSize: '2rem'
+                                        fontSize: '2rem',
+                                        borderRadius: '50%', border: 'none', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
                                     }}
                                     onClick={startRun}
                                 >
@@ -617,7 +620,11 @@ const RunMode = ({ profile, onAddXp }) => {
                             {isPaused ? (
                                 <button
                                     className="btn-control-large"
-                                    style={{ background: '#00ff66', color: '#000', width: '80px', height: '80px' }}
+                                    style={{
+                                        background: '#00ff66', color: '#000', width: '80px', height: '80px',
+                                        borderRadius: '50%', border: 'none', cursor: 'pointer', fontSize: '2rem',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                    }}
                                     onClick={resumeRun}
                                 >
                                     ▶
@@ -625,7 +632,11 @@ const RunMode = ({ profile, onAddXp }) => {
                             ) : (
                                 <button
                                     className="btn-control-large"
-                                    style={{ background: '#ffcc00', color: '#000', width: '80px', height: '80px' }}
+                                    style={{
+                                        background: '#ffcc00', color: '#000', width: '80px', height: '80px',
+                                        borderRadius: '50%', border: 'none', cursor: 'pointer', fontSize: '2rem',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                    }}
                                     onClick={pauseRun}
                                 >
                                     ⏸
@@ -634,7 +645,11 @@ const RunMode = ({ profile, onAddXp }) => {
 
                             <button
                                 className="btn-control-large"
-                                style={{ background: '#ff0055', color: '#fff', width: '60px', height: '60px', fontSize: '1.5rem' }}
+                                style={{
+                                    background: '#ff0055', color: '#fff', width: '60px', height: '60px', fontSize: '1.5rem',
+                                    borderRadius: '50%', border: 'none', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                }}
                                 onClick={finishRun}
                             >
                                 ■
