@@ -32,25 +32,36 @@ export const generateId = () => {
 
 export const registerUser = async (email, password, name, inviteCode = "") => {
     try {
-        // 1. Create Auth User
+        let referrerDoc = null;
+        let referrerData = null;
+
+        // 1. Validate Invite Code FIRST (if provided)
+        if (inviteCode) {
+            const cleanInvite = inviteCode.trim();
+            const q = query(collection(db, "users"), where("id", "==", cleanInvite));
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                return { error: "Código de convite inválido." };
+            }
+
+            referrerDoc = snapshot.docs[0];
+            referrerData = referrerDoc.data();
+        }
+
+        // 2. Create Auth User
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // 2. Update Auth Profile
+        // 3. Update Auth Profile
         await updateAuthProfile(user, { displayName: name });
 
-        // 3. Create Firestore Document
+        // 4. Create Firestore Document
         let friendCode = generateId();
 
-        // Handle Referral Logic
-        if (inviteCode) {
-            const q = query(collection(db, "users"), where("id", "==", inviteCode));
-            const snapshot = await getDocs(q);
-            if (!snapshot.empty) {
-                const referrerDoc = snapshot.docs[0];
-                const referrerData = referrerDoc.data();
-
-                // Award 100 XP to Referrer
+        // 5. Award XP to Referrer (if valid)
+        if (referrerDoc && referrerData) {
+            try {
                 const referrerCurrentXp = referrerData.xp || 0;
                 await updateDoc(referrerDoc.ref, {
                     xp: referrerCurrentXp + 100,
@@ -64,17 +75,16 @@ export const registerUser = async (email, password, name, inviteCode = "") => {
                 });
 
                 // NOTIFY REFERRER
-                try {
-                    await addDoc(collection(db, "users", referrerDoc.id, "notifications"), {
-                        title: "Bônus de Convite! 🎟️",
-                        message: `${name} criou uma conta com seu link. Você ganhou +100 XP!`,
-                        type: "success",
-                        timestamp: new Date().toISOString(),
-                        read: false
-                    });
-                } catch (err) {
-                    console.error("Error notifying referrer:", err);
-                }
+                await addDoc(collection(db, "users", referrerDoc.id, "notifications"), {
+                    title: "Bônus de Convite! 🎟️",
+                    message: `${name} criou uma conta com seu link. Você ganhou +100 XP!`,
+                    type: "success",
+                    timestamp: new Date().toISOString(),
+                    read: false
+                });
+            } catch (err) {
+                console.error("Error rewarding referrer:", err);
+                // Continue creating the new user even if referrer update fails slightly
             }
         }
 
@@ -83,20 +93,17 @@ export const registerUser = async (email, password, name, inviteCode = "") => {
             id: friendCode, // Public Friend Code
             email,
             name,
-            xp: inviteCode ? 100 : 0, // Bonus 100 XP if invited
+            xp: referrerDoc ? 100 : 0, // Bonus 100 XP if invited successfully
             level: 1,
             friends: [],
             createdAt: new Date().toISOString(),
-            xpHistory: inviteCode ? [{
+            xpHistory: referrerDoc ? [{
                 id: Date.now(),
                 date: new Date().toISOString(),
                 amount: 100,
                 reason: 'Bônus de Convite',
                 type: 'gain'
             }] : [],
-            level: 1,
-            friends: [],
-            createdAt: new Date().toISOString(),
             // Profile Defaults
             weight: '',
             height: '',
@@ -116,6 +123,8 @@ export const registerUser = async (email, password, name, inviteCode = "") => {
             // Battle System Defaults
             attributes: { strength: 0, speed: 0, defense: 0, points: 0 },
             battleStats: { wins: 0, losses: 0 },
+            friendRequests: [],
+            friendRequestsAccepted: []
         };
 
         await setDoc(doc(db, "users", user.uid), newUserProfile);
