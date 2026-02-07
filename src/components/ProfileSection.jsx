@@ -3,6 +3,7 @@ import { updateUser } from '../utils/db'; // Ensure this is imported effectively
 import { sendRankUpEmail } from '../utils/email';
 import { updateEmail, updateProfile as updateAuthProfile, updatePassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import AdminPanel from './AdminPanel';
 import DailyBonus from './DailyBonus';
 import FriendRequests from './FriendRequests';
 
@@ -27,6 +28,9 @@ const avatars = {
 
 const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount }) => { // onUpdateProfile passed from App
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [showAdminPanel, setShowAdminPanel] = useState(false); // Admin Toggle
+    const IS_ADMIN = profile?.email === "nollramsilva9@gmail.com";
+
     const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
     const [isBonusModalOpen, setIsBonusModalOpen] = useState(false);
     const [isRequestsModalOpen, setIsRequestsModalOpen] = useState(false);

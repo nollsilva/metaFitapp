@@ -1,16 +1,47 @@
+```javascript
 import React from 'react';
 
-const CommunityCard = ({ post }) => {
+const CommunityCard = ({ post, isAdmin, onEdit, onDelete }) => {
     return (
-        <div style={{
-            background: '#222',
-            borderRadius: '12px',
-            overflow: 'hidden',
+        <div className="animate-fade-in" style={{
+            background: 'rgba(20, 20, 25, 0.8)',
+            border: post.isFeatured ? '1px solid #ffd700' : '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '15px',
             marginBottom: '15px',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-            border: post.isFeatured ? '1px solid #ffd700' : '1px solid #333',
-            position: 'relative'
+            overflow: 'hidden',
+            position: 'relative' // For absolute positioning of admin buttons
         }}>
+            {/* ADMIN CONTROLS */}
+            {isAdmin && (
+                <div style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    zIndex: 10,
+                    display: 'flex',
+                    gap: '5px'
+                }}>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onEdit(post); }}
+                        style={{
+                            background: 'rgba(0, 100, 255, 0.8)', color: '#fff', border: 'none',
+                            borderRadius: '5px', padding: '5px 8px', cursor: 'pointer', fontSize: '12px'
+                        }}
+                    >
+                        ✏️
+                    </button>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onDelete(post.id); }}
+                        style={{
+                            background: 'rgba(255, 0, 0, 0.8)', color: '#fff', border: 'none',
+                            borderRadius: '5px', padding: '5px 8px', cursor: 'pointer', fontSize: '12px'
+                        }}
+                    >
+                        🗑️
+                    </button>
+                </div>
+            )}
+
             {post.isFeatured && (
                 <div style={{
                     position: 'absolute',

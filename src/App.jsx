@@ -772,7 +772,7 @@ function App() {
           />
         )}
 
-        {activeTab === 'community' && <CommunityScreen />}
+        {activeTab === 'community' && <CommunityScreen profile={userProfile} />}
 
         {activeTab === 'timer' && activeExercise && (
           <WorkoutTimer

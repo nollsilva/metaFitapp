@@ -777,3 +777,78 @@ export const subscribeToCommunityFeed = (callback) => {
         return () => { };
     }
 };
+// --- ADMIN SYSTEM ---
+
+export const getAllUsers = async () => {
+    try {
+        const q = query(collection(db, "users"));
+        const snapshot = await getDocs(q);
+        const users = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            users.push({
+                uid: doc.id,
+                ...data
+            });
+        });
+        return users;
+    } catch (e) {
+        console.error("Get All Users Error:", e);
+        return [];
+    }
+};
+
+export const setUserVip = async (targetUid, planType) => {
+    try {
+        const userRef = doc(db, "users", targetUid);
+
+        if (!planType) {
+            // Remove VIP
+            await updateDoc(userRef, {
+                vip: false,
+                vipPlan: null,
+                vipExpiresAt: null
+            });
+            return { success: true, message: "VIP removido." };
+        }
+
+        let durationDays = 30;
+        if (planType === 'semiannual') durationDays = 180;
+        if (planType === 'annual') durationDays = 365;
+
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + durationDays);
+
+        await updateDoc(userRef, {
+            vip: true,
+            vipPlan: planType,
+            vipExpiresAt: expiresAt.toISOString()
+        });
+
+        return { success: true, message: `VIP ${planType} concedido até ${expiresAt.toLocaleDateString()}` };
+    } catch (e) {
+        console.error("Set VIP Error:", e);
+        return { error: e.message };
+    }
+};
+
+export const deleteCommunityPost = async (postId) => {
+    try {
+        await deleteDoc(doc(db, "community_feed", postId));
+        return { success: true };
+    } catch (e) {
+        console.error("Delete Post Error:", e);
+        return { error: e.message };
+    }
+};
+
+export const updateCommunityPost = async (postId, data) => {
+    try {
+        const postRef = doc(db, "community_feed", postId);
+        await updateDoc(postRef, data);
+        return { success: true };
+    } catch (e) {
+        console.error("Update Post Error:", e);
+        return { error: e.message };
+    }
+};

@@ -3,18 +3,27 @@ import { communityData } from '../data/communityData';
 import CommunityCard from './CommunityCard';
 import JoinCommunityModal from './JoinCommunityModal';
 import AddPostModal from './AddPostModal';
-import { subscribeToCommunityFeed } from '../utils/db';
+import { subscribeToCommunityFeed, deleteCommunityPost } from '../utils/db'; // Added delete
 
-const CommunityPage = () => {
+const CommunityPage = ({ profile }) => { // Receives profile
     const [showJoinModal, setShowJoinModal] = useState(false);
-    const [showAddModal, setShowAddModal] = useState(false); // Admin Modal
+    const [showAddModal, setShowAddModal] = useState(false);
     const [posts, setPosts] = useState(communityData);
     const [isAdmin, setIsAdmin] = useState(false);
     const [headerClicks, setHeaderClicks] = useState(0);
 
+    // Edit State
+    const [postToEdit, setPostToEdit] = useState(null);
+
+    const isRootAdmin = profile?.email === "nollramsilva9@gmail.com";
+
+    // Auto-enable admin for root
+    useEffect(() => {
+        if (isRootAdmin) setIsAdmin(true);
+    }, [isRootAdmin]);
+
     // Subscribe to real-time updates
     useEffect(() => {
-        // Safe check for function existence (redundant now with db.js fix, but good for safety)
         if (typeof subscribeToCommunityFeed !== 'function') {
             console.error("CRITICAL: subscribeToCommunityFeed is NOT a function!");
             return;
@@ -27,14 +36,31 @@ const CommunityPage = () => {
         return () => unsubscribe && unsubscribe();
     }, []);
 
-    // Secret Admin Trigger
+    const handleDelete = async (postId) => {
+        if (!window.confirm("Tem certeza que deseja apagar este post?")) return;
+
+        const result = await deleteCommunityPost(postId);
+        if (result.success) {
+            // Optimistic update or wait for subscription
+            // Subscription will handle it, but we can alert
+        } else {
+            alert("Erro ao apagar: " + result.error);
+        }
+    };
+
+    const handleEdit = (post) => {
+        setPostToEdit(post);
+        setShowAddModal(true);
+    };
+
+    // Secret Admin Trigger (Still works for non-root admins if any existed, but mostly for debug)
     const handleHeaderClick = () => {
         const newCount = headerClicks + 1;
         setHeaderClicks(newCount);
-        if (newCount >= 7) { // >= 7 to allow triggering if they go crazy clicking
+        if (newCount >= 7) {
             if (!isAdmin) {
                 setIsAdmin(true);
-                alert("Modo Admin Ativado! 🛠️ Agora você pode adicionar posts.");
+                alert("Modo Admin Ativado! 🛠️");
             }
         }
     };
@@ -66,14 +92,20 @@ const CommunityPage = () => {
             {/* Feed */}
             <div style={{ padding: '10px 20px' }}>
                 {posts.map((post, index) => (
-                    <CommunityCard key={post.id || index} post={post} />
+                    <CommunityCard
+                        key={post.id || index}
+                        post={post}
+                        isAdmin={isRootAdmin} // Only ROOT gets edit/delete
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                    />
                 ))}
             </div>
 
             {/* Admin Add Button */}
             {isAdmin && (
                 <button
-                    onClick={() => setShowAddModal(true)}
+                    onClick={() => { setPostToEdit(null); setShowAddModal(true); }}
                     style={{
                         position: 'fixed',
                         bottom: '150px',
@@ -130,7 +162,10 @@ const CommunityPage = () => {
             )}
 
             {showAddModal && (
-                <AddPostModal onClose={() => setShowAddModal(false)} />
+                <AddPostModal
+                    onClose={() => { setShowAddModal(false); setPostToEdit(null); }}
+                    postToEdit={postToEdit}
+                />
             )}
         </div>
     );
