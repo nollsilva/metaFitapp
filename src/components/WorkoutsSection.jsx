@@ -21,7 +21,20 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
         legs: [], glutes: [], chest: [], back: [], abs: [], arms: [], shoulders_biceps: []
     });
 
-    // ... (useEffect for props stays same) ...
+    // Sync state with profile props when they load
+    useEffect(() => {
+        if (profile) {
+            setUrgentPart(profile.urgentPart || 'corpo todo');
+            setTrainingDays(profile.trainingDays || 3);
+            setSelectedWeekDays(profile.selectedWeekDays || []);
+            setTrainingDuration(profile.trainingDuration || 20);
+
+            // Should we auto-hide settings if data exists?
+            if (profile.selectedWeekDays && profile.selectedWeekDays.length > 0) {
+                setShowSettings(false);
+            }
+        }
+    }, [profile]);
 
     // Checkbox state for equipment
     const [hasBar, setHasBar] = useState(false);
@@ -31,7 +44,11 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
     const weekDays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     const now = new Date();
     const currentDayIdx = now.getDay();
-    const todayKey = now.toISOString().split('T')[0];
+    // Use LOCAL date string YYYY-MM-DD instead of UTC to fix timezone issues
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const todayKey = `${year}-${month}-${day}`;
     const currentDayName = weekDays[currentDayIdx];
 
 
@@ -197,7 +214,7 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
         };
 
         setCategorizedRoutine(filteredLib);
-    }, [hasBar, profile.gender]);
+    }, [hasBar, profile.gender, profile.workoutLevel]);
 
     // --- Settings Logic ---
     const handleDayToggle = (day) => {

@@ -38,6 +38,14 @@ import LevelUpModal from './components/LevelUpModal'; // Imported
 import RPGMap from './components/rpg/RPGMap'; // Imported
 import WeeklyCheckinModal from './components/WeeklyCheckinModal'; // Imported
 
+// Helper for Local Date Keys (YYYY-MM-DD) to fix timezone issues
+const getLocalDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Helper to auto-reload page if a lazy-loaded chunk fails (e.g., after deployment)
 const lazyWithRetry = (componentImport) =>
   React.lazy(async () => {
@@ -80,7 +88,7 @@ function App() {
   // Initialize sessionChecks from localStorage if valid for today
   const [sessionChecks, setSessionChecks] = useState(() => {
     try {
-      const todayKey = new Date().toISOString().split('T')[0];
+      const todayKey = getLocalDateKey();
       const stored = localStorage.getItem(`metafit_checks_${todayKey}`);
       if (stored) {
         return new Set(JSON.parse(stored));
@@ -93,7 +101,7 @@ function App() {
 
   // Sync sessionChecks to localStorage whenever it changes
   useEffect(() => {
-    const todayKey = new Date().toISOString().split('T')[0];
+    const todayKey = getLocalDateKey();
     const checksArray = Array.from(sessionChecks);
     localStorage.setItem(`metafit_checks_${todayKey}`, JSON.stringify(checksArray));
 
@@ -258,7 +266,7 @@ function App() {
 
     while (currentDate <= yesterday) {
       const dayKeyStr = dayKeys[currentDate.getDay()];
-      const dateStr = currentDate.toISOString().split('T')[0];
+      const dateStr = getLocalDateKey(currentDate);
 
       if (scheduledDays.includes(dayKeyStr)) {
         // If not done AND not already marked as missed (prevent double penalty if logic fails somewhere)
@@ -561,7 +569,7 @@ function App() {
   };
 
   const handleDailyWorkoutComplete = (xpAmount) => {
-    const todayKey = new Date().toISOString().split('T')[0];
+    const todayKey = getLocalDateKey();
     const newHistory = { ...userProfile.workoutHistory };
     newHistory[todayKey] = 'done';
 
