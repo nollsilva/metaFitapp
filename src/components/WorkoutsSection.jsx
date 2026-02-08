@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import ShareStoryCard from './ShareStoryCard';
 import { shareHiddenElement } from '../utils/share';
 import { calculateStreak } from '../utils/streak';
