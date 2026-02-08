@@ -165,6 +165,46 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
     };
 
 
+
+    const updateBiometrics = (field, value) => {
+        const updated = { ...profile, [field]: value };
+
+        // Calculate TDEE if all fields present
+        if (updated.weight && updated.height && updated.age && updated.gender && updated.activityLevel) {
+            let bmr;
+            const w = parseFloat(updated.weight);
+            const h = parseFloat(updated.height);
+            const a = parseFloat(updated.age);
+
+            if (updated.gender === 'male') {
+                bmr = (10 * w) + (6.25 * h) - (5 * a) + 5;
+            } else {
+                bmr = (10 * w) + (6.25 * h) - (5 * a) - 161;
+            }
+
+            const activityMultipliers = {
+                'sedentary': 1.2,
+                'light': 1.375,
+                'moderate': 1.55,
+                'active': 1.725,
+                'very_active': 1.9
+            };
+
+            const tdee = Math.round(bmr * (activityMultipliers[updated.activityLevel] || 1.2));
+
+            // Adjust for Goal
+            let goalAdjustment = 0;
+            if (updated.goal === 'lose') goalAdjustment = -500;
+            if (updated.goal === 'gain') goalAdjustment = 500;
+
+            const finalCalories = Math.max(1200, tdee + goalAdjustment); // Min 1200 safety net
+
+            onUpdateProfile({ [field]: value, targetCalories: finalCalories });
+        } else {
+            onUpdateProfile({ [field]: value });
+        }
+    };
+
     const confirmAvatarSelection = () => {
         if (tempAvatar) {
             onUpdateProfile({ avatar: tempAvatar });
@@ -638,28 +678,83 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
             {/* BMI Calculator Section */}
             <div className="card" style={{ marginBottom: '2rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                 <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    ⚖️ Calculadora de IMC
+                    ⚖️ Calculadora Metabólica
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '1rem' }}>
+                    {/* Weight */}
                     <div style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
                         <label style={{ fontSize: '0.8rem', color: '#aaa', display: 'block', marginBottom: '5px' }}>Peso (kg)</label>
                         <input
                             type="number"
                             placeholder="Ex: 70"
                             value={profile.weight || ''}
-                            onChange={(e) => onUpdateProfile({ weight: e.target.value })}
+                            onChange={(e) => updateBiometrics('weight', e.target.value)}
                             style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '1.2rem', fontWeight: 'bold' }}
                         />
                     </div>
+                    {/* Height */}
                     <div style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
                         <label style={{ fontSize: '0.8rem', color: '#aaa', display: 'block', marginBottom: '5px' }}>Altura (cm)</label>
                         <input
                             type="number"
                             placeholder="Ex: 175"
                             value={profile.height || ''}
-                            onChange={(e) => onUpdateProfile({ height: e.target.value })}
+                            onChange={(e) => updateBiometrics('height', e.target.value)}
                             style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '1.2rem', fontWeight: 'bold' }}
                         />
+                    </div>
+                    {/* Age */}
+                    <div style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#aaa', display: 'block', marginBottom: '5px' }}>Idade</label>
+                        <input
+                            type="number"
+                            placeholder="Ex: 25"
+                            value={profile.age || ''}
+                            onChange={(e) => updateBiometrics('age', e.target.value)}
+                            style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '1.2rem', fontWeight: 'bold' }}
+                        />
+                    </div>
+                    {/* Gender */}
+                    <div style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#aaa', display: 'block', marginBottom: '5px' }}>Gênero</label>
+                        <select
+                            value={profile.gender || 'male'}
+                            onChange={(e) => updateBiometrics('gender', e.target.value)}
+                            style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '1rem', fontWeight: 'bold' }}
+                        >
+                            <option value="male">Masculino</option>
+                            <option value="female">Feminino</option>
+                        </select>
+                    </div>
+                    {/* Activity Level - Full Width */}
+                    <div style={{ gridColumn: '1 / -1', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#aaa', display: 'block', marginBottom: '5px' }}>
+                            Nível de Atividade Atual <span style={{ fontSize: '0.7em', color: '#666' }}>(Seja sincero!)</span>
+                        </label>
+                        <select
+                            value={profile.activityLevel || 'moderate'}
+                            onChange={(e) => updateBiometrics('activityLevel', e.target.value)}
+                            style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '1rem', fontWeight: 'bold' }}
+                        >
+                            <option value="sedentary">Sedentário (Pouco ou nenhum exercício)</option>
+                            <option value="light">Levemente Ativo (Exercício leve 1-3 dias/sem)</option>
+                            <option value="moderate">Moderadamente Ativo (Exercício moderado 3-5 dias/sem)</option>
+                            <option value="active">Muito Ativo (Exercício pesado 6-7 dias/sem)</option>
+                            <option value="very_active">Extremamente Ativo (Exercício muito pesado + trabalho físico)</option>
+                        </select>
+                    </div>
+                    {/* Goal - Full Width */}
+                    <div style={{ gridColumn: '1 / -1', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#aaa', display: 'block', marginBottom: '5px' }}>Objetivo</label>
+                        <select
+                            value={profile.goal || 'maintain'}
+                            onChange={(e) => updateBiometrics('goal', e.target.value)}
+                            style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '1rem', fontWeight: 'bold' }}
+                        >
+                            <option value="lose">Perder Peso (-500kcal)</option>
+                            <option value="maintain">Manter Peso</option>
+                            <option value="gain">Ganhar Massa (+500kcal)</option>
+                        </select>
                     </div>
                 </div>
 
