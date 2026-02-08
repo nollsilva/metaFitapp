@@ -163,6 +163,17 @@ const ShareStoryCard = ({ id, type, data, isVip }) => {
 
             {/* Footer */}
             <div style={{ zIndex: 1, textAlign: 'center', marginBottom: '1.5rem', opacity: 1, width: '100%' }}>
+
+                {/* Streak Display */}
+                {data.streak > 0 && (
+                    <div style={{ marginBottom: '0.8rem', ...textShadow }}>
+                        <span style={{ fontSize: '1.4rem' }}>🔥</span>
+                        <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#ffaa00', marginLeft: '5px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                            {data.streak} {data.streak === 1 ? 'Dia' : 'Dias'} Seguidos
+                        </span>
+                    </div>
+                )}
+
                 <p style={{ margin: '0 0 5px 0', fontSize: '0.8rem', color: isVip ? '#fff' : '#ccc', ...textShadow }}>Use já o MetaFit</p>
                 <div style={{
                     fontWeight: 'bold',

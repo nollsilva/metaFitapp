@@ -30,6 +30,7 @@ const RecenterAutomatically = ({ lat, lng }) => {
 import { saveRun, getUserRuns } from '../utils/db'; // Import DB functions
 import html2canvas from 'html2canvas';
 import { RewardedAdButton } from './AdSystem';
+import { calculateStreak } from '../utils/streak';
 
 const RunMode = ({ profile, onAddXp }) => {
     const [isRunning, setIsRunning] = useState(false);
@@ -436,6 +437,23 @@ const RunMode = ({ profile, onAddXp }) => {
                             <div className="run-stat-label">XP GANHO {profile.vip && <span style={{ color: '#ffd700', fontSize: '0.7rem' }}>(+15%)</span>}</div>
                         </div>
                     </div>
+
+                    {/* Streak Info */}
+                    {(profile && calculateStreak(profile.workoutHistory, true, profile.selectedWeekDays, profile.hasShield) > 0) && (
+                        <div style={{ marginBottom: '15px', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+                            <span style={{ fontSize: '1.8rem' }}>🔥</span>
+                            <span style={{
+                                fontSize: '1.2rem',
+                                fontWeight: 'bold',
+                                color: '#ffaa00',
+                                marginLeft: '8px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '1px'
+                            }}>
+                                {calculateStreak(profile.workoutHistory, true, profile.selectedWeekDays, profile.hasShield)} {calculateStreak(profile.workoutHistory, true, profile.selectedWeekDays, profile.hasShield) === 1 ? 'Dia' : 'Dias'} Seguidos
+                            </span>
+                        </div>
+                    )}
 
                     {/* Branding for Share */}
                     <div style={{ marginBottom: '10px', color: '#00f0ff', fontWeight: 'bold', letterSpacing: '2px' }}>

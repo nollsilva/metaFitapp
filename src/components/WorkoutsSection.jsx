@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
 import ShareStoryCard from './ShareStoryCard';
 import { shareHiddenElement } from '../utils/share';
+import { calculateStreak } from '../utils/streak';
 
 const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteDaily, checkedExercises, onToggleCheck }) => {
     // Initialize form state from profile
@@ -376,7 +376,9 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
                     duration: trainingDuration,
                     xpTotal: profile.xp, // for medal
                     xp: trainingDuration >= 30 ? 400 : 200, // Estimate based on logic
-                    focus: todayWorkout.title
+                    xp: trainingDuration >= 30 ? 400 : 200, // Estimate based on logic
+                    focus: todayWorkout.title,
+                    streak: calculateStreak(workoutHistory, true, profile.selectedWeekDays, profile.hasShield) // Include today, schedule, shield
                 }}
             />
 
