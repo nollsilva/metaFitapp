@@ -90,7 +90,7 @@ const AuthModal = ({ onClose, onSuccess }) => {
                                     style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
                                 />
                             </div>
-                            <div className="input-group" style={{ marginBottom: '1.5rem' }}>
+                            <div className="input-group" style={{ marginBottom: '1.5rem', position: 'relative' }}>
                                 <label>Código de Convite (Opcional)</label>
                                 <input
                                     type="text"
@@ -99,6 +99,25 @@ const AuthModal = ({ onClose, onSuccess }) => {
                                     onChange={(e) => setInviteCode(e.target.value)}
                                     style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
                                 />
+                                {inviteCode && (
+                                    <button
+                                        type="button"
+                                        onClick={() => { setInviteCode(''); localStorage.removeItem('metafit_ref_code'); }}
+                                        style={{
+                                            position: 'absolute',
+                                            right: '10px',
+                                            top: '38px',
+                                            background: 'none',
+                                            border: 'none',
+                                            color: '#ff4d4d',
+                                            cursor: 'pointer',
+                                            fontSize: '1.2rem'
+                                        }}
+                                        title="Limpar código"
+                                    >
+                                        ×
+                                    </button>
+                                )}
                             </div>
                         </>
                     )}

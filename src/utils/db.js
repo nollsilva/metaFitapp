@@ -45,7 +45,7 @@ export const registerUser = async (email, password, name, inviteCode = "") => {
             const snapshot = await getDocs(q);
 
             if (snapshot.empty) {
-                return { error: "Código de convite inválido." };
+                return { error: "Código de convite (ID) não encontrado. Verifique ou apague para prosseguir." };
             }
 
             referrerDoc = snapshot.docs[0];

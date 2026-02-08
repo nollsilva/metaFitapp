@@ -611,7 +611,7 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                                     const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('192.168');
                                     const protocol = isLocal ? origin.split('//')[0] : 'https:';
                                     const host = origin.split('//')[1];
-                                    return `${protocol}//${host}/?ref=${profile.uid}`;
+                                    return `${protocol}//${host}/?ref=${profile.id}`;
                                 })()}
                             </div>
                             <button
@@ -620,7 +620,7 @@ const ProfileSection = ({ profile, onOpenAuth, onUpdateProfile, onDeleteAccount 
                                     const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('192.168');
                                     const protocol = isLocal ? origin.split('//')[0] : 'https:';
                                     const host = origin.split('//')[1]; // Remove existing protocol to replace cleanly
-                                    const link = `${protocol}//${host}/?ref=${profile.uid}`;
+                                    const link = `${protocol}//${host}/?ref=${profile.id}`;
 
                                     navigator.clipboard.writeText(link);
                                     alert("Link copiado! Envie para seus amigos via WhatsApp ou Telegram.");
