@@ -586,7 +586,7 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
             {activeTab === 'guide' && (
                 <div className="animate-fade-in">
                     {/* PARA VOCE Section */}
-                    {mealPlan && (
+                    {(true) && (
                         <div style={{ marginBottom: '4rem' }}>
                             <div className="card" style={{ border: '1px solid var(--color-primary)', background: 'rgba(0, 240, 255, 0.03)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
