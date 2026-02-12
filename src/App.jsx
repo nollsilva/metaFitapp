@@ -161,6 +161,25 @@ function App() {
     window.addEventListener('click', unlockAudio);
     window.addEventListener('touchstart', unlockAudio);
 
+    // Migration Check (Render -> Firebase)
+    if (window.location.hostname.includes('onrender.com')) {
+      setNotification(
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <span>⚠️ Mudamos de endereço!</span>
+          <span style={{ fontSize: '0.9rem' }}>Acesse a nova versão mais rápida em:</span>
+          <a
+            href="https://metafit-6b64a.web.app/"
+            style={{
+              color: '#00E0FF', fontWeight: 'bold', textDecoration: 'underline',
+              background: 'rgba(0,0,0,0.5)', padding: '5px', borderRadius: '4px'
+            }}
+          >
+            metafit-6b64a.web.app
+          </a>
+        </div>
+      );
+    }
+
   }, []);
 
   const handleTutorialComplete = () => {
