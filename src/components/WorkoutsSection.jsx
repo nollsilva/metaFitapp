@@ -687,7 +687,7 @@ const WorkoutsSection = ({ profile, onUpdateProfile, onStartWorkout, onCompleteD
                                                         opacity: checkedExercises.has(i) ? 0.6 : 1,
                                                         position: 'relative'
                                                     }} onClick={() => {
-                                                        setSelectedExercise(ex);
+                                                        setSelectedExercise({ ...ex, isDaily: true, index: i });
                                                     }}>
                                                         {/* Visual Indicator of Completion (non-clickable) */}
                                                         {checkedExercises.has(i) && (
